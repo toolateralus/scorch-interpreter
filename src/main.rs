@@ -1,4 +1,5 @@
 pub mod tokens;
+pub mod ast;
 
 use std::env;
 use std::fs::File;

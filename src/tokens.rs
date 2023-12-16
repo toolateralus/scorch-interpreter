@@ -4,8 +4,6 @@ pub fn create_tokenizer() -> Tokenizer {
     let mut operators : HashMap<String, TokenKind> = HashMap::new();
     let mut keywords : HashMap<String, TokenKind> = HashMap::new();
 
-
-
     keywords.insert(String::from("make"), TokenKind::Make);
     keywords.insert(String::from("yield"), TokenKind::Yield);
     keywords.insert(String::from("break"), TokenKind::Break);
@@ -47,7 +45,7 @@ pub enum TokenFamily {
     Undefined = 0,
     Value,
     Identifier, 
-    Operatior,
+    Operator,
     Punctuation,
     Keyword,
 }
@@ -61,16 +59,12 @@ pub enum TokenKind {
     Boolean,
     // identifiers
     Variable,
-    Function,
     // operators
     Add,
     Subtract,
     Multiply,
     Divide,
     Modulo,
-
-
-
     // punctuation
     OpenParenthesis,
     CloseParenthesis,
@@ -82,14 +76,17 @@ pub enum TokenKind {
     Semicolon,
     Colon,
     Period,
+    
     // keywords.
     Make,
     Yield,
-    Break,
+    Break, 
     Typedef,
-    Insert,
-    Extract,
-    DubColon,
+    
+    // special operators
+    Insert, // <=
+    Extract, // =>
+    DubColon, // ::
 }
 
 #[derive(Debug)]
@@ -163,7 +160,7 @@ fn try_next(&mut self, current: &mut char) -> bool
                     let match_ = matches[0].clone();
                     let kind = self.operators.get(&match_);
                     let token = Token {
-                        family : TokenFamily::Operatior,
+                        family : TokenFamily::Operator,
                         kind : *kind.unwrap(),
                         value : match_,
                     };
