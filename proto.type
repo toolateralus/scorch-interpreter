@@ -1,1 +1,5 @@
-make i : i = i * 2500;
+<= enum {
+    yield::[%];
+};
+
+<= iterator, [0, 1, 2, 3, 4, 5];
