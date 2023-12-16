@@ -18,6 +18,7 @@ pub fn create_tokenizer() -> Tokenizer {
     operators.insert(String::from("]"), TokenKind::CloseBracket);
     operators.insert(String::from(","), TokenKind::Comma);
     operators.insert(String::from(";"), TokenKind::Semicolon);
+    operators.insert(String::from("::"), TokenKind::DubColon);
     operators.insert(String::from(":"), TokenKind::Colon);
     operators.insert(String::from("."), TokenKind::Period);
 
@@ -88,6 +89,7 @@ pub enum TokenKind {
     Typedef,
     Insert,
     Extract,
+    DubColon,
 }
 
 #[derive(Debug)]
@@ -118,10 +120,10 @@ fn try_next(&mut self, current: &mut char) -> bool
         }
         false
     }
-    fn tokenize(&mut self, input : &str) -> () {
+    fn tokenize(&mut self, input : &str) {
         self.length = input.len();
         self.source = String::from(input);
-        while self.index < self.source.len() {
+        while self.index < self.length {
             let mut current = self.source.chars().nth(self.index).unwrap();
             if current.is_whitespace() {
                 self.index += 1;
@@ -129,11 +131,11 @@ fn try_next(&mut self, current: &mut char) -> bool
             }
             if current.is_digit(10) {
                 let mut digit : String = String::new(); 
-                while self.index < self.length && current.is_digit(10) { // is decimal
+                loop {
                     digit.push(current);
-                    if !self.try_next(&mut current) {
+                    if !self.try_next(&mut current) || !current.is_digit(10) {
                         break;
-                    }  
+                    }
                 }
                 let token = Token {
                     family : TokenFamily::Value,
@@ -143,32 +145,38 @@ fn try_next(&mut self, current: &mut char) -> bool
                 self.tokens.push(token);
                 continue;
             }            
-            if current.is_ascii_punctuation() {
+            if current == ':' || current.is_ascii_punctuation() {
                 let mut punctuation : String = String::new();
-                while self.index < self.length && current.is_ascii_punctuation() {
+                let mut matches : Vec<String> = Vec::new();
+                loop {
                     punctuation.push(current);
-                    if !self.try_next(&mut current) {
+                    if self.operators.contains_key(&punctuation) {
+                        matches.push(punctuation.clone());
+                    }
+                    if !self.try_next(&mut current) || !(current.is_ascii_punctuation() || current == ':') {
                         break;
-                    }  
-                } 
-                if self.operators.contains_key(&punctuation) {
-                    let kind = self.operators.get(&punctuation);
+                    }
+                }
+                if !matches.is_empty() {
+                    // sort for longest matching operator.
+                    matches.sort_by(|a, b| b.len().cmp(&a.len()));
+                    let match_ = matches[0].clone();
+                    let kind = self.operators.get(&match_);
                     let token = Token {
                         family : TokenFamily::Operatior,
                         kind : *kind.unwrap(),
-                        value : punctuation,
+                        value : match_,
                     };
                     self.tokens.push(token);
-                    continue;
                 }
             }
             if current.is_alphabetic() {
                 let mut identifier : String = String::new();
-                while self.index < self.length && current.is_alphabetic() {
+                loop {
                     identifier.push(current);
-                    if !self.try_next(&mut current) {
+                    if !self.try_next(&mut current) || !current.is_alphabetic() {
                         break;
-                    }  
+                    }
                 }
                 
                 if self.keywords.contains_key(&identifier) {
