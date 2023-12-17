@@ -122,6 +122,29 @@ impl TokenProcessor for Tokenizer {
         self.source = String::from(input);
         while self.index < self.length {
             let mut current = self.source.chars().nth(self.index).unwrap();
+
+            if current == '\'' || current == '\"' {
+                let mut string : String = String::new();
+                loop {
+
+                    if !self.try_next(&mut current) {
+                        panic!("Expected end of string.");
+                    }   
+
+                    if  current == '\'' || current == '\"' {
+                        self.index += 1;
+                        break;
+                    }
+                    string.push(current);  
+                }
+                let token = Token {
+                    family: TokenFamily::Value,
+                    kind: TokenKind::String,
+                    value: string,
+                };
+                self.tokens.push(token);
+                continue;
+            }
             if current == '\n' || current == '\r'  {
                 let token = Token {
                     family: TokenFamily::Punctuation,

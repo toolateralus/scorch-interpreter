@@ -77,8 +77,9 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Node {
     }
     
     let next = tokens.get(*index + 1).unwrap();
-    
+
     if current.family != TokenFamily::Identifier {
+        dbg!(current);
         panic!("Expected identifier token");
     }
 
