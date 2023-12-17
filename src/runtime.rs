@@ -1,5 +1,6 @@
 use std::{collections::HashMap, f64::NAN};
 use crate::ast::{Visitor, Node};
+#[derive(Debug)]
 pub enum ValueType {
     Float(f64),
     Int(i64),
@@ -7,6 +8,7 @@ pub enum ValueType {
     String(String),
     None(()),
 }
+#[derive(Debug)]
 pub struct Context {
     pub parent: Option<Box<Context>>,
     pub children: Vec<Box<Context>>,
@@ -21,6 +23,7 @@ impl Context {
         }
     }
 }
+#[derive(Debug)]
 pub struct Interpreter {
     pub context: Context,
 }
@@ -43,10 +46,7 @@ impl Visitor<ValueType> for Interpreter {
         } = node
         {
             let value = expression.accept(self);
-            if let ValueType::None(_) = value {
-                dbg!(node);
-                panic!("Expected value in declaration");
-            }
+            self.context.variables.insert(id.to_string(), Box::new(value));
         } else {
             panic!("Expected Declaration node");
         }        
@@ -64,7 +64,7 @@ impl Visitor<ValueType> for Interpreter {
     fn visit_factor(&mut self, node: &Node) -> ValueType {
         if let Node::Number(value) = node {
             return ValueType::Float(*value);           
-        } else if let Node::Identifier(id) = node {
+        } else if let Node::Identifier(_id) = node {
             // todo: dereference identifiers
             // id == string id;
 
@@ -108,7 +108,7 @@ impl Visitor<ValueType> for Interpreter {
         ValueType::Float(result)
     }
     fn visit_string(&mut self, node: &Node) -> ValueType {
-        if let Node::String(value) = node {
+        if let Node::String(_value) = node {
             
         } else {
             panic!("Expected String node");

@@ -145,4 +145,7 @@ fn main() -> () {
     };
 
     ast_root.accept(&mut visitor);
+
+    dbg!(visitor.context);
+
 }

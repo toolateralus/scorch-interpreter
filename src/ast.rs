@@ -26,6 +26,8 @@ pub enum Node {
     MulOp(Box<Node>, Box<Node>),
     DivOp(Box<Node>, Box<Node>),
 
+    // todo: implement Modulo & Unary operations.
+
     Expression(Box<Node>),
     // Statements
     AssignStmnt {
@@ -89,7 +91,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Node {
 
     token = consume_newlines(index, tokens);
 
-    if (*index + 1 >= tokens.len()) {
+    if *index + 1 >= tokens.len() {
         dbg!(token);
         panic!("Unexpected end of tokens")
     }
