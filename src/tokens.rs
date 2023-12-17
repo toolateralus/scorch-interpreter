@@ -18,10 +18,11 @@ pub fn create_tokenizer() -> Tokenizer {
     operators.insert(String::from(";"), TokenKind::Semicolon);
     operators.insert(String::from("::"), TokenKind::DubColon);
     operators.insert(String::from(":"), TokenKind::Colon);
+    operators.insert(String::from("="), TokenKind::Assignment);
     operators.insert(String::from("."), TokenKind::Period);
 
-    operators.insert(String::from("<="), TokenKind::Insert);
-    operators.insert(String::from("=>"), TokenKind::Extract);
+    operators.insert(String::from("<="), TokenKind::ReverseLambda);
+    operators.insert(String::from("=>"), TokenKind::Lambda);
 
     operators.insert(String::from("+"), TokenKind::Add);
     operators.insert(String::from("-"), TokenKind::Subtract);
@@ -40,7 +41,7 @@ pub fn create_tokenizer() -> Tokenizer {
     tokenizer
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum TokenFamily {
     Undefined = 0,
     Value,
@@ -49,9 +50,11 @@ pub enum TokenFamily {
     Punctuation,
     Keyword,
 }
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum TokenKind {
     Undefined = 0,
+    // id's
+    Identifier,
     // values
     Number,
     String,
@@ -83,11 +86,12 @@ pub enum TokenKind {
     Typedef,
     
     // special operators
-    Insert, // <=
-    Extract, // =>
-    DubColon, // ::
+    ReverseLambda, // <=, Pack In.
+    Lambda, // =>, Extract out.
+    DubColon,
+    Assignment, // ::
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Token {
     pub family : TokenFamily,
     pub kind : TokenKind,
