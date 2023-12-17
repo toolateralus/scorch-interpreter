@@ -26,13 +26,14 @@ pub enum Node {
         id : String,
         expression : Box<Node>,
     },
+    Block (Vec<Box<Node>>),
 }
 
 impl Node {
     pub fn accept<T>(&self, visitor: &mut dyn Visitor<T>) -> T {
         match self {
             Node::Undefined() => panic!("visitor reached undefined node."),
-            Node::Identifier(_key) => visitor.visit_variable(self),
+            Node::Identifier(_key) => visitor.visit_identifier(self),
             Node::Number(_value) => { visitor.visit_number(self) },
             Node::AddOp(_lhs, _rhs) => visitor.visit_term(self),
             Node::SubOp(_lhs, _rhs) => visitor.visit_term(self),
@@ -40,14 +41,26 @@ impl Node {
             Node::DivOp(_lhs, _rhs) => visitor.visit_factor(self),
             Node::AssignStmnt {id: _, expression: _} => visitor.visit_assignment(self),
             Node::DeclStmt { target_type, id, expression } => visitor.visit_declaration(self),
+            Node::Block(statements) => visitor.visit_block(self),
         }
     }
 }
 pub fn parse_program(tokens: &Vec<Token>) -> Node {
     let mut index = 0;
-    //parse_expression(tokens, &mut index)
-    let program = parse_statement(tokens, &mut index);
+    let program = parse_block(tokens, &mut index);
     program
+}
+fn parse_block(tokens: &Vec<Token>, index: &mut usize) -> Node {
+    let mut statements = Vec::new();
+    while let Some(token) = tokens.get(*index) {
+        if token.kind == TokenKind::CloseBrace {
+            *index += 1;
+            break;
+        }
+        let statement = parse_statement(tokens, index);
+        statements.push(Box::new(statement));
+    }
+    Node::Block(statements)
 }
 fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Node {
     let current = tokens.get(*index).unwrap();
@@ -94,24 +107,34 @@ fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Node {
                 *index += 1;
                 let right = parse_term(tokens, index);
                 left = Node::AddOp(Box::new(left), Box::new(right));
-            }
+            },
             TokenKind::Subtract => {
                 *index += 1;
                 let right = parse_term(tokens, index);
                 left = Node::SubOp(Box::new(left), Box::new(right));
             },
-            TokenKind::CloseParenthesis => break,
-            TokenKind::Semicolon => break,
-            TokenKind::Comma => break,
+            TokenKind::CloseParenthesis => {
+                *index += 1;
+                break;
+            },
+            TokenKind::Semicolon => {
+                *index += 1;
+                break;
+            },
+            TokenKind::Comma => {
+                *index += 1;
+                break;
+            },
             _ => {
                 println!("left");
                 dbg!(left);
                 println!("token");
                 dbg!(token);
                 panic!("unexpected token");
-            },
+            }
         }
     }
+    
     left
 }
 fn parse_term(tokens: &Vec<Token>, index: &mut usize) -> Node {
@@ -164,18 +187,7 @@ fn parse_factor(tokens: &Vec<Token>, index: &mut usize) -> Node {
             },
             TokenKind::OpenParenthesis => {
                 let node = parse_expression(tokens, index);
-                if let Some(token) = tokens.get(*index) {
-                    if token.kind == TokenKind::CloseParenthesis {
-                        //*index += 1;
-                        node
-                    }
-                    else {
-                        panic!("Expected ')' token")
-                    }
-                } 
-                else {
-                    panic!("Unexpected end of tokens")
-                }
+                node
             }
             _ => panic!("Expected number or identifier token"),
         };
@@ -191,32 +203,39 @@ pub trait Visitor<T> {
     fn visit_binary_op(&mut self, node: &Node) -> T;
     fn visit_assignment(&mut self, node: &Node) -> T;
     fn visit_declaration(&mut self, node: &Node) -> T;
-    fn visit_variable(&mut self, node: &Node) -> T;
+    fn visit_block(&mut self, node: &Node) -> T;
+    fn visit_identifier(&mut self, node: &Node) -> T;
 }
-struct PrintVisitor;
+pub struct PrintVisitor;
 impl Visitor<()> for PrintVisitor {
+    fn visit_block(&mut self, node: &Node) {
+        println!("visit_block: {:?}", node);
+        if let Node::Block(statements) = node {
+            for statement in statements {
+                statement.accept(self);
+            }
+        } else {
+            panic!("Expected Block node");
+        }
+    }
     fn visit_declaration(&mut self, node: &Node) -> () {
         println!("visit_declaration: {:?}", node);
     }
-    fn visit_variable(&mut self, node: &Node) -> () {
+    fn visit_identifier(&mut self, node: &Node) -> () {
         println!("visit_variable: {:?}", node);
     }
     fn visit_number(&mut self, node: &Node) -> () {
         println!("visit_number: {:?}", node);
     }
-
     fn visit_term(&mut self, node: &Node) -> () {
         println!("visit_term: {:?}", node);
     }
-
     fn visit_factor(&mut self, node: &Node) -> () {
         println!("visit_factor: {:?}", node);
     }
-
     fn visit_assignment(&mut self, node: &Node) -> () {
         println!("visit_assignment: {:?}", node);
     }
-
     fn visit_binary_op(&mut self, node: &Node) -> () {
         println!("visit_binary_op: {:?}", node);
     }
