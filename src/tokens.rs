@@ -41,7 +41,7 @@ pub fn create_tokenizer() -> Tokenizer {
     tokenizer
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum TokenFamily {
     Undefined = 0,
     Value,
@@ -167,11 +167,11 @@ fn try_next(&mut self, current: &mut char) -> bool
                     self.tokens.push(token);
                 }
             }
-            if current.is_alphabetic() {
+            if current.is_alphabetic() || current == '_' || current == '-' {
                 let mut identifier : String = String::new();
                 loop {
                     identifier.push(current);
-                    if !self.try_next(&mut current) || !current.is_alphabetic() {
+                    if !self.try_next(&mut current) || (!current.is_alphanumeric() && current != '_' && current != '-') {
                         break;
                     }
                 }

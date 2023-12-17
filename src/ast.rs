@@ -1,38 +1,90 @@
+use core::panic;
+use std::{f32::consts::E, panic::AssertUnwindSafe};
+
 use crate::tokens::*;
 
 #[derive(Debug)]
 pub enum Node {
+    // literal & values
     Undefined(),
     Number(f64),
-    Add(Box<Node>, Box<Node>),
-    Subtract(Box<Node>, Box<Node>),
-    Multiply(Box<Node>, Box<Node>),
-    Divide(Box<Node>, Box<Node>),
     Identifier(String),
-    Assignment {
+
+    // binary operations
+    AddOp(Box<Node>, Box<Node>),
+    SubOp(Box<Node>, Box<Node>),
+    MulOp(Box<Node>, Box<Node>),
+    DivOp(Box<Node>, Box<Node>),
+
+    // Statements
+    AssignStmnt {
         id: Box<Node>,
         expression : Box<Node>,
-    }
+    },
+    DeclStmt {
+        target_type: String,
+        id : String,
+        expression : Box<Node>,
+    },
 }
 
 impl Node {
     pub fn accept<T>(&self, visitor: &mut dyn Visitor<T>) -> T {
         match self {
             Node::Undefined() => panic!("visitor reached undefined node."),
-            Node::Number(_value) => { visitor.visit_number(self) },
-            Node::Add(_lhs, _rhs) => visitor.visit_term(self),
-            Node::Subtract(_lhs, _rhs) => visitor.visit_term(self),
-            Node::Multiply(_lhs, _rhs) => visitor.visit_factor(self),
-            Node::Divide(_lhs, _rhs) => visitor.visit_factor(self),
-            Node::Assignment {id: _, expression: _} => visitor.visit_assignment(self),
             Node::Identifier(_key) => visitor.visit_variable(self),
+            Node::Number(_value) => { visitor.visit_number(self) },
+            Node::AddOp(_lhs, _rhs) => visitor.visit_term(self),
+            Node::SubOp(_lhs, _rhs) => visitor.visit_term(self),
+            Node::MulOp(_lhs, _rhs) => visitor.visit_factor(self),
+            Node::DivOp(_lhs, _rhs) => visitor.visit_factor(self),
+            Node::AssignStmnt {id: _, expression: _} => visitor.visit_assignment(self),
+            Node::DeclStmt { target_type, id, expression } => visitor.visit_declaration(self),
         }
     }
 }
-pub fn parse(tokens: &Vec<Token>) -> Node {
+pub fn parse_program(tokens: &Vec<Token>) -> Node {
     let mut index = 0;
-    parse_expression(tokens, &mut index)
+    //parse_expression(tokens, &mut index)
+    let program = parse_statement(tokens, &mut index);
+    program
 }
+fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Node {
+    let current = tokens.get(*index).unwrap();
+    let next = tokens.get(*index + 1).unwrap();
+
+    if current.family != TokenFamily::Identifier {
+        panic!("Expected identifier token");
+    }
+    
+    if next.kind == TokenKind::Colon {
+        *index += 2;
+        // todo: check for valid type / builtins
+        let target_type = tokens.get(*index).unwrap().value.clone();
+        *index += 1;
+
+        let id = current.value.clone();
+        let expression = parse_expression(tokens, index);
+        Node::DeclStmt {
+            target_type,
+            id,
+            expression: Box::new(expression),
+        }
+    }
+    else if next.kind == TokenKind::Assignment {
+        *index += 2;
+        let id = Node::Identifier(current.value.clone());
+        let expression = parse_expression(tokens, index);
+        Node::AssignStmnt {
+            id: Box::new(id),
+            expression: Box::new(expression),
+        }
+    } else {
+        panic!("Expected ':' or '=' token after Identifier,\n instead got : \n current : {:?}\n next : {:?}", current, next);
+    }
+
+}
+
 fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Node {
     let mut left = parse_term(tokens, index);
 
@@ -41,14 +93,23 @@ fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Node {
             TokenKind::Add => {
                 *index += 1;
                 let right = parse_term(tokens, index);
-                left = Node::Add(Box::new(left), Box::new(right));
+                left = Node::AddOp(Box::new(left), Box::new(right));
             }
             TokenKind::Subtract => {
                 *index += 1;
                 let right = parse_term(tokens, index);
-                left = Node::Subtract(Box::new(left), Box::new(right));
-            }
-            _ => break,
+                left = Node::SubOp(Box::new(left), Box::new(right));
+            },
+            TokenKind::CloseParenthesis => break,
+            TokenKind::Semicolon => break,
+            TokenKind::Comma => break,
+            _ => {
+                println!("left");
+                dbg!(left);
+                println!("token");
+                dbg!(token);
+                panic!("unexpected token");
+            },
         }
     }
     left
@@ -60,12 +121,12 @@ fn parse_term(tokens: &Vec<Token>, index: &mut usize) -> Node {
             TokenKind::Multiply => {
                 *index += 1;
                 let right = parse_addition(tokens, index);
-                left = Node::Multiply(Box::new(left), Box::new(right));
+                left = Node::MulOp(Box::new(left), Box::new(right));
             }
             TokenKind::Divide => {
                 *index += 1;
                 let right = parse_addition(tokens, index);
-                left = Node::Divide(Box::new(left), Box::new(right));
+                left = Node::DivOp(Box::new(left), Box::new(right));
             }
             _ => break,
         }
@@ -80,12 +141,12 @@ fn parse_addition(tokens: &Vec<Token>, index: &mut usize) -> Node {
             TokenKind::Add => {
                 *index += 1;
                 let right = parse_factor(tokens, index);
-                left = Node::Add(Box::new(left), Box::new(right));
+                left = Node::AddOp(Box::new(left), Box::new(right));
             }
             TokenKind::Subtract => {
                 *index += 1;
                 let right = parse_factor(tokens, index);
-                left = Node::Subtract(Box::new(left), Box::new(right));
+                left = Node::SubOp(Box::new(left), Box::new(right));
             }
             _ => break,
         }
@@ -98,20 +159,24 @@ fn parse_factor(tokens: &Vec<Token>, index: &mut usize) -> Node {
         let node = match token.kind {
             TokenKind::Number => Node::Number(token.value.parse::<f64>().unwrap()),
             TokenKind::Identifier => { 
-                let mut node = Node::Undefined();
-                // foo = 10;
-                if tokens.get(*index + 1).unwrap().kind == TokenKind::Assignment {
-                    *index += 1;
-                    let value = parse_expression(tokens, index);
-                    node = Node::Assignment {
-                        id: Box::new(node),
-                        expression: Box::new(value),
-                    };
-                } else {
-                    
-                }
-                node
+                let id = Node::Identifier(token.value.clone());
+                id
             },
+            TokenKind::OpenParenthesis => {
+                let node = parse_expression(tokens, index);
+                if let Some(token) = tokens.get(*index) {
+                    if token.kind == TokenKind::CloseParenthesis {
+                        //*index += 1;
+                        node
+                    }
+                    else {
+                        panic!("Expected ')' token")
+                    }
+                } 
+                else {
+                    panic!("Unexpected end of tokens")
+                }
+            }
             _ => panic!("Expected number or identifier token"),
         };
         node
@@ -125,10 +190,14 @@ pub trait Visitor<T> {
     fn visit_factor(&mut self, node: &Node) -> T;
     fn visit_binary_op(&mut self, node: &Node) -> T;
     fn visit_assignment(&mut self, node: &Node) -> T;
+    fn visit_declaration(&mut self, node: &Node) -> T;
     fn visit_variable(&mut self, node: &Node) -> T;
 }
 struct PrintVisitor;
 impl Visitor<()> for PrintVisitor {
+    fn visit_declaration(&mut self, node: &Node) -> () {
+        println!("visit_declaration: {:?}", node);
+    }
     fn visit_variable(&mut self, node: &Node) -> () {
         println!("visit_variable: {:?}", node);
     }

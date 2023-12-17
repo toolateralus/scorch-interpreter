@@ -1,1 +1,2 @@
-variable = 0;
+integer : int(64 + 2500 / (2500 - 2500 / (2500 * 2)));
+result = 10;

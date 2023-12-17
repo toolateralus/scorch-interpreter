@@ -19,7 +19,7 @@ fn main() -> () {
     tokenizer.tokenize(contents.as_str());
     
     let tokens = tokenizer.tokens;
-    let ast_root = ast::parse(&tokens);
+    let ast_root = ast::parse_program(&tokens);
     println!("ast_root: {:?}", ast_root);
 }
 
