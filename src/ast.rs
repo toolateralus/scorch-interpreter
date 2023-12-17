@@ -263,8 +263,6 @@ impl Visitor<()> for PrintVisitor {
         println!("{}visit_number:", " ".repeat(self.indent));
     }
     fn visit_binary_op(&mut self, node: &Node) -> () {
-        println!("{}visit_number:", " ".repeat(self.indent));
-
         match node {
             Node::AddOp(lhs, rhs) => {
                 println!("{}visit_add_op:", " ".repeat(self.indent));
@@ -298,7 +296,6 @@ impl Visitor<()> for PrintVisitor {
         }
 
     }
-
     fn visit_expression(&mut self, node: &Node) -> () {
         println!("{}visit_expression:", " ".repeat(self.indent));
         self.indent += 2;
