@@ -19,13 +19,13 @@ impl Node {
     pub fn accept<T>(&self, visitor: &mut dyn Visitor<T>) -> T {
         match self {
             Node::Undefined() => panic!("visitor reached undefined node."),
-            Node::Number(value) => { visitor.visit_number(self) },
-            Node::Add(lhs, rhs) => visitor.visit_term(self),
-            Node::Subtract(lhs, rhs) => visitor.visit_term(self),
-            Node::Multiply(lhs, rhs) => visitor.visit_factor(self),
-            Node::Divide(lhs, rhs) => visitor.visit_factor(self),
-            Node::Assignment {id, expression} => visitor.visit_assignment(self),
-            Node::Identifier(key) => visitor.visit_variable(self),
+            Node::Number(_value) => { visitor.visit_number(self) },
+            Node::Add(_lhs, _rhs) => visitor.visit_term(self),
+            Node::Subtract(_lhs, _rhs) => visitor.visit_term(self),
+            Node::Multiply(_lhs, _rhs) => visitor.visit_factor(self),
+            Node::Divide(_lhs, _rhs) => visitor.visit_factor(self),
+            Node::Assignment {id: _, expression: _} => visitor.visit_assignment(self),
+            Node::Identifier(_key) => visitor.visit_variable(self),
         }
     }
 }
