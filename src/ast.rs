@@ -69,9 +69,15 @@ fn parse_block(tokens: &Vec<Token>, index: &mut usize) -> Node {
     Node::Block(statements)
 }
 fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Node {
-    let current = tokens.get(*index).unwrap();
+    let mut current = tokens.get(*index).unwrap();
+    
+    while *index < tokens.len() && current.kind == TokenKind::Newline {
+        *index += 1;
+        current = tokens.get(*index).unwrap();
+    }
+    
     let next = tokens.get(*index + 1).unwrap();
-
+    
     if current.family != TokenFamily::Identifier {
         panic!("Expected identifier token");
     }
@@ -118,6 +124,10 @@ fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Node {
                 left = Node::SubOp(Box::new(left), Box::new(right));
             }
             TokenKind::CloseParenthesis => {
+                *index += 1;
+                break;
+            }
+            TokenKind::Newline => {
                 *index += 1;
                 break;
             }

@@ -17,7 +17,7 @@ fn main() -> () {
     let mut contents = String::new();
     file.read_to_string(&mut contents)
         .expect("Failed to read file");
-    tokenizer.tokenize(contents.as_str());
+    tokenizer.tokenize(&contents.as_str());
 
     let tokens = tokenizer.tokens;
     let ast_root = ast::parse_program(&tokens);

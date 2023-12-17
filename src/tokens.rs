@@ -66,6 +66,7 @@ pub enum TokenKind {
     Divide,
     Modulo,
     // punctuation
+    Newline,
     OpenParenthesis,
     CloseParenthesis,
     OpenBrace,
@@ -121,11 +122,21 @@ impl TokenProcessor for Tokenizer {
         self.source = String::from(input);
         while self.index < self.length {
             let mut current = self.source.chars().nth(self.index).unwrap();
+            if current == '\n' || current == '\r'  {
+                let token = Token {
+                    family: TokenFamily::Punctuation,
+                    kind: TokenKind::Newline,
+                    value: String::from("\n"),
+                };
+                self.tokens.push(token);
+                self.index += 1;
+                continue;
+            }
             if current.is_whitespace() {
                 self.index += 1;
                 continue;
             }
-            if current.is_digit(10) {
+            if current.is_numeric() {
                 let mut digit: String = String::new();
                 loop {
                     digit.push(current);

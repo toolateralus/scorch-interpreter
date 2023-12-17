@@ -1,24 +1,2 @@
-integer : int( 64 + 2500 / (2500 - 2500 / (2500 * 2)))
-
-
-visit_block
-visit_declaration:
-  type: int
-  id: integer
-  expression:
-    visit_expression:
-      visit_add_op:
-        visit_factor: 64
-        visit_expression:
-          visit_div_op:
-            visit_factor: 2500
-            visit_expression:
-              visit_sub_op:
-                visit_factor: 2500
-                visit_expression:
-                  visit_div_op:
-                    visit_factor: 2500
-                    visit_expression:
-                      visit_mul_op:
-                        visit_factor: 2500
-                        visit_factor: 2
+a : int(25 * 2)
+b : float(25 * 2200)
