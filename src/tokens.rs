@@ -3,9 +3,9 @@ use std::collections::HashMap;
 pub fn create_tokenizer() -> Tokenizer {
     let mut operators : HashMap<String, TokenKind> = HashMap::new();
     let mut keywords : HashMap<String, TokenKind> = HashMap::new();
-
-    keywords.insert(String::from("make"), TokenKind::Make);
-    keywords.insert(String::from("yield"), TokenKind::Yield);
+    
+    keywords.insert(String::from("for"), TokenKind::For);
+    keywords.insert(String::from("loop"), TokenKind::Loop);
     keywords.insert(String::from("break"), TokenKind::Break);
     keywords.insert(String::from("typedef"), TokenKind::Typedef);
     operators.insert(String::from("("), TokenKind::OpenParenthesis);
@@ -49,7 +49,6 @@ pub enum TokenFamily {
     Punctuation,
     Keyword,
 }
-
 #[derive(Debug, Clone, Copy)]
 pub enum TokenKind {
     Undefined = 0,
@@ -78,8 +77,8 @@ pub enum TokenKind {
     Period,
     
     // keywords.
-    Make,
-    Yield,
+    For,
+    Loop,
     Break, 
     Typedef,
     
@@ -88,12 +87,11 @@ pub enum TokenKind {
     Extract, // =>
     DubColon, // ::
 }
-
 #[derive(Debug)]
 pub struct Token {
-    family : TokenFamily,
-    kind : TokenKind,
-    value : String,
+    pub family : TokenFamily,
+    pub kind : TokenKind,
+    pub value : String,
 }
 pub trait TokenProcessor {
     fn tokenize(&mut self, input : &str) -> ();
@@ -113,7 +111,7 @@ fn try_next(&mut self, current: &mut char) -> bool
         self.index += 1;
         if self.index < self.length {
             *current = self.source.chars().nth(self.index).unwrap();
-                return true;
+            return true;
         }
         false
     }

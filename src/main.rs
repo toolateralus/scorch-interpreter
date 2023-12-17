@@ -18,6 +18,6 @@ fn main() -> () {
     file.read_to_string(&mut contents).expect("Failed to read file");
     tokenizer.tokenize(contents.as_str());
     
-    dbg!(tokenizer.tokens);
+        
 }
 
