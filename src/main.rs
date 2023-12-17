@@ -1,5 +1,5 @@
-pub mod tokens;
 pub mod ast;
+pub mod tokens;
 
 use std::env;
 use std::fs::File;
@@ -10,21 +10,18 @@ use tokens::*;
 fn main() -> () {
     let args: Vec<String> = env::args().collect();
     println!("Command-line arguments: {:?}", args);
-    
+
     let mut tokenizer = tokens::create_tokenizer();
-    
+
     let mut file = File::open("proto.type").expect("Failed to open file");
     let mut contents = String::new();
-    file.read_to_string(&mut contents).expect("Failed to read file");
+    file.read_to_string(&mut contents)
+        .expect("Failed to read file");
     tokenizer.tokenize(contents.as_str());
-    
+
     let tokens = tokenizer.tokens;
     let ast_root = ast::parse_program(&tokens);
 
-    let mut visitor = ast::PrintVisitor{
-        indent: 0,
-    };
+    let mut visitor = ast::PrintVisitor { indent: 0 };
     ast_root.accept(&mut visitor);
-
 }
-

@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
 pub fn create_tokenizer() -> Tokenizer {
-    let mut operators : HashMap<String, TokenKind> = HashMap::new();
-    let mut keywords : HashMap<String, TokenKind> = HashMap::new();
-    
+    let mut operators: HashMap<String, TokenKind> = HashMap::new();
+    let mut keywords: HashMap<String, TokenKind> = HashMap::new();
+
     keywords.insert(String::from("for"), TokenKind::For);
     keywords.insert(String::from("loop"), TokenKind::Loop);
     keywords.insert(String::from("break"), TokenKind::Break);
@@ -33,10 +33,10 @@ pub fn create_tokenizer() -> Tokenizer {
     let tokenizer = Tokenizer {
         operators,
         keywords,
-        tokens : Vec::<Token>::new(),
-        source : String::new(),
-        index : 0,
-        length : 0,
+        tokens: Vec::<Token>::new(),
+        source: String::new(),
+        index: 0,
+        length: 0,
     };
     tokenizer
 }
@@ -45,7 +45,7 @@ pub fn create_tokenizer() -> Tokenizer {
 pub enum TokenFamily {
     Undefined = 0,
     Value,
-    Identifier, 
+    Identifier,
     Operator,
     Punctuation,
     Keyword,
@@ -71,45 +71,44 @@ pub enum TokenKind {
     OpenBrace,
     CloseBrace,
     OpenBracket,
-    CloseBracket,   
+    CloseBracket,
     Comma,
     Semicolon,
     Colon,
     Period,
-    
+
     // keywords.
     For,
     Loop,
-    Break, 
+    Break,
     Typedef,
-    
+
     // special operators
     ReverseLambda, // <=, Pack In.
-    Lambda, // =>, Extract out.
+    Lambda,        // =>, Extract out.
     DubColon,
     Assignment, // ::
 }
 #[derive(Debug, Clone)]
 pub struct Token {
-    pub family : TokenFamily,
-    pub kind : TokenKind,
-    pub value : String,
+    pub family: TokenFamily,
+    pub kind: TokenKind,
+    pub value: String,
 }
 pub trait TokenProcessor {
-    fn tokenize(&mut self, input : &str) -> ();
-    fn try_next(&mut self, current: &mut char) -> bool; 
+    fn tokenize(&mut self, input: &str) -> ();
+    fn try_next(&mut self, current: &mut char) -> bool;
 }
 pub struct Tokenizer {
-    pub tokens : Vec<Token>,
-    source : String,
-    index : usize,
-    length : usize,
-    keywords : HashMap<String, TokenKind>,
-    operators : HashMap<String, TokenKind>,
+    pub tokens: Vec<Token>,
+    source: String,
+    index: usize,
+    length: usize,
+    keywords: HashMap<String, TokenKind>,
+    operators: HashMap<String, TokenKind>,
 }
 impl TokenProcessor for Tokenizer {
-fn try_next(&mut self, current: &mut char) -> bool
-    {
+    fn try_next(&mut self, current: &mut char) -> bool {
         self.index += 1;
         if self.index < self.length {
             *current = self.source.chars().nth(self.index).unwrap();
@@ -117,7 +116,7 @@ fn try_next(&mut self, current: &mut char) -> bool
         }
         false
     }
-    fn tokenize(&mut self, input : &str) {
+    fn tokenize(&mut self, input: &str) {
         self.length = input.len();
         self.source = String::from(input);
         while self.index < self.length {
@@ -127,7 +126,7 @@ fn try_next(&mut self, current: &mut char) -> bool
                 continue;
             }
             if current.is_digit(10) {
-                let mut digit : String = String::new(); 
+                let mut digit: String = String::new();
                 loop {
                     digit.push(current);
                     if !self.try_next(&mut current) || !current.is_digit(10) {
@@ -135,22 +134,24 @@ fn try_next(&mut self, current: &mut char) -> bool
                     }
                 }
                 let token = Token {
-                    family : TokenFamily::Value,
-                    kind : TokenKind::Number,
-                    value : digit,
+                    family: TokenFamily::Value,
+                    kind: TokenKind::Number,
+                    value: digit,
                 };
                 self.tokens.push(token);
                 continue;
-            }            
+            }
             if current == ':' || current.is_ascii_punctuation() {
-                let mut punctuation : String = String::new();
-                let mut matches : Vec<String> = Vec::new();
+                let mut punctuation: String = String::new();
+                let mut matches: Vec<String> = Vec::new();
                 loop {
                     punctuation.push(current);
                     if self.operators.contains_key(&punctuation) {
                         matches.push(punctuation.clone());
                     }
-                    if !self.try_next(&mut current) || !(current.is_ascii_punctuation() || current == ':') {
+                    if !self.try_next(&mut current)
+                        || !(current.is_ascii_punctuation() || current == ':')
+                    {
                         break;
                     }
                 }
@@ -160,40 +161,42 @@ fn try_next(&mut self, current: &mut char) -> bool
                     let match_ = matches[0].clone();
                     let kind = self.operators.get(&match_);
                     let token = Token {
-                        family : TokenFamily::Operator,
-                        kind : *kind.unwrap(),
-                        value : match_,
+                        family: TokenFamily::Operator,
+                        kind: *kind.unwrap(),
+                        value: match_,
                     };
                     self.tokens.push(token);
                 }
             }
             if current.is_alphabetic() || current == '_' || current == '-' {
-                let mut identifier : String = String::new();
+                let mut identifier: String = String::new();
                 loop {
                     identifier.push(current);
-                    if !self.try_next(&mut current) || (!current.is_alphanumeric() && current != '_' && current != '-') {
+                    if !self.try_next(&mut current)
+                        || (!current.is_alphanumeric() && current != '_' && current != '-')
+                    {
                         break;
                     }
                 }
-                
+
                 if self.keywords.contains_key(&identifier) {
                     let kind = self.keywords.get(&identifier);
                     let token = Token {
-                        family : TokenFamily::Keyword,
-                        kind : *kind.unwrap(),
-                        value : identifier,
+                        family: TokenFamily::Keyword,
+                        kind: *kind.unwrap(),
+                        value: identifier,
                     };
                     self.tokens.push(token);
                     continue;
                 }
-                
+
                 // todo: implement const-first rule;
                 // variables are explicit.
-                
+
                 let token = Token {
-                    family : TokenFamily::Identifier,
-                    kind : TokenKind::Identifier,
-                    value : identifier,  
+                    family: TokenFamily::Identifier,
+                    kind: TokenKind::Identifier,
+                    value: identifier,
                 };
                 self.tokens.push(token);
             }
