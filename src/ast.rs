@@ -6,6 +6,7 @@ pub enum Node {
     // literal & values
     Undefined(),
     Number(f64),
+    String(String),
     Identifier(String),
 
     // binary operations
@@ -26,6 +27,7 @@ pub enum Node {
         expression: Box<Node>,
     },
     Block(Vec<Box<Node>>),
+    
 }
 impl Node {
     pub fn accept<T>(&self, visitor: &mut dyn Visitor<T>) -> T {
@@ -48,6 +50,7 @@ impl Node {
             } => visitor.visit_declaration(self),
             Node::Block(_statements) => visitor.visit_block(self),
             Node::Expression(_root) => visitor.visit_expression(self),
+            Node::String(_) => visitor.visit_string(self),
         }
     }
 }
@@ -108,7 +111,6 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Node {
         panic!("Expected ':' or '=' token after Identifier,\n instead got : \n current : {:?}\n next : {:?}", current, next);
     }
 }
-
 fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Node {
     let mut left = parse_addition(tokens, index);
 
@@ -151,7 +153,6 @@ fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Node {
     }
     Node::Expression(Box::new(left))
 }
-
 fn parse_term(tokens: &Vec<Token>, index: &mut usize) -> Node {
     let mut left = parse_factor(tokens, index);
     while let Some(token) = tokens.get(*index) {
@@ -190,7 +191,6 @@ fn parse_addition(tokens: &Vec<Token>, index: &mut usize) -> Node {
     }
     left
 }
-
 fn parse_factor(tokens: &Vec<Token>, index: &mut usize) -> Node {
     if let Some(token) = tokens.get(*index) {
         *index += 1;
@@ -198,6 +198,10 @@ fn parse_factor(tokens: &Vec<Token>, index: &mut usize) -> Node {
             TokenKind::Number => Node::Number(token.value.parse::<f64>().unwrap()),
             TokenKind::Identifier => {
                 let id = Node::Identifier(token.value.clone());
+                id
+            }
+            TokenKind::String => {
+                let id = Node::String(token.value.clone());
                 id
             }
             TokenKind::OpenParenthesis => {
@@ -220,6 +224,7 @@ pub trait Visitor<T> {
     fn visit_declaration(&mut self, node: &Node) -> T;
     fn visit_block(&mut self, node: &Node) -> T;
     fn visit_expression(&mut self, node: &Node) -> T;
+    fn visit_string(&mut self, node: &Node) -> T;
     fn visit_identifier(&mut self, node: &Node) -> T;
 }
 pub struct PrintVisitor {
@@ -314,6 +319,13 @@ impl Visitor<()> for PrintVisitor {
                 self.indent -= 2;
             }
             _ => panic!("Expected binary operation node"),
+        }
+    }
+    fn visit_string(&mut self, node: &Node) -> () {
+        if let Node::String(value) = node {
+            println!("{}visit_string: {}", " ".repeat(self.indent), value);
+        } else {
+            panic!("Expected String node");
         }
     }
     fn visit_expression(&mut self, node: &Node) -> () {

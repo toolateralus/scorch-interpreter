@@ -175,10 +175,10 @@ impl TokenProcessor for Tokenizer {
                 self.tokens.push(token);
                 continue;
             }
-            if current == ':' || current.is_ascii_punctuation() {
+            if current.is_ascii_punctuation() && !(current == '\'' || current == '\"') {
                 let mut punctuation: String = String::new();
                 let mut matches: Vec<String> = Vec::new();
-                loop {
+                while !(current == '\'' || current == '\"') {
                     punctuation.push(current);
                     if self.operators.contains_key(&punctuation) {
                         matches.push(punctuation.clone());
