@@ -1,3 +1,4 @@
+use regex::Regex;
 use std::collections::HashMap;
 
 pub fn create_tokenizer() -> Tokenizer {
@@ -47,7 +48,6 @@ pub enum TokenFamily {
     Value,
     Identifier,
     Operator,
-    Punctuation,
     Keyword,
 }
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -65,6 +65,7 @@ pub enum TokenKind {
     Multiply,
     Divide,
     Modulo,
+
     // punctuation
     Newline,
     OpenParenthesis,
@@ -88,7 +89,8 @@ pub enum TokenKind {
     ReverseLambda, // <=, Pack In.
     Lambda,        // =>, Extract out.
     DubColon,
-    Assignment, // ::
+    Assignment,
+    If, // ::
 }
 #[derive(Debug, Clone)]
 pub struct Token {
@@ -117,25 +119,26 @@ impl TokenProcessor for Tokenizer {
         }
         false
     }
-    fn tokenize(&mut self, input: &str) {
+    fn tokenize(&mut self, original_input: &str) {
+        let comment_regex = Regex::new(r"//.*$|/\*[\s\S]*?\*/").unwrap();
+        let input = comment_regex.replace_all(original_input, "");
         self.length = input.len();
         self.source = String::from(input);
         while self.index < self.length {
             let mut current = self.source.chars().nth(self.index).unwrap();
 
             if current == '\'' || current == '\"' {
-                let mut string : String = String::new();
+                let mut string: String = String::new();
                 loop {
-
                     if !self.try_next(&mut current) {
                         panic!("Expected end of string.");
-                    }   
+                    }
 
-                    if  current == '\'' || current == '\"' {
+                    if current == '\'' || current == '\"' {
                         self.index += 1;
                         break;
                     }
-                    string.push(current);  
+                    string.push(current);
                 }
                 let token = Token {
                     family: TokenFamily::Value,
@@ -145,9 +148,9 @@ impl TokenProcessor for Tokenizer {
                 self.tokens.push(token);
                 continue;
             }
-            if current == '\n' || current == '\r'  {
+            if current == '\n' || current == '\r' {
                 let token = Token {
-                    family: TokenFamily::Punctuation,
+                    family: TokenFamily::Operator,
                     kind: TokenKind::Newline,
                     value: String::from("\n"),
                 };

@@ -27,7 +27,6 @@ pub enum Node {
         expression: Box<Node>,
     },
     Block(Vec<Box<Node>>),
-    
 }
 impl Node {
     pub fn accept<T>(&self, visitor: &mut dyn Visitor<T>) -> T {
@@ -61,7 +60,10 @@ pub fn parse_program(tokens: &Vec<Token>) -> Node {
 }
 fn parse_block(tokens: &Vec<Token>, index: &mut usize) -> Node {
     let mut statements = Vec::new();
-    while let Some(token) = tokens.get(*index) {
+
+    while *index < tokens.len() {
+        let mut token = tokens.get(*index).unwrap();
+        token = consume_newlines(index, tokens);
         if token.kind == TokenKind::CloseBrace {
             *index += 1;
             break;
@@ -72,44 +74,81 @@ fn parse_block(tokens: &Vec<Token>, index: &mut usize) -> Node {
     Node::Block(statements)
 }
 fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Node {
+    let mut token = tokens.get(*index).unwrap();
+
+    token = consume_newlines(index, tokens);
+
+    if (*index + 1 >= tokens.len()) {
+        dbg!(token);
+        panic!("Unexpected end of tokens")
+    }
+
+    let next = tokens.get(*index + 1).unwrap();
+
+    match token.family {
+        TokenFamily::Keyword => {
+            match token.kind {
+                TokenKind::If => todo!(),
+                TokenKind::For => todo!(),
+                TokenKind::Loop => todo!(),
+                TokenKind::Break => todo!(),
+                TokenKind::Typedef => todo!(),
+                _ => {
+                    dbg!(token);
+                    panic!("Expected keyword token");
+                }
+            }
+        }
+        TokenFamily::Identifier => {
+            if next.kind == TokenKind::Colon {
+                *index += 2;
+                // todo: check for valid type / builtins
+                let target_type = tokens.get(*index).unwrap().value.clone();
+                *index += 1;
+
+                let id = token.value.clone();
+                let expression = parse_expression(tokens, index);
+                Node::DeclStmt {
+                    target_type,
+                    id,
+                    expression: Box::new(expression),
+                }
+            } else if next.kind == TokenKind::Assignment {
+                *index += 2;
+                let id = Node::Identifier(token.value.clone());
+                let expression = parse_expression(tokens, index);
+                Node::AssignStmnt {
+                    id: Box::new(id),
+                    expression: Box::new(expression),
+                }
+            } else {
+                panic!("Expected ':' or '=' token after Identifier,\n instead got : \n current : {:?}\n next : {:?}", token, next);
+            }
+        }
+        TokenFamily::Operator => {
+            if token.kind == TokenKind::OpenBrace {
+                *index += 1;
+                let block = parse_block(tokens, index);
+                return block;
+            } else {
+                panic!("Expected brace token");
+            }
+            
+        }
+        _ => {
+            dbg!(token);
+            panic!("Expected keyword, identifier or operator token");
+        }
+    }
+}
+
+fn consume_newlines<'a>(index: &mut usize, tokens: &'a Vec<Token>) -> &'a Token {
     let mut current = tokens.get(*index).unwrap();
-    
     while *index < tokens.len() && current.kind == TokenKind::Newline {
         *index += 1;
         current = tokens.get(*index).unwrap();
     }
-    
-    let next = tokens.get(*index + 1).unwrap();
-
-    if current.family != TokenFamily::Identifier {
-        dbg!(current);
-        panic!("Expected identifier token");
-    }
-
-    if next.kind == TokenKind::Colon {
-        *index += 2;
-        // todo: check for valid type / builtins
-        let target_type = tokens.get(*index).unwrap().value.clone();
-        *index += 1;
-
-        let id = current.value.clone();
-        let expression = parse_expression(tokens, index);
-        Node::DeclStmt {
-            target_type,
-            id,
-            expression: Box::new(expression),
-        }
-    } else if next.kind == TokenKind::Assignment {
-        *index += 2;
-        let id = Node::Identifier(current.value.clone());
-        let expression = parse_expression(tokens, index);
-        Node::AssignStmnt {
-            id: Box::new(id),
-            expression: Box::new(expression),
-        }
-    } else {
-        panic!("Expected ':' or '=' token after Identifier,\n instead got : \n current : {:?}\n next : {:?}", current, next);
-    }
+    return current;
 }
 fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Node {
     let mut left = parse_addition(tokens, index);
@@ -232,7 +271,8 @@ pub struct PrintVisitor {
 }
 impl Visitor<()> for PrintVisitor {
     fn visit_block(&mut self, node: &Node) {
-        println!("visit_block");
+        println!("{}visit_block:", " ".repeat(self.indent));
+        self.indent += 2;
         if let Node::Block(statements) = node {
             for statement in statements {
                 statement.accept(self);
@@ -240,6 +280,7 @@ impl Visitor<()> for PrintVisitor {
         } else {
             panic!("Expected Block node");
         }
+        self.indent -= 2;
     }
     fn visit_declaration(&mut self, node: &Node) -> () {
         println!("{}visit_declaration:", " ".repeat(self.indent));
