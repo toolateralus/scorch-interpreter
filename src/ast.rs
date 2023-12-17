@@ -8,15 +8,13 @@ pub enum Node {
     Subtract(Box<Node>, Box<Node>),
     Multiply(Box<Node>, Box<Node>),
     Divide(Box<Node>, Box<Node>),
-    Variable {
-        key : Box<Node>,
-        value:  Box<Node>, 
-    },
+    Identifier(String),
     Assignment {
-        destination: Box<Node>,
+        id: Box<Node>,
         expression : Box<Node>,
     }
 }
+
 impl Node {
     pub fn accept<T>(&self, visitor: &mut dyn Visitor<T>) -> T {
         match self {
@@ -26,8 +24,8 @@ impl Node {
             Node::Subtract(lhs, rhs) => visitor.visit_term(self),
             Node::Multiply(lhs, rhs) => visitor.visit_factor(self),
             Node::Divide(lhs, rhs) => visitor.visit_factor(self),
-            Node::Assignment {destination, expression} => visitor.visit_assignment(self),
-            Node::Variable { key, value } => visitor.visit_variable(self),
+            Node::Assignment {id, expression} => visitor.visit_assignment(self),
+            Node::Identifier(key) => visitor.visit_variable(self),
         }
     }
 }
@@ -95,23 +93,22 @@ fn parse_addition(tokens: &Vec<Token>, index: &mut usize) -> Node {
     left
 }
 fn parse_factor(tokens: &Vec<Token>, index: &mut usize) -> Node {
-
-
     if let Some(token) = tokens.get(*index) {
         *index += 1;
         let node = match token.kind {
             TokenKind::Number => Node::Number(token.value.parse::<f64>().unwrap()),
-            TokenKind::Variable => { 
+            TokenKind::Identifier => { 
                 let mut node = Node::Undefined();
                 // foo = 10;
                 if tokens.get(*index + 1).unwrap().kind == TokenKind::Assignment {
+                    *index += 1;
+                    let value = parse_expression(tokens, index);
                     node = Node::Assignment {
-                        destination: Box::new(Node::Variable {
-                            key: Box::new(Node::Number(10.0)),
-                            value: Box::new(Node::Number(10.0)),
-                        }),
-                        expression: Box::new(Node::Number(10.0)),
+                        id: Box::new(node),
+                        expression: Box::new(value),
                     };
+                } else {
+                    
                 }
                 node
             },
@@ -122,9 +119,6 @@ fn parse_factor(tokens: &Vec<Token>, index: &mut usize) -> Node {
         panic!("Unexpected end of tokens")
     }
 }
-
-
-
 pub trait Visitor<T> {
     fn visit_number(&mut self, node: &Node) -> T;
     fn visit_term(&mut self, node: &Node) -> T;

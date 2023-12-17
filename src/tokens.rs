@@ -53,14 +53,12 @@ pub enum TokenFamily {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum TokenKind {
     Undefined = 0,
-    // id's
-    Identifier,
     // values
     Number,
     String,
     Boolean,
     // identifiers
-    Variable,
+    Identifier,
     // operators
     Add,
     Subtract,
@@ -194,7 +192,7 @@ fn try_next(&mut self, current: &mut char) -> bool
                 
                 let token = Token {
                     family : TokenFamily::Identifier,
-                    kind : TokenKind::Variable,
+                    kind : TokenKind::Identifier,
                     value : identifier,  
                 };
                 self.tokens.push(token);
