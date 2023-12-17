@@ -21,7 +21,9 @@ fn main() -> () {
     let tokens = tokenizer.tokens;
     let ast_root = ast::parse_program(&tokens);
 
-    let mut visitor = ast::PrintVisitor{};
+    let mut visitor = ast::PrintVisitor{
+        indent: 0,
+    };
     ast_root.accept(&mut visitor);
 
 }

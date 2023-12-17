@@ -1,8 +1,6 @@
 use core::panic;
 use std::{f32::consts::E, panic::AssertUnwindSafe};
-
 use crate::tokens::*;
-
 #[derive(Debug)]
 pub enum Node {
     // literal & values
@@ -16,6 +14,7 @@ pub enum Node {
     MulOp(Box<Node>, Box<Node>),
     DivOp(Box<Node>, Box<Node>),
 
+    Expression(Box<Node>),
     // Statements
     AssignStmnt {
         id: Box<Node>,
@@ -28,20 +27,20 @@ pub enum Node {
     },
     Block (Vec<Box<Node>>),
 }
-
 impl Node {
     pub fn accept<T>(&self, visitor: &mut dyn Visitor<T>) -> T {
         match self {
             Node::Undefined() => panic!("visitor reached undefined node."),
-            Node::Identifier(_key) => visitor.visit_identifier(self),
-            Node::Number(_value) => { visitor.visit_number(self) },
-            Node::AddOp(_lhs, _rhs) => visitor.visit_term(self),
-            Node::SubOp(_lhs, _rhs) => visitor.visit_term(self),
-            Node::MulOp(_lhs, _rhs) => visitor.visit_factor(self),
-            Node::DivOp(_lhs, _rhs) => visitor.visit_factor(self),
+            Node::Identifier(_key) => visitor.visit_factor(self),
+            Node::Number(_value) => { visitor.visit_factor(self) },
+            Node::AddOp(_lhs, _rhs) => visitor.visit_binary_op(self),
+            Node::SubOp(_lhs, _rhs) => visitor.visit_binary_op(self),
+            Node::MulOp(_lhs, _rhs) => visitor.visit_binary_op(self),
+            Node::DivOp(_lhs, _rhs) => visitor.visit_binary_op(self),
             Node::AssignStmnt {id: _, expression: _} => visitor.visit_assignment(self),
             Node::DeclStmt { target_type, id, expression } => visitor.visit_declaration(self),
             Node::Block(statements) => visitor.visit_block(self),
+            Node::Expression(root) => visitor.visit_expression(self),
         }
     }
 }
@@ -134,8 +133,7 @@ fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Node {
             }
         }
     }
-    
-    left
+    Node::Expression(Box::new(left))
 }
 fn parse_term(tokens: &Vec<Token>, index: &mut usize) -> Node {
     let mut left = parse_addition(tokens, index);
@@ -204,12 +202,15 @@ pub trait Visitor<T> {
     fn visit_assignment(&mut self, node: &Node) -> T;
     fn visit_declaration(&mut self, node: &Node) -> T;
     fn visit_block(&mut self, node: &Node) -> T;
+    fn visit_expression(&mut self, node: &Node) -> T;
     fn visit_identifier(&mut self, node: &Node) -> T;
 }
-pub struct PrintVisitor;
+pub struct PrintVisitor {
+    pub indent: usize,
+}
 impl Visitor<()> for PrintVisitor {
     fn visit_block(&mut self, node: &Node) {
-        println!("visit_block: {:?}", node);
+        println!("visit_block");
         if let Node::Block(statements) = node {
             for statement in statements {
                 statement.accept(self);
@@ -219,24 +220,93 @@ impl Visitor<()> for PrintVisitor {
         }
     }
     fn visit_declaration(&mut self, node: &Node) -> () {
-        println!("visit_declaration: {:?}", node);
+        println!("{}visit_declaration:", " ".repeat(self.indent));
+        self.indent += 2;
+        if let Node::DeclStmt { target_type, id, expression } = node {
+            println!("{}type: {}", " ".repeat(self.indent), target_type);
+            println!("{}id: {}", " ".repeat(self.indent), id);
+            println!("{}expression:", " ".repeat(self.indent));
+            self.indent += 2;
+            expression.accept(self);
+            self.indent -= 2;
+        } else {
+            panic!("Expected Declaration node");
+        }
+        self.indent -= 2;
     }
     fn visit_identifier(&mut self, node: &Node) -> () {
-        println!("visit_variable: {:?}", node);
+        println!("{}visit_identifier:", " ".repeat(self.indent));
     }
     fn visit_number(&mut self, node: &Node) -> () {
-        println!("visit_number: {:?}", node);
+        println!("{}visit_number:", " ".repeat(self.indent));
     }
     fn visit_term(&mut self, node: &Node) -> () {
-        println!("visit_term: {:?}", node);
+        println!("{}visit_number:", " ".repeat(self.indent));
     }
     fn visit_factor(&mut self, node: &Node) -> () {
-        println!("visit_factor: {:?}", node);
+        if let Node::Number(value) = node {
+            println!("{}visit_factor: {}", " ".repeat(self.indent), value);
+        } else if let Node::Identifier(id) = node {
+            println!("{}visit_factor: {}", " ".repeat(self.indent), id);
+        } else if let Node::Expression(root) = node {
+            println!("{}visit_factor:", " ".repeat(self.indent));
+            self.indent += 2;
+            root.accept(self);
+            self.indent -= 2;
+        }
+        else {
+            dbg!(node);
+            panic!("Expected Number or Identifier node");
+        }
     }
     fn visit_assignment(&mut self, node: &Node) -> () {
-        println!("visit_assignment: {:?}", node);
+        println!("{}visit_number:", " ".repeat(self.indent));
     }
     fn visit_binary_op(&mut self, node: &Node) -> () {
-        println!("visit_binary_op: {:?}", node);
+        println!("{}visit_number:", " ".repeat(self.indent));
+
+        match node {
+            Node::AddOp(lhs, rhs) => {
+                println!("{}visit_add_op:", " ".repeat(self.indent));
+                self.indent += 2;
+                lhs.accept(self);
+                rhs.accept(self);
+                self.indent -= 2;
+            },
+            Node::SubOp(lhs, rhs) => {
+                println!("{}visit_sub_op:", " ".repeat(self.indent));
+                self.indent += 2;
+                lhs.accept(self);
+                rhs.accept(self);
+                self.indent -= 2;
+            },
+            Node::MulOp(lhs, rhs) => {
+                println!("{}visit_mul_op:", " ".repeat(self.indent));
+                self.indent += 2;
+                lhs.accept(self);
+                rhs.accept(self);
+                self.indent -= 2;
+            },
+            Node::DivOp(lhs, rhs) => {
+                println!("{}visit_div_op:", " ".repeat(self.indent));
+                self.indent += 2;
+                lhs.accept(self);
+                rhs.accept(self);
+                self.indent -= 2;
+            },
+            _ => panic!("Expected binary operation node"),
+        }
+
+    }
+
+    fn visit_expression(&mut self, node: &Node) -> () {
+        println!("{}visit_expression:", " ".repeat(self.indent));
+        self.indent += 2;
+        if let Node::Expression(root) = node {
+            root.accept(self);
+        } else {
+            panic!("Expected Expression node");
+        }
+        self.indent -= 2;
     }
 }
