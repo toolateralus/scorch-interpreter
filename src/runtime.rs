@@ -187,7 +187,16 @@ impl Visitor<ValueType> for Interpreter {
         if let Node::NotOp(operand) = node {
             match operand.accept(self) {
                 ValueType::Bool(value) => ValueType::Bool(!value),
-                _ => panic!("Expected boolean operand for not operation"),
+                ValueType::Float(mut value) => {
+                    value = 1.0 - value;
+                    if value > 1.0 {
+                        value = 1.0;
+                    } else if value < 0.0 {
+                        value = 0.0;
+                    }
+                    ValueType::Float(value)
+                },
+                _ => panic!("Expected boolean or numerical operand for not operation"),
             }
         } else {
             panic!("Expected NotOp node");

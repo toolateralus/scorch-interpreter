@@ -27,3 +27,8 @@ stringC := stringA + stringB
 
 //# results in stringC == 'WE WERE A-PART'
 
+//# negative numbers & unaries are just ! and -
+negative := -1.0
+
+not_1 := !1
+

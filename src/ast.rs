@@ -318,13 +318,13 @@ fn parse_factor(tokens: &Vec<Token>, index: &mut usize) -> Node {
                 let node = parse_expression(tokens, index);
                 node
             }
-            TokenKind::Subtract => { // assuming Subtract is your unary minus
-                let node = parse_factor(tokens, index); // parse the operand
-                Node::NegOp(Box::new(node)) // create a NegOp node
+            TokenKind::Subtract => {
+                let node = parse_factor(tokens, index);
+                Node::NegOp(Box::new(node))
             }
-            TokenKind::Not => { // assuming Not is your unary not
-                let node = parse_factor(tokens, index); // parse the operand
-                Node::NotOp(Box::new(node)) // create a NotOp node
+            TokenKind::Not => {
+                let node = parse_factor(tokens, index); 
+                Node::NotOp(Box::new(node))
             }
             _ => panic!("Expected number or identifier token"),
         };
