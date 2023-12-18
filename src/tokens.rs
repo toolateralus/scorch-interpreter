@@ -124,8 +124,9 @@ impl TokenProcessor for Tokenizer {
         false
     }
     fn tokenize(&mut self, original_input: &str) {
-        let comment_regex = Regex::new(r"//.*$|/\*[\s\S]*?\*/").unwrap();
+        let comment_regex = Regex::new(r"(//.*\n)|(/\*.*?\*/)").unwrap();
         let input = comment_regex.replace_all(original_input, "");
+
         self.length = input.len();
         self.source = String::from(input);
         while self.index < self.length {

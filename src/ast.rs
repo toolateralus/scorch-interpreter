@@ -116,43 +116,73 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Node {
         TokenFamily::Identifier => {
             // varname : type = default;
             let id = token.value.clone();
+            match next.kind {
+                // declaring a variable with implicit type.
+                TokenKind::ColonEquals => {
+                    *index += 2;
+                     // move past the identifier and the ':=' token.
+                    let value = parse_expression(tokens, index);
 
-            if next.kind == TokenKind::Colon {
-                *index += 2;
+                    let mut type_string = "dynamic";
+
+                    match value {
+                        Node::Undefined() => type_string = "undefined",
+                        Node::Number(_) => type_string = "num",
+                        Node::String(_) => type_string = "str",
+                        _ => {
+                            dbg!(value);
+                            panic!("Expected value / expression, got previous dump");
+                        }
+                    }
+
+                    Node::DeclStmt {
+                        target_type: String::from(type_string),
+                        id,
+                        expression: Box::new(value),
+                    }
+                }
+                // declaraing a variable with explicit type.
+                TokenKind::Colon => {
+                    *index += 2;
+                    // varname :^ type = default;
+                    // todo: check for valid type / builtins
+                    let target_type_tkn = tokens.get(*index).unwrap();
+                    let target_type = target_type_tkn.value.clone();
+                    *index += 1;
+
+                    // varname : type^ = default;
+
+                    if let Some(token) = tokens.get(*index) {
+                        assert_eq!(token.kind, TokenKind::Assignment, "Expected identifier token");
+                    } else {
+                        dbg!(token);
+                        panic!("expected type identifier in declaration statement");
+                    }
+                    *index += 1;
                 
-                // varname :^ type = default;
-                // todo: check for valid type / builtins
-                let target_type_tkn = tokens.get(*index).unwrap();
-                let target_type = target_type_tkn.value.clone();
-                *index += 1;
-
-                // varname : type^ = default;
-
-                if let Some(token) = tokens.get(*index) {
-                    assert_eq!(token.kind, TokenKind::Assignment, "Expected identifier token");
-                } else {
+                    // varname : type = ^default;
+                    let expression = parse_expression(tokens, index);
+                    Node::DeclStmt {
+                        target_type,
+                        id,
+                        expression: Box::new(expression),
+                    }
+                }
+                // assigning a value to an already declared variable.
+                TokenKind::Assignment => {
+                    *index += 2;
+                    let id = Node::Identifier(token.value.clone());
+                    let expression = parse_expression(tokens, index);
+                    Node::AssignStmnt {
+                        id: Box::new(id),
+                        expression: Box::new(expression),
+                    }
+                }
+                _ => {
                     dbg!(token);
-                    panic!("expected type identifier in declaration statement");
+                    println!("Expected ':' or '=' token after Identifier,\n instead got : \n current : {:?}\n next : {:?}", token, next);
+                    panic!("parser failure : check logs.");
                 }
-                *index += 1;
-               
-                // varname : type = ^default;
-                let expression = parse_expression(tokens, index);
-                Node::DeclStmt {
-                    target_type,
-                    id,
-                    expression: Box::new(expression),
-                }
-            } else if next.kind == TokenKind::Assignment {
-                *index += 2;
-                let id = Node::Identifier(token.value.clone());
-                let expression = parse_expression(tokens, index);
-                Node::AssignStmnt {
-                    id: Box::new(id),
-                    expression: Box::new(expression),
-                }
-            } else {
-                panic!("Expected ':' or '=' token after Identifier,\n instead got : \n current : {:?}\n next : {:?}", token, next);
             }
         }
         TokenFamily::Operator => {

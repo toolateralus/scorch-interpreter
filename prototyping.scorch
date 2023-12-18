@@ -1,1 +1,6 @@
+// # file: prototyping.scorch
+// # description: prototype language syntax & tests for development of scorch lang.
+
 xaryu : num = 2500.1567
+xaryu_sister : num  = 1.1 * xaryu / (300 / xaryu);
+
