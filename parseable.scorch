@@ -3,12 +3,8 @@
 explicitly_typed_variable : type = value
 dynamically_typed_variable := value
 
-
-
-
 x := 100.0
 y : num = 2500.16
-z := !(-x * y / (x + -y))
 
 
 //# to demonstrate both : 

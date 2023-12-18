@@ -1,0 +1,21 @@
+explicitly_typed_variable : num = 0.0
+dynamically_typed_variable := 0.0
+
+x := 100.0
+y : num = 2500.16
+
+first_name := 'Cyitlec'
+last_name := 'Kivals'
+
+full_name := first_name + ' ' + last_name
+
+birthplace := 'The
+Most
+American
+American 
+City 
+in 
+America'
+
+age := 'mid 20s'
+height := '6 feet, 3.758168 inches'

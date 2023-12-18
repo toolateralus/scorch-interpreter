@@ -6,13 +6,11 @@ pub trait Visitor<T> {
     fn visit_term(&mut self, node: &Node) -> T;
     fn visit_factor(&mut self, node: &Node) -> T;
     fn visit_eof(&mut self, node: &Node) -> T;
-    
     fn visit_binary_op(&mut self, node: &Node) -> T;
     
     // unary operations
     fn visit_not_op(&mut self, node: &Node) -> T;
     fn visit_neg_op(&mut self, node: &Node) -> T;
-
     fn visit_assignment(&mut self, node: &Node) -> T;
     fn visit_declaration(&mut self, node: &Node) -> T;
     fn visit_block(&mut self, node: &Node) -> T;
@@ -21,6 +19,7 @@ pub trait Visitor<T> {
     fn visit_identifier(&mut self, node: &Node) -> T;
     fn visit_bool(&mut self, node: &Node) -> T;
 }
+
 #[derive(Debug)]
 pub enum Node {
     // literal & values
