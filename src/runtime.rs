@@ -212,8 +212,18 @@ impl Visitor<ValueType> for Interpreter {
             panic!("Expected NegOp node");
         }
     }
+
+    fn visit_bool(&mut self, node: &Node) -> ValueType {
+        if let Node::Bool(value) = node {
+            return ValueType::Bool(*value);
+        } else {
+            panic!("Expected Bool node");
+        }
+    }
 }
 
+
+// binary operation definitions
 impl Interpreter {
     fn bin_op_float(&mut self, node : &Node, lhs : &f64, rhs : &f64) -> ValueType {
         let mut result: f64 = NAN;
@@ -229,7 +239,6 @@ impl Interpreter {
         }
         ValueType::Float(result)
     }
-
     fn bin_op_string(&mut self, node : &Node, lhs : &String, rhs : &String) -> ValueType {
         let result: String;
         match node {

@@ -1,4 +1,0 @@
-variable := 10.2 * ---------------------------------------------20.0
-stringA := 'WE WERE A-'
-stringB := 'PART'
-stringC := stringA + stringB

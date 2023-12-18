@@ -6,15 +6,20 @@ pub trait Visitor<T> {
     fn visit_term(&mut self, node: &Node) -> T;
     fn visit_factor(&mut self, node: &Node) -> T;
     fn visit_eof(&mut self, node: &Node) -> T;
+    
     fn visit_binary_op(&mut self, node: &Node) -> T;
+    
+    // unary operations
+    fn visit_not_op(&mut self, node: &Node) -> T;
+    fn visit_neg_op(&mut self, node: &Node) -> T;
+
     fn visit_assignment(&mut self, node: &Node) -> T;
     fn visit_declaration(&mut self, node: &Node) -> T;
     fn visit_block(&mut self, node: &Node) -> T;
     fn visit_expression(&mut self, node: &Node) -> T;
     fn visit_string(&mut self, node: &Node) -> T;
     fn visit_identifier(&mut self, node: &Node) -> T;
-    fn visit_not_op(&mut self, node: &Node) -> T;
-    fn visit_neg_op(&mut self, node: &Node) -> T;
+    fn visit_bool(&mut self, node: &Node) -> T;
 }
 #[derive(Debug)]
 pub enum Node {
@@ -45,6 +50,7 @@ pub enum Node {
         expression: Box<Node>,
     },
     Block(Vec<Box<Node>>),
+    Bool(bool),
 }
 impl Node {
     pub fn accept<T>(&self, visitor: &mut dyn Visitor<T>) -> T {
@@ -70,6 +76,7 @@ impl Node {
             Node::String(_) => visitor.visit_string(self),
             Node::NegOp(_) => visitor.visit_neg_op(self),
             Node::NotOp(_) => visitor.visit_not_op(self),
+            Node::Bool(_) => visitor.visit_bool(self),
         }
     }
 }
@@ -325,6 +332,10 @@ fn parse_factor(tokens: &Vec<Token>, index: &mut usize) -> Node {
             TokenKind::Not => {
                 let node = parse_factor(tokens, index); 
                 Node::NotOp(Box::new(node))
+            }
+            TokenKind::Bool => {
+                let boolean = Node::Bool(token.value.parse::<bool>().unwrap());
+                boolean
             }
             _ => panic!("Expected number or identifier token"),
         };

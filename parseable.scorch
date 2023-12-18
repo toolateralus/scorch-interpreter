@@ -3,6 +3,14 @@
 explicitly_typed_variable : type = value
 dynamically_typed_variable := value
 
+
+
+
+x := 100.0
+y : num = 2500.16
+z := !(-x * y / (x + -y))
+
+
 //# to demonstrate both : 
 //# such as 
 name : string = 'joe schmoe'
@@ -19,16 +27,11 @@ height := '6 feet, 3.758168 inches'
 //# strings may start or end with " and ' interchangably.
 //# right now, as much of a bug as it is, you may start a string with ' and end with ".
 
-//# string fields and concatenation
-stringA := 'WE WERE A-'
-stringB := "PART"
 
-stringC := stringA + stringB
+//# concatenating strings:
 
-//# results in stringC == 'WE WERE A-PART'
+first_name := 'Cyitlec' //#ch yee t' leck
+last_name := 'Kivals' //# kih vahlS
+full_name := first_name + ' ' + last_name
 
-//# negative numbers & unaries are just ! and -
-negative := -1.0
-
-not_1 := !1
 

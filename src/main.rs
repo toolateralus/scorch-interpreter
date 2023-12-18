@@ -149,6 +149,14 @@ impl Visitor<()> for PrintVisitor {
         }
         self.indent -= 2;
     }
+
+    fn visit_bool(&mut self, node: &Node) -> () {
+        if let Node::Bool(value) = node {
+            println!("{}visit_bool: {}", " ".repeat(self.indent), value);
+        } else {
+            panic!("Expected Bool node");
+        }
+    }
 }
 
 fn main() -> () {

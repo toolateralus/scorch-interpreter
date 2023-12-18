@@ -96,7 +96,8 @@ pub enum TokenKind {
     ColonEquals, 
     Assignment,
     If,
-    Not, // ::
+    Not,
+    Bool, // ::
 }
 #[derive(Debug, Clone)]
 pub struct Token {
@@ -223,6 +224,17 @@ impl TokenProcessor for Tokenizer {
                     {
                         break;
                     }
+                }
+
+                if identifier == "true" || identifier == "false"
+                {
+                    let token = Token {
+                        family: TokenFamily::Value,
+                        kind: TokenKind::Bool,
+                        value: identifier,
+                    };
+                    self.tokens.push(token);
+                    continue;
                 }
 
                 if self.keywords.contains_key(&identifier) {
