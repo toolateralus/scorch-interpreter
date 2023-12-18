@@ -233,7 +233,6 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
         }
     }
 }
-
 fn get_current<'a>(tokens : &'a Vec<Token>, index: &mut usize) -> &'a Token {
     if let Some(token) = tokens.get(*index) {
         return token;
@@ -241,7 +240,6 @@ fn get_current<'a>(tokens : &'a Vec<Token>, index: &mut usize) -> &'a Token {
         panic!("Unexpected end of tokens")
     }
 }
-
 fn consume_newlines<'a>(index: &mut usize, tokens: &'a Vec<Token>) -> &'a Token {
     let mut current = get_current(tokens, index);
     while *index + 1 < tokens.len() && current.kind == TokenKind::Newline {

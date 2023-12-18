@@ -30,14 +30,13 @@ first_name := 'Cyitlec' //#ch yee t' leck
 last_name := 'Kivals' //# kih vahlS
 full_name := first_name + ' ' + last_name
 
+
 # todo
 - implement conditional / relational expressions;
 
 # our <= and => operators have special purpose, not yet implemented. packing & extracting
 - implement operators (|, ||, &, &&, ==, !=, <, >, <=, >=)
-
 - implement extended assignment operators (+=, -=, *=, /=, ^= , &=, %=)
-
 
 #ideas ranked from nearest to being completed to furthest.
 - access modifiers (data mutability) (const, mutable) {
@@ -54,3 +53,10 @@ full_name := first_name + ' ' + last_name
     we make a base object type that everything inherits from that we can implement operators in 
     and just make it 'in language'?
 }
+
+- equals : (bool) = (a : String, b : String) {
+    return lhs == rhs
+} 
+- equals := (a : String, b : String) {
+    return lhs == rhs
+} 
