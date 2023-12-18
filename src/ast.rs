@@ -18,6 +18,9 @@ pub trait Visitor<T> {
     fn visit_string(&mut self, node: &Node) -> T;
     fn visit_identifier(&mut self, node: &Node) -> T;
     fn visit_bool(&mut self, node: &Node) -> T;
+
+    fn visit_where_stmnt(&mut self, node: &Node) -> T;
+    fn visit_or_stmnt(&mut self, node: &Node) -> T;
 }
 
 #[derive(Debug)]
@@ -48,6 +51,16 @@ pub enum Node {
         id: String,
         expression: Box<Node>,
     },
+    WhereStmnt { 
+        condition: Box<Node>,
+        block : Box<Node>,
+        or_stmnt : Option<Box<Node>>
+    },
+    OrStmnt {
+        condition : Option<Box<Node>>,
+        block : Box<Node>,
+        or_stmnt: Option<Box<Node>>
+    },
     Block(Vec<Box<Node>>),
     Bool(bool),
 }
@@ -76,6 +89,8 @@ impl Node {
             Node::NegOp(_) => visitor.visit_neg_op(self),
             Node::NotOp(_) => visitor.visit_not_op(self),
             Node::Bool(_) => visitor.visit_bool(self),
+            Node::WhereStmnt { condition, block: true_block, or_stmnt } => visitor.visit_where_stmnt(self),
+            Node::OrStmnt { condition, block, or_stmnt } => visitor.visit_or_stmnt(self),
         }
     }
 }
@@ -129,14 +144,9 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
     match token.family {
         TokenFamily::Keyword => {
             match token.kind {
-                TokenKind::If => todo!(),
-                TokenKind::For => todo!(),
-                TokenKind::Loop => todo!(),
-                TokenKind::Break => todo!(),
-                TokenKind::Typedef => todo!(),
                 _ => {
                     dbg!(token);
-                    panic!("Expected keyword token");
+                    panic!("keywords are not yet implemented.");
                 }
             }
         }

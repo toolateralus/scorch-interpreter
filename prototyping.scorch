@@ -2,7 +2,8 @@ explicitly_typed_variable : num = 0.0
 dynamically_typed_variable := 0.0
 
 x := 100.0
-y : num = 2500.16
+y := 2500.16
+
 
 first_name := 'Cyitlec'
 last_name := 'Kivals'

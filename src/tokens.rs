@@ -7,8 +7,11 @@ pub fn create_tokenizer() -> Tokenizer {
 
     keywords.insert(String::from("for"), TokenKind::For);
     keywords.insert(String::from("loop"), TokenKind::Loop);
+    
     keywords.insert(String::from("break"), TokenKind::Break);
     keywords.insert(String::from("typedef"), TokenKind::Typedef);
+
+
     operators.insert(String::from("("), TokenKind::OpenParenthesis);
     operators.insert(String::from(")"), TokenKind::CloseParenthesis);
     operators.insert(String::from("{"), TokenKind::OpenBrace);
@@ -83,7 +86,6 @@ pub enum TokenKind {
     Colon,
     Period,
 
-    // keywords.
     For,
     Loop,
     Break,
@@ -95,7 +97,6 @@ pub enum TokenKind {
     DubColon,
     ColonEquals, 
     Assignment,
-    If,
     Not,
     Bool, // ::
 }

@@ -157,6 +157,44 @@ impl Visitor<()> for PrintVisitor {
             panic!("Expected Bool node");
         }
     }
+
+    fn visit_where_stmnt(&mut self, node: &Node) -> () {
+        println!("{}visit_where_stmnt:", " ".repeat(self.indent));
+        self.indent += 2;
+        if let Node::WhereStmnt {
+            condition,
+            block: true_block,
+            or_stmnt,
+        } = node
+        {
+            println!("{}condition:", " ".repeat(self.indent));
+            self.indent += 2;
+            condition.accept(self);
+            self.indent -= 2;
+            println!("{}body:", " ".repeat(self.indent));
+            self.indent += 2;
+            true_block.accept(self);
+            self.indent -= 2;
+            println!("{}otherwise:", " ".repeat(self.indent));
+            self.indent += 2;
+            or_stmnt.as_ref().unwrap().accept(self);
+            self.indent -= 2;
+        } else {
+            panic!("Expected WhereStmnt node");
+        }
+        self.indent -= 2;
+    }
+
+    fn visit_or_stmnt(&mut self, node: &Node) -> () {
+        println!("{}visit_or_stmnt:", " ".repeat(self.indent));
+        self.indent += 2;
+        if let Node::OrStmnt { condition, block, or_stmnt } = node {
+            block.accept(self);
+        } else {
+            panic!("Expected OrStmnt node");
+        }
+        self.indent -= 2;
+    }
 }
 
 fn main() -> () {

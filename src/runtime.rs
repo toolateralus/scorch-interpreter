@@ -220,6 +220,44 @@ impl Visitor<ValueType> for Interpreter {
             panic!("Expected Bool node");
         }
     }
+
+    fn visit_where_stmnt(&mut self, node: &Node) -> ValueType {
+        if let Node::WhereStmnt { condition, block: true_block, or_stmnt } = node {
+            if let ValueType::Bool(value) = condition.accept(self) {
+                if value {
+                    true_block.accept(self);
+                } else {
+                    if let Some(or_stmnt) = or_stmnt {
+                        or_stmnt.accept(self);
+                    }
+                }
+            } else {
+                panic!("Expected boolean condition");
+            }
+        } else {
+            panic!("Expected WhereStmnt node");
+        }
+        return ValueType::None(());
+    }
+
+    fn visit_or_stmnt(&mut self, node: &Node) -> ValueType {
+        if let Node::OrStmnt { condition, block: true_block, or_stmnt } = node {
+            if let ValueType::Bool(value) = condition.as_ref().unwrap().accept(self) {
+                if value {
+                    true_block.accept(self);
+                } else {
+                    if let Some(or_stmnt) = or_stmnt {
+                        or_stmnt.accept(self);
+                    }
+                }
+            } else {
+                panic!("Expected boolean condition");
+            }
+        } else {
+            panic!("Expected OrStmnt node");
+        }
+        return ValueType::None(());
+    }
 }
 
 
