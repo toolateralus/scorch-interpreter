@@ -1,9 +1,11 @@
 use core::panic;
+use std::str::EncodeUtf16;
 use crate::tokens::*;
 pub trait Visitor<T> {
     fn visit_number(&mut self, node: &Node) -> T;
     fn visit_term(&mut self, node: &Node) -> T;
     fn visit_factor(&mut self, node: &Node) -> T;
+    fn visit_eof(&mut self, node: &Node) -> T;
     fn visit_binary_op(&mut self, node: &Node) -> T;
     fn visit_assignment(&mut self, node: &Node) -> T;
     fn visit_declaration(&mut self, node: &Node) -> T;
@@ -44,7 +46,7 @@ pub enum Node {
 impl Node {
     pub fn accept<T>(&self, visitor: &mut dyn Visitor<T>) -> T {
         match self {
-            Node::Undefined() => panic!("visitor reached undefined node."),
+            Node::Undefined() => visitor.visit_eof(self),
             Node::Identifier(_key) => visitor.visit_factor(self),
             Node::Number(_value) => visitor.visit_factor(self),
             Node::AddOp(_lhs, _rhs) => visitor.visit_binary_op(self),
@@ -83,18 +85,32 @@ fn parse_block(tokens: &Vec<Token>, index: &mut usize) -> Node {
             break;
         }
         let statement = parse_statement(tokens, index);
-        statements.push(Box::new(statement));
+
+        match statement {
+            Ok(node) => {
+                statements.push(Box::new(node));
+            }
+
+            Err(_) => {
+                if token.kind == TokenKind::Newline {
+                    break; // ignore newlines.
+                }
+                panic!("Expected statement node");
+            }
+        }
     }
     Node::Block(statements)
 }
-fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Node {
-    let mut token = tokens.get(*index).unwrap();
+fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
+    if *index >= tokens.len() {
+        return Err(())
+    }
 
+    let mut token = tokens.get(*index).unwrap();
     token = consume_newlines(index, tokens);
 
     if *index + 1 >= tokens.len() {
-        println!("Potential unexpected end of input in 'parse_statement");
-        return Node::Undefined();
+        return Err(()) // probably a newline
     }
 
     let next = tokens.get(*index + 1).unwrap();
@@ -117,29 +133,19 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Node {
             // varname : type = default;
             let id = token.value.clone();
             match next.kind {
+                // varname := default;
                 // declaring a variable with implicit type.
                 TokenKind::ColonEquals => {
                     *index += 2;
-                     // move past the identifier and the ':=' token.
+                     
+                    // varname := ^default;
                     let value = parse_expression(tokens, index);
 
-                    let mut type_string = "dynamic";
-
-                    match value {
-                        Node::Undefined() => type_string = "undefined",
-                        Node::Number(_) => type_string = "num",
-                        Node::String(_) => type_string = "str",
-                        _ => {
-                            dbg!(value);
-                            panic!("Expected value / expression, got previous dump");
-                        }
-                    }
-
-                    Node::DeclStmt {
-                        target_type: String::from(type_string),
+                    Ok(Node::DeclStmt {
+                        target_type: String::from("dynamic"),
                         id,
                         expression: Box::new(value),
-                    }
+                    })
                 }
                 // declaraing a variable with explicit type.
                 TokenKind::Colon => {
@@ -162,21 +168,21 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Node {
                 
                     // varname : type = ^default;
                     let expression = parse_expression(tokens, index);
-                    Node::DeclStmt {
+                    Ok(Node::DeclStmt {
                         target_type,
                         id,
                         expression: Box::new(expression),
-                    }
+                    })
                 }
                 // assigning a value to an already declared variable.
                 TokenKind::Assignment => {
                     *index += 2;
                     let id = Node::Identifier(token.value.clone());
                     let expression = parse_expression(tokens, index);
-                    Node::AssignStmnt {
+                    Ok(Node::AssignStmnt {
                         id: Box::new(id),
                         expression: Box::new(expression),
-                    }
+                    })
                 }
                 _ => {
                     dbg!(token);
@@ -189,8 +195,9 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Node {
             if token.kind == TokenKind::OpenBrace {
                 *index += 1;
                 let block = parse_block(tokens, index);
-                return block;
+                Ok(block)
             } else {
+                dbg!(token);
                 panic!("Expected brace token");
             }
             

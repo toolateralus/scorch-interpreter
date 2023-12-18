@@ -123,6 +123,10 @@ impl Visitor<()> for PrintVisitor {
         }
         self.indent -= 2;
     }
+
+    fn visit_eof(&mut self, node: &Node) -> () {
+        () // do nothing.
+    }
 }
 
 fn main() -> () {

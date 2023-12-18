@@ -47,7 +47,8 @@ impl Visitor<ValueType> for Interpreter {
             let mut value = ValueType::None(());
             
             match target_type.as_str() {
-                "num"   |
+                "dynamic" |
+                "num"     |
                 "string" => {
                     value = self.visit_expression(expression);
                 }
@@ -153,7 +154,7 @@ impl Visitor<ValueType> for Interpreter {
     }
     fn visit_string(&mut self, node: &Node) -> ValueType {
         if let Node::String(_value) = node {
-            
+            return ValueType::String(_value.clone());
         } else {
             panic!("Expected String node");
         }
@@ -165,6 +166,10 @@ impl Visitor<ValueType> for Interpreter {
         } else {
             panic!("Expected Expression node");
         }
+    }
+
+    fn visit_eof(&mut self, node: &Node) -> ValueType {
+        ValueType::None(()) // do nothing.
     }
 }
 
