@@ -1,14 +1,29 @@
 //# this file just describes the parse-able syntax of the scorch lang at this time.
 
-
 explicitly_typed_variable : type = value
+dynamically_typed_variable := value
 
+//# to demonstrate both : 
 //# such as 
 name : string = 'joe schmoe'
 birthplace : string = "america"
 age : int = 'mid 20s'
 height : float = '6 feet, 3.758168 inches'
 
+//# is the same as
+name := 'joe schmoe'
+birthplace := "america"
+age := 'mid 20s'
+height := '6 feet, 3.758168 inches'
 
+//# strings may start or end with " and ' interchangably.
+//# right now, as much of a bug as it is, you may start a string with ' and end with ".
 
-dynamically_typed_variable := value
+//# string fields and concatenation
+stringA := 'WE WERE A-'
+stringB := "PART"
+
+stringC := stringA + stringB
+
+//# results in stringC == 'WE WERE A-PART'
+
