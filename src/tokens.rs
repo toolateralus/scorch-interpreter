@@ -17,10 +17,13 @@ pub fn create_tokenizer() -> Tokenizer {
     operators.insert(String::from("]"), TokenKind::CloseBracket);
     operators.insert(String::from(","), TokenKind::Comma);
     operators.insert(String::from(";"), TokenKind::Semicolon);
+    
     operators.insert(String::from("::"), TokenKind::DubColon);
     operators.insert(String::from(":"), TokenKind::Colon);
-    operators.insert(String::from("="), TokenKind::Assignment);
+    operators.insert(String::from(":="), TokenKind::ColonEquals);
     operators.insert(String::from("."), TokenKind::Period);
+
+    operators.insert(String::from("="), TokenKind::Assignment);
 
     operators.insert(String::from("<="), TokenKind::ReverseLambda);
     operators.insert(String::from("=>"), TokenKind::Lambda);
@@ -89,6 +92,7 @@ pub enum TokenKind {
     ReverseLambda, // <=, Pack In.
     Lambda,        // =>, Extract out.
     DubColon,
+    ColonEquals, 
     Assignment,
     If, // ::
 }
@@ -100,7 +104,7 @@ pub struct Token {
 }
 pub trait TokenProcessor {
     fn tokenize(&mut self, input: &str) -> ();
-    fn try_next(&mut self, current: &mut char) -> bool;
+    fn consume(&mut self, current: &mut char) -> bool;
 }
 pub struct Tokenizer {
     pub tokens: Vec<Token>,
@@ -111,7 +115,7 @@ pub struct Tokenizer {
     operators: HashMap<String, TokenKind>,
 }
 impl TokenProcessor for Tokenizer {
-    fn try_next(&mut self, current: &mut char) -> bool {
+    fn consume(&mut self, current: &mut char) -> bool {
         self.index += 1;
         if self.index < self.length {
             *current = self.source.chars().nth(self.index).unwrap();
@@ -130,7 +134,7 @@ impl TokenProcessor for Tokenizer {
             if current == '\'' || current == '\"' {
                 let mut string: String = String::new();
                 loop {
-                    if !self.try_next(&mut current) {
+                    if !self.consume(&mut current) {
                         panic!("Expected end of string.");
                     }
 
@@ -164,9 +168,11 @@ impl TokenProcessor for Tokenizer {
             }
             if current.is_numeric() {
                 let mut digit: String = String::new();
-                loop {
-                    digit.push(current);
-                    if !self.try_next(&mut current) || !current.is_digit(10) {
+                digit.push(current);
+                while self.consume(&mut current) {
+                    if current.is_digit(10) || current == '.' {
+                        digit.push(current);
+                    } else {
                         break;
                     }
                 }
@@ -186,7 +192,7 @@ impl TokenProcessor for Tokenizer {
                     if self.operators.contains_key(&punctuation) {
                         matches.push(punctuation.clone());
                     }
-                    if !self.try_next(&mut current)
+                    if !self.consume(&mut current)
                         || !(current.is_ascii_punctuation() || current == ':')
                     {
                         break;
@@ -209,7 +215,7 @@ impl TokenProcessor for Tokenizer {
                 let mut identifier: String = String::new();
                 loop {
                     identifier.push(current);
-                    if !self.try_next(&mut current)
+                    if !self.consume(&mut current)
                         || (!current.is_alphanumeric() && current != '_' && current != '-')
                     {
                         break;

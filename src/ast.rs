@@ -92,7 +92,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Node {
 
     token = consume_newlines(index, tokens);
 
-    if *index >= tokens.len() {
+    if *index + 1 >= tokens.len() {
         println!("Potential unexpected end of input in 'parse_statement");
         return Node::Undefined();
     }
@@ -114,18 +114,29 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Node {
             }
         }
         TokenFamily::Identifier => {
-            // varname : type ( default_value )
+            // varname : type = default;
+            let id = token.value.clone();
+
             if next.kind == TokenKind::Colon {
                 *index += 2;
-
+                
+                // varname :^ type = default;
                 // todo: check for valid type / builtins
                 let target_type_tkn = tokens.get(*index).unwrap();
-
                 let target_type = target_type_tkn.value.clone();
-
                 *index += 1;
 
-                let id = token.value.clone();
+                // varname : type^ = default;
+
+                if let Some(token) = tokens.get(*index) {
+                    assert_eq!(token.kind, TokenKind::Assignment, "Expected identifier token");
+                } else {
+                    dbg!(token);
+                    panic!("expected type identifier in declaration statement");
+                }
+                *index += 1;
+               
+                // varname : type = ^default;
                 let expression = parse_expression(tokens, index);
                 Node::DeclStmt {
                     target_type,
