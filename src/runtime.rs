@@ -1,5 +1,5 @@
+use crate::ast::{Node, Visitor};
 use std::{collections::HashMap, f64::NAN};
-use crate::ast::{Visitor, Node};
 #[derive(Debug, Clone)]
 pub enum ValueType {
     Float(f64),
@@ -45,20 +45,18 @@ impl Visitor<ValueType> for Interpreter {
         } = node
         {
             let mut value = ValueType::None(());
-            
+
             match target_type.as_str() {
-                "dynamic" |
-                "num"     |
-                "string" => {
+                "dynamic" | "num" | "string" => {
                     value = self.visit_expression(expression);
                 }
-                _ => { 
+                _ => {
                     dbg!(node);
                     panic!("Unsupported type");
                 }
             }
 
-            let str_id : String = id.clone();
+            let str_id: String = id.clone();
 
             // redefinition
             if self.context.variables.contains_key(&str_id) {
@@ -69,12 +67,9 @@ impl Visitor<ValueType> for Interpreter {
             else {
                 self.context.variables.insert(str_id, Box::new(value));
             }
-            
-
-
         } else {
             panic!("Expected Declaration node");
-        }        
+        }
         return ValueType::None(());
     }
     fn visit_identifier(&mut self, _node: &Node) -> ValueType {
@@ -98,9 +93,7 @@ impl Visitor<ValueType> for Interpreter {
                     }
                 }
             }
-            Node::Expression(root) => {
-                root.accept(self)
-            }
+            Node::Expression(root) => root.accept(self),
             _ => {
                 dbg!(node);
                 panic!("Expected Number or Identifier node");
@@ -112,7 +105,7 @@ impl Visitor<ValueType> for Interpreter {
             Node::AssignStmnt { id, expression } => {
                 let mut val = ValueType::None(());
                 val = self.visit_expression(expression);
-                let str_id : String = match id.as_ref() {
+                let str_id: String = match id.as_ref() {
                     Node::Identifier(id) => id.clone(),
                     _ => {
                         dbg!(node);
@@ -129,7 +122,7 @@ impl Visitor<ValueType> for Interpreter {
                     }
                 }
                 return ValueType::None(());
-            },
+            }
             _ => {
                 dbg!(node);
                 panic!("Expected Assignment node");
@@ -137,12 +130,11 @@ impl Visitor<ValueType> for Interpreter {
         }
     }
     fn visit_binary_op(&mut self, node: &Node) -> ValueType {
-
         match node {
-            Node::AddOp(lhs, rhs) |
-            Node::SubOp(lhs, rhs) |
-            Node::MulOp(lhs, rhs) |
-            Node::DivOp(lhs, rhs) => {
+            Node::AddOp(lhs, rhs)
+            | Node::SubOp(lhs, rhs)
+            | Node::MulOp(lhs, rhs)
+            | Node::DivOp(lhs, rhs) => {
                 let e_lhs = lhs.accept(self);
                 let e_rhs = rhs.accept(self);
                 match (e_lhs, e_rhs) {
@@ -163,7 +155,6 @@ impl Visitor<ValueType> for Interpreter {
                 panic!("Expected binary operation node");
             }
         }
-
     }
     fn visit_string(&mut self, node: &Node) -> ValueType {
         if let Node::String(_value) = node {
@@ -180,7 +171,7 @@ impl Visitor<ValueType> for Interpreter {
             panic!("Expected Expression node");
         }
     }
-    fn visit_eof(&mut self, node: &Node) -> ValueType {
+    fn visit_eof(&mut self, _node: &Node) -> ValueType {
         ValueType::None(()) // do nothing.
     }
     fn visit_not_op(&mut self, node: &Node) -> ValueType {
@@ -195,7 +186,7 @@ impl Visitor<ValueType> for Interpreter {
                         value = 0.0;
                     }
                     ValueType::Float(value)
-                },
+                }
                 _ => panic!("Expected boolean or numerical operand for not operation"),
             }
         } else {
@@ -222,7 +213,12 @@ impl Visitor<ValueType> for Interpreter {
     }
 
     fn visit_where_stmnt(&mut self, node: &Node) -> ValueType {
-        if let Node::WhereStmnt { condition, block: true_block, or_stmnt } = node {
+        if let Node::WhereStmnt {
+            condition,
+            block: true_block,
+            or_stmnt,
+        } = node
+        {
             if let ValueType::Bool(value) = condition.accept(self) {
                 if value {
                     true_block.accept(self);
@@ -241,7 +237,12 @@ impl Visitor<ValueType> for Interpreter {
     }
 
     fn visit_or_stmnt(&mut self, node: &Node) -> ValueType {
-        if let Node::OrStmnt { condition, block: true_block, or_stmnt } = node {
+        if let Node::OrStmnt {
+            condition,
+            block: true_block,
+            or_stmnt,
+        } = node
+        {
             if let ValueType::Bool(value) = condition.as_ref().unwrap().accept(self) {
                 if value {
                     true_block.accept(self);
@@ -260,10 +261,9 @@ impl Visitor<ValueType> for Interpreter {
     }
 }
 
-
 // binary operation definitions
 impl Interpreter {
-    fn bin_op_float(&mut self, node : &Node, lhs : &f64, rhs : &f64) -> ValueType {
+    fn bin_op_float(&mut self, node: &Node, lhs: &f64, rhs: &f64) -> ValueType {
         let mut result: f64 = NAN;
         match node {
             Node::AddOp(_, _) => result = lhs + rhs,
@@ -277,7 +277,7 @@ impl Interpreter {
         }
         ValueType::Float(result)
     }
-    fn bin_op_string(&mut self, node : &Node, lhs : &String, rhs : &String) -> ValueType {
+    fn bin_op_string(&mut self, node: &Node, lhs: &String, rhs: &String) -> ValueType {
         let result: String;
         match node {
             Node::AddOp(_, _) => result = format!("{}{}", lhs, rhs),

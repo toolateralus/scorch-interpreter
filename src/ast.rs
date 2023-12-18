@@ -1,5 +1,5 @@
 use core::panic;
-use std::str::EncodeUtf16;
+
 use crate::tokens::*;
 pub trait Visitor<T> {
     fn visit_number(&mut self, node: &Node) -> T;
@@ -7,7 +7,7 @@ pub trait Visitor<T> {
     fn visit_factor(&mut self, node: &Node) -> T;
     fn visit_eof(&mut self, node: &Node) -> T;
     fn visit_binary_op(&mut self, node: &Node) -> T;
-    
+
     // unary operations
     fn visit_not_op(&mut self, node: &Node) -> T;
     fn visit_neg_op(&mut self, node: &Node) -> T;
@@ -39,7 +39,6 @@ pub enum Node {
     NegOp(Box<Node>), // for unary minus
     NotOp(Box<Node>), // for unary not
     // todo: implement Modulo & Unary operations.
-
     Expression(Box<Node>),
     // Statements
     AssignStmnt {
@@ -51,15 +50,15 @@ pub enum Node {
         id: String,
         expression: Box<Node>,
     },
-    WhereStmnt { 
+    WhereStmnt {
         condition: Box<Node>,
-        block : Box<Node>,
-        or_stmnt : Option<Box<Node>>
+        block: Box<Node>,
+        or_stmnt: Option<Box<Node>>,
     },
     OrStmnt {
-        condition : Option<Box<Node>>,
-        block : Box<Node>,
-        or_stmnt: Option<Box<Node>>
+        condition: Option<Box<Node>>,
+        block: Box<Node>,
+        or_stmnt: Option<Box<Node>>,
     },
     Block(Vec<Box<Node>>),
     Bool(bool),
@@ -89,8 +88,16 @@ impl Node {
             Node::NegOp(_) => visitor.visit_neg_op(self),
             Node::NotOp(_) => visitor.visit_not_op(self),
             Node::Bool(_) => visitor.visit_bool(self),
-            Node::WhereStmnt { condition, block: true_block, or_stmnt } => visitor.visit_where_stmnt(self),
-            Node::OrStmnt { condition, block, or_stmnt } => visitor.visit_or_stmnt(self),
+            Node::WhereStmnt {
+                condition: _,
+                block: _true_block,
+                or_stmnt: _,
+            } => visitor.visit_where_stmnt(self),
+            Node::OrStmnt {
+                condition: _,
+                block: _,
+                or_stmnt: _,
+            } => visitor.visit_or_stmnt(self),
         }
     }
 }
@@ -129,27 +136,25 @@ fn parse_block(tokens: &Vec<Token>, index: &mut usize) -> Node {
 }
 fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
     if *index >= tokens.len() {
-        return Err(())
+        return Err(());
     }
 
     let mut token = tokens.get(*index).unwrap();
     token = consume_newlines(index, tokens);
 
     if *index + 1 >= tokens.len() {
-        return Err(()) // probably a newline
+        return Err(()); // probably a newline
     }
 
     let next = tokens.get(*index + 1).unwrap();
 
     match token.family {
-        TokenFamily::Keyword => {
-            match token.kind {
-                _ => {
-                    dbg!(token);
-                    panic!("keywords are not yet implemented.");
-                }
+        TokenFamily::Keyword => match token.kind {
+            _ => {
+                dbg!(token);
+                panic!("keywords are not yet implemented.");
             }
-        }
+        },
         TokenFamily::Identifier => {
             // varname : type = default;
             let id = token.value.clone();
@@ -158,7 +163,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
                 // declaring a variable with implicit type.
                 TokenKind::ColonEquals => {
                     *index += 2;
-                     
+
                     // varname := ^default;
                     let value = parse_expression(tokens, index);
 
@@ -180,13 +185,17 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
                     // varname : type^ = default;
 
                     if let Some(token) = tokens.get(*index) {
-                        assert_eq!(token.kind, TokenKind::Assignment, "Expected identifier token");
+                        assert_eq!(
+                            token.kind,
+                            TokenKind::Assignment,
+                            "Expected identifier token"
+                        );
                     } else {
                         dbg!(token);
                         panic!("expected type identifier in declaration statement");
                     }
                     *index += 1;
-                
+
                     // varname : type = ^default;
                     let expression = parse_expression(tokens, index);
                     Ok(Node::DeclStmt {
@@ -221,7 +230,6 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
                 dbg!(token);
                 panic!("Expected brace token");
             }
-            
         }
         _ => {
             dbg!(token);
@@ -339,7 +347,7 @@ fn parse_factor(tokens: &Vec<Token>, index: &mut usize) -> Node {
                 Node::NegOp(Box::new(node))
             }
             TokenKind::Not => {
-                let node = parse_factor(tokens, index); 
+                let node = parse_factor(tokens, index);
                 Node::NotOp(Box::new(node))
             }
             TokenKind::Bool => {

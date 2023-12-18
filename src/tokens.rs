@@ -7,10 +7,9 @@ pub fn create_tokenizer() -> Tokenizer {
 
     keywords.insert(String::from("for"), TokenKind::For);
     keywords.insert(String::from("loop"), TokenKind::Loop);
-    
+
     keywords.insert(String::from("break"), TokenKind::Break);
     keywords.insert(String::from("typedef"), TokenKind::Typedef);
-
 
     operators.insert(String::from("("), TokenKind::OpenParenthesis);
     operators.insert(String::from(")"), TokenKind::CloseParenthesis);
@@ -20,7 +19,7 @@ pub fn create_tokenizer() -> Tokenizer {
     operators.insert(String::from("]"), TokenKind::CloseBracket);
     operators.insert(String::from(","), TokenKind::Comma);
     operators.insert(String::from(";"), TokenKind::Semicolon);
-    
+
     operators.insert(String::from("::"), TokenKind::DubColon);
     operators.insert(String::from(":"), TokenKind::Colon);
     operators.insert(String::from(":="), TokenKind::ColonEquals);
@@ -95,7 +94,7 @@ pub enum TokenKind {
     ReverseLambda, // <=, Pack In.
     Lambda,        // =>, Extract out.
     DubColon,
-    ColonEquals, 
+    ColonEquals,
     Assignment,
     Not,
     Bool, // ::
@@ -227,8 +226,7 @@ impl TokenProcessor for Tokenizer {
                     }
                 }
 
-                if identifier == "true" || identifier == "false"
-                {
+                if identifier == "true" || identifier == "false" {
                     let token = Token {
                         family: TokenFamily::Value,
                         kind: TokenKind::Bool,

@@ -1,14 +1,14 @@
 pub mod ast;
-pub mod tokens;
 pub mod runtime;
+pub mod tokens;
 
 use std::env;
 use std::fs::File;
 use std::io::Read;
 
 use ast::{Node, Visitor};
-use tokens::*;
 use runtime::Interpreter;
+use tokens::*;
 pub struct PrintVisitor {
     pub indent: usize,
 }
@@ -124,7 +124,7 @@ impl Visitor<()> for PrintVisitor {
         self.indent -= 2;
     }
 
-    fn visit_eof(&mut self, node: &Node) -> () {
+    fn visit_eof(&mut self, _node: &Node) -> () {
         () // do nothing.
     }
 
@@ -188,7 +188,12 @@ impl Visitor<()> for PrintVisitor {
     fn visit_or_stmnt(&mut self, node: &Node) -> () {
         println!("{}visit_or_stmnt:", " ".repeat(self.indent));
         self.indent += 2;
-        if let Node::OrStmnt { condition, block, or_stmnt } = node {
+        if let Node::OrStmnt {
+            condition: _,
+            block,
+            or_stmnt: _,
+        } = node
+        {
             block.accept(self);
         } else {
             panic!("Expected OrStmnt node");
@@ -219,5 +224,4 @@ fn main() -> () {
     ast_root.accept(&mut visitor);
 
     dbg!(visitor.context);
-
 }
