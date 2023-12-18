@@ -66,6 +66,7 @@ impl Node {
         }
     }
 }
+
 pub fn parse_program(tokens: &Vec<Token>) -> Node {
     let mut index = 0;
     let program = parse_block(tokens, &mut index);
@@ -91,9 +92,9 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Node {
 
     token = consume_newlines(index, tokens);
 
-    if *index + 1 >= tokens.len() {
-        dbg!(token);
-        panic!("Unexpected end of tokens")
+    if *index >= tokens.len() {
+        println!("Potential unexpected end of input in 'parse_statement");
+        return Node::Undefined();
     }
 
     let next = tokens.get(*index + 1).unwrap();
@@ -156,7 +157,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Node {
 }
 fn consume_newlines<'a>(index: &mut usize, tokens: &'a Vec<Token>) -> &'a Token {
     let mut current = tokens.get(*index).unwrap();
-    while *index < tokens.len() && current.kind == TokenKind::Newline {
+    while *index + 1 < tokens.len() && current.kind == TokenKind::Newline {
         *index += 1;
         current = tokens.get(*index).unwrap();
     }

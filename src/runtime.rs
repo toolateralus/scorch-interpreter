@@ -1,6 +1,6 @@
 use std::{collections::HashMap, f64::NAN};
 use crate::ast::{Visitor, Node};
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ValueType {
     Float(f64),
     Int(i64),
@@ -46,18 +46,32 @@ impl Visitor<ValueType> for Interpreter {
         } = node
         {
             let mut value = ValueType::None(());
+            
             match target_type.as_str() {
-                "float" => {
-                    value = self.bin_op_float(node);
-                },
+                "float" |
+                "int"   |
                 "string" => {
-                    value = self.bin_op_string(node);
-                },
-                _ => {
+                    value = self.visit_expression(expression);
+                }
+                _ => { 
+                    dbg!(node);
                     panic!("Unsupported type");
                 }
             }
-            self.context.variables.insert(id.to_string(), Box::new(value));
+
+            let str_id : String = id.clone();
+
+            // redefinition
+            if self.context.variables.contains_key(&str_id) {
+                dbg!(node);
+                panic!("redefinition of variable");
+            }
+            // first time declaration
+            else {
+                self.context.variables.insert(str_id, Box::new(value));
+            }
+            
+
 
         } else {
             panic!("Expected Declaration node");
@@ -74,25 +88,44 @@ impl Visitor<ValueType> for Interpreter {
         return ValueType::None(());
     }
     fn visit_factor(&mut self, node: &Node) -> ValueType {
-        if let Node::Number(value) = node {
-            return ValueType::Float(*value);           
-        } else if let Node::Identifier(_id) = node {
-            // todo: dereference identifiers
-            // id == string id;
-
-        } else if let Node::Expression(root) = node {
-            root.accept(self);
-        } else {
-            dbg!(node);
-            panic!("Expected Number or Identifier node");
+        match node {
+            Node::Number(value) => return ValueType::Float(*value),
+            Node::Identifier(_id) => {
+                match self.context.variables.get(_id) {
+                    Some(value) => *value.clone(), // todo : fix copy on value type references here.
+                    None => {
+                        dbg!(node);
+                        panic!("Variable not found");
+                    }
+                }
+            }
+            Node::Expression(root) => {
+                root.accept(self)
+            }
+            _ => {
+                dbg!(node);
+                panic!("Expected Number or Identifier node");
+            }
         }
-        return ValueType::None(());
     }
     fn visit_assignment(&mut self, _node: &Node) -> ValueType {
         return ValueType::None(());
     }
     fn visit_binary_op(&mut self, node: &Node) -> ValueType {
-        self.bin_op_float(node)
+
+        match node {
+            Node::AddOp(_, _) |
+            Node::SubOp(_, _) |
+            Node::MulOp(_, _) |
+            Node::DivOp(_, _) => {
+                self.bin_op_float(node)
+            }
+            _ => {
+                dbg!(node);
+                panic!("Expected binary operation node");
+            }
+        }
+
     }
     fn visit_string(&mut self, node: &Node) -> ValueType {
         if let Node::String(_value) = node {
@@ -119,24 +152,37 @@ impl Interpreter {
             Node::SubOp(lhs, rhs) |
             Node::MulOp(lhs, rhs) |
             Node::DivOp(lhs, rhs) => (lhs, rhs),
-            _ => panic!("Expected binary operation node"),
+            Node::Number(value) => return ValueType::Float(*value),
+            _ => {
+                dbg!(node);
+                panic!("Expected binary operation node");
+            } 
         };
         let f_lhs = match lhs.accept(self) {
             ValueType::Float(value) => value,
             ValueType::Int(value) => value as f64,
-            _ => panic!("Expected float or int"),
+            _ =>  { 
+                dbg!(node);
+                panic!("Expected float or int");
+            }
         };
         let f_rhs = match rhs.accept(self) {
             ValueType::Float(value) => value,
             ValueType::Int(value) => value as f64,
-            _ => panic!("Expected float or int"),
+            _ => {
+                dbg!(node);
+                panic!("Expected float or int")
+            }
         };
         match node {
             Node::AddOp(_, _) => result = f_lhs + f_rhs,
             Node::SubOp(_, _) => result = f_lhs - f_rhs,
             Node::MulOp(_, _) => result = f_lhs * f_rhs,
             Node::DivOp(_, _) => result = f_lhs / f_rhs,
-            _ => panic!("Expected binary operation node"),
+            _ => {
+                dbg!(node);
+                panic!("Expected binary operation node");
+            }
         }
         ValueType::Float(result)
     }
@@ -148,6 +194,7 @@ impl Interpreter {
             Node::SubOp(lhs, rhs) |
             Node::MulOp(lhs, rhs) |
             Node::DivOp(lhs, rhs) => (lhs, rhs),
+            Node::String(value) => return ValueType::String(value.to_string()),
             _ => {
                 dbg!(node);
                 panic!("Expected binary operation node");

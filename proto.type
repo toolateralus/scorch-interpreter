@@ -1,1 +1,2 @@
-xarys:string('i am a ' + ' gay bag');
+xaryu : int(2)
+xaryus_sister : int(8 * xaryu)
