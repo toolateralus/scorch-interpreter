@@ -13,6 +13,8 @@ pub trait Visitor<T> {
     fn visit_expression(&mut self, node: &Node) -> T;
     fn visit_string(&mut self, node: &Node) -> T;
     fn visit_identifier(&mut self, node: &Node) -> T;
+    fn visit_not_op(&mut self, node: &Node) -> T;
+    fn visit_neg_op(&mut self, node: &Node) -> T;
 }
 #[derive(Debug)]
 pub enum Node {
@@ -27,7 +29,8 @@ pub enum Node {
     SubOp(Box<Node>, Box<Node>),
     MulOp(Box<Node>, Box<Node>),
     DivOp(Box<Node>, Box<Node>),
-
+    NegOp(Box<Node>), // for unary minus
+    NotOp(Box<Node>), // for unary not
     // todo: implement Modulo & Unary operations.
 
     Expression(Box<Node>),
@@ -65,6 +68,8 @@ impl Node {
             Node::Block(_statements) => visitor.visit_block(self),
             Node::Expression(_root) => visitor.visit_expression(self),
             Node::String(_) => visitor.visit_string(self),
+            Node::NegOp(_) => visitor.visit_neg_op(self),
+            Node::NotOp(_) => visitor.visit_not_op(self),
         }
     }
 }
@@ -312,6 +317,14 @@ fn parse_factor(tokens: &Vec<Token>, index: &mut usize) -> Node {
             TokenKind::OpenParenthesis => {
                 let node = parse_expression(tokens, index);
                 node
+            }
+            TokenKind::Subtract => { // assuming Subtract is your unary minus
+                let node = parse_factor(tokens, index); // parse the operand
+                Node::NegOp(Box::new(node)) // create a NegOp node
+            }
+            TokenKind::Not => { // assuming Not is your unary not
+                let node = parse_factor(tokens, index); // parse the operand
+                Node::NotOp(Box::new(node)) // create a NotOp node
             }
             _ => panic!("Expected number or identifier token"),
         };

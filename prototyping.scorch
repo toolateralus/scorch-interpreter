@@ -1,4 +1,4 @@
-variable := 10 * 20
+variable := 10.2 * -20.0
 stringA := 'WE WERE A-'
 stringB := 'PART'
 

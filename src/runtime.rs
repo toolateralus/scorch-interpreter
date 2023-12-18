@@ -183,6 +183,26 @@ impl Visitor<ValueType> for Interpreter {
     fn visit_eof(&mut self, node: &Node) -> ValueType {
         ValueType::None(()) // do nothing.
     }
+    fn visit_not_op(&mut self, node: &Node) -> ValueType {
+        if let Node::NotOp(operand) = node {
+            match operand.accept(self) {
+                ValueType::Bool(value) => ValueType::Bool(!value),
+                _ => panic!("Expected boolean operand for not operation"),
+            }
+        } else {
+            panic!("Expected NotOp node");
+        }
+    }
+    fn visit_neg_op(&mut self, node: &Node) -> ValueType {
+        if let Node::NegOp(operand) = node {
+            match operand.accept(self) {
+                ValueType::Float(value) => ValueType::Float(-value),
+                _ => panic!("Expected numeric operand for negation operation"),
+            }
+        } else {
+            panic!("Expected NegOp node");
+        }
+    }
 }
 
 impl Interpreter {

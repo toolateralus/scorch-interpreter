@@ -33,6 +33,7 @@ pub fn create_tokenizer() -> Tokenizer {
     operators.insert(String::from("*"), TokenKind::Multiply);
     operators.insert(String::from("/"), TokenKind::Divide);
     operators.insert(String::from("%"), TokenKind::Modulo);
+    operators.insert(String::from("!"), TokenKind::Not);
 
     let tokenizer = Tokenizer {
         operators,
@@ -94,7 +95,8 @@ pub enum TokenKind {
     DubColon,
     ColonEquals, 
     Assignment,
-    If, // ::
+    If,
+    Not, // ::
 }
 #[derive(Debug, Clone)]
 pub struct Token {

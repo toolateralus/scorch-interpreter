@@ -127,6 +127,28 @@ impl Visitor<()> for PrintVisitor {
     fn visit_eof(&mut self, node: &Node) -> () {
         () // do nothing.
     }
+
+    fn visit_not_op(&mut self, node: &Node) -> () {
+        println!("{}visit_not_op:", " ".repeat(self.indent));
+        self.indent += 2;
+        if let Node::Expression(root) = node {
+            root.accept(self);
+        } else {
+            panic!("Expected Expression node");
+        }
+        self.indent -= 2;
+    }
+
+    fn visit_neg_op(&mut self, node: &Node) -> () {
+        println!("{}visit_neg_op:", " ".repeat(self.indent));
+        self.indent += 2;
+        if let Node::Expression(root) = node {
+            root.accept(self);
+        } else {
+            panic!("Expected Expression node");
+        }
+        self.indent -= 2;
+    }
 }
 
 fn main() -> () {
