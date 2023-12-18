@@ -1,0 +1,14 @@
+//# this file just describes the parse-able syntax of the scorch lang at this time.
+
+
+explicitly_typed_variable : type = value
+
+//# such as 
+name : string = 'joe schmoe'
+birthplace : string = "america"
+age : int = 'mid 20s'
+height : float = '6 feet, 3.758168 inches'
+
+
+
+dynamically_typed_variable := value

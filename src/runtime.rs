@@ -139,11 +139,24 @@ impl Visitor<ValueType> for Interpreter {
     fn visit_binary_op(&mut self, node: &Node) -> ValueType {
 
         match node {
-            Node::AddOp(_, _) |
-            Node::SubOp(_, _) |
-            Node::MulOp(_, _) |
-            Node::DivOp(_, _) => {
-                self.bin_op_float(node)
+            Node::AddOp(lhs, rhs) |
+            Node::SubOp(lhs, rhs) |
+            Node::MulOp(lhs, rhs) |
+            Node::DivOp(lhs, rhs) => {
+                let e_lhs = lhs.accept(self);
+                let e_rhs = rhs.accept(self);
+                match (e_lhs, e_rhs) {
+                    (ValueType::Float(lhs_float), ValueType::Float(rhs_float)) => {
+                        return self.bin_op_float(node, &lhs_float, &rhs_float);
+                    }
+                    (ValueType::String(lhs_string), ValueType::String(rhs_string)) => {
+                        return self.bin_op_string(node, &lhs_string, &rhs_string);
+                    }
+                    _ => {
+                        dbg!(node);
+                        panic!("Expected float or int");
+                    }
+                }
             }
             _ => {
                 dbg!(node);
@@ -167,45 +180,19 @@ impl Visitor<ValueType> for Interpreter {
             panic!("Expected Expression node");
         }
     }
-
     fn visit_eof(&mut self, node: &Node) -> ValueType {
         ValueType::None(()) // do nothing.
     }
 }
 
 impl Interpreter {
-    fn bin_op_float(&mut self, node: &Node) -> ValueType {
+    fn bin_op_float(&mut self, node : &Node, lhs : &f64, rhs : &f64) -> ValueType {
         let mut result: f64 = NAN;
-        let (lhs, rhs): (&Box<Node>, &Box<Node>) = match node {
-            Node::AddOp(lhs, rhs) |
-            Node::SubOp(lhs, rhs) |
-            Node::MulOp(lhs, rhs) |
-            Node::DivOp(lhs, rhs) => (lhs, rhs),
-            Node::Number(value) => return ValueType::Float(*value),
-            _ => {
-                dbg!(node);
-                panic!("Expected binary operation node");
-            } 
-        };
-        let f_lhs = match lhs.accept(self) {
-            ValueType::Float(value) => value,
-            _ =>  { 
-                dbg!(node);
-                panic!("Expected float or int");
-            }
-        };
-        let f_rhs = match rhs.accept(self) {
-            ValueType::Float(value) => value,
-            _ => {
-                dbg!(node);
-                panic!("Expected float or int")
-            }
-        };
         match node {
-            Node::AddOp(_, _) => result = f_lhs + f_rhs,
-            Node::SubOp(_, _) => result = f_lhs - f_rhs,
-            Node::MulOp(_, _) => result = f_lhs * f_rhs,
-            Node::DivOp(_, _) => result = f_lhs / f_rhs,
+            Node::AddOp(_, _) => result = lhs + rhs,
+            Node::SubOp(_, _) => result = lhs - rhs,
+            Node::MulOp(_, _) => result = lhs * rhs,
+            Node::DivOp(_, _) => result = lhs / rhs,
             _ => {
                 dbg!(node);
                 panic!("Expected binary operation node");
@@ -214,30 +201,14 @@ impl Interpreter {
         ValueType::Float(result)
     }
 
-    fn bin_op_string(&mut self, node: &Node) -> ValueType {
-        let mut result: String = String::from("");
-        let (lhs, rhs): (&Box<Node>, &Box<Node>) = match node {
-            Node::AddOp(lhs, rhs) |
-            Node::SubOp(lhs, rhs) |
-            Node::MulOp(lhs, rhs) |
-            Node::DivOp(lhs, rhs) => (lhs, rhs),
-            Node::String(value) => return ValueType::String(value.to_string()),
+    fn bin_op_string(&mut self, node : &Node, lhs : &String, rhs : &String) -> ValueType {
+        let result: String;
+        match node {
+            Node::AddOp(_, _) => result = format!("{}{}", lhs, rhs),
             _ => {
                 dbg!(node);
                 panic!("Expected binary operation node");
             }
-        };
-        let f_lhs = match lhs.accept(self) {
-            ValueType::String(value) => value,
-            _ => panic!("Expected float or int"),
-        };
-        let f_rhs = match rhs.accept(self) {
-            ValueType::String(value) => value,
-            _ => panic!("Expected float or int"),
-        };
-        match node {
-            Node::AddOp(_, _) => result = f_lhs + &f_rhs,
-            _ => panic!("Expected binary operation node"),
         }
         ValueType::String(result)
     }

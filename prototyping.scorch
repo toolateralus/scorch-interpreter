@@ -1,2 +1,8 @@
 variable := 10 * 20
-variable2 := 'i am a fackin string'
+stringA := 'WE WERE A-'
+stringB := 'PART'
+
+stringC := stringA + stringB
+
+
+
