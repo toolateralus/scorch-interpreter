@@ -135,7 +135,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
         return Err(());
     }
 
-    let mut token = tokens.get(*index).unwrap();
+    let mut token = get_current(tokens, index);
     token = consume_newlines(index, tokens);
 
     if *index + 1 >= tokens.len() {
@@ -174,7 +174,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
                     *index += 2;
                     // varname :^ type = default;
                     // todo: check for valid type / builtins
-                    let target_type_tkn = tokens.get(*index).unwrap();
+                    let target_type_tkn = get_current(tokens, index);
                     let target_type = target_type_tkn.value.clone();
                     *index += 1;
 
@@ -233,11 +233,20 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
         }
     }
 }
+
+fn get_current<'a>(tokens : &'a Vec<Token>, index: &mut usize) -> &'a Token {
+    if let Some(token) = tokens.get(*index) {
+        return token;
+    } else {
+        panic!("Unexpected end of tokens")
+    }
+}
+
 fn consume_newlines<'a>(index: &mut usize, tokens: &'a Vec<Token>) -> &'a Token {
-    let mut current = tokens.get(*index).unwrap();
+    let mut current = get_current(tokens, index);
     while *index + 1 < tokens.len() && current.kind == TokenKind::Newline {
         *index += 1;
-        current = tokens.get(*index).unwrap();
+        current = get_current(tokens, index);
     }
     return current;
 }

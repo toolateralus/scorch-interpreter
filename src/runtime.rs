@@ -44,10 +44,10 @@ impl Visitor<ValueType> for Interpreter {
             expression,
         } = node
         {
-            let mut value = ValueType::None(());
+            let mut value: ValueType = ValueType::None(());
 
             match target_type.as_str() {
-                "dynamic" | "num" | "string" => {
+                "dynamic" | "num" | "string" => { // todo: add an actual type system.
                     value = self.visit_expression(expression);
                 }
                 _ => {
