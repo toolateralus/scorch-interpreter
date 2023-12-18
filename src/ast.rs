@@ -111,8 +111,7 @@ fn parse_block(tokens: &Vec<Token>, index: &mut usize) -> Node {
     let mut statements = Vec::new();
 
     while *index < tokens.len() {
-        let mut token = tokens.get(*index).unwrap();
-        token = consume_newlines(index, tokens);
+        let token = consume_newlines(index, tokens);
         if token.kind == TokenKind::CloseBrace {
             *index += 1;
             break;
@@ -120,12 +119,9 @@ fn parse_block(tokens: &Vec<Token>, index: &mut usize) -> Node {
         let statement = parse_statement(tokens, index);
 
         match statement {
-            Ok(node) => {
-                statements.push(Box::new(node));
-            }
-
+            Ok(node) => statements.push(Box::new(node)),
             Err(_) => {
-                if token.kind == TokenKind::Newline {
+                if token.kind == TokenKind::Newline || token.kind == TokenKind::Semicolon {
                     break; // ignore newlines.
                 }
                 panic!("Expected statement node");
