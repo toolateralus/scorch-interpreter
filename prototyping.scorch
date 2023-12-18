@@ -1,0 +1,5 @@
+xaryu : num(20)
+xaryus_sexy_sister : num(5000 * xaryu)
+
+
+xaryus_sexy_sister = xaryu * 2

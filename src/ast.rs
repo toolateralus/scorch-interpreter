@@ -114,10 +114,15 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Node {
             }
         }
         TokenFamily::Identifier => {
+            // varname : type ( default_value )
             if next.kind == TokenKind::Colon {
                 *index += 2;
+
                 // todo: check for valid type / builtins
-                let target_type = tokens.get(*index).unwrap().value.clone();
+                let target_type_tkn = tokens.get(*index).unwrap();
+
+                let target_type = target_type_tkn.value.clone();
+
                 *index += 1;
 
                 let id = token.value.clone();

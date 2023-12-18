@@ -3,7 +3,6 @@ use crate::ast::{Visitor, Node};
 #[derive(Debug, Clone)]
 pub enum ValueType {
     Float(f64),
-    Int(i64),
     Bool(bool),
     String(String),
     None(()),
@@ -48,8 +47,7 @@ impl Visitor<ValueType> for Interpreter {
             let mut value = ValueType::None(());
             
             match target_type.as_str() {
-                "float" |
-                "int"   |
+                "num"   |
                 "string" => {
                     value = self.visit_expression(expression);
                 }
@@ -108,8 +106,34 @@ impl Visitor<ValueType> for Interpreter {
             }
         }
     }
-    fn visit_assignment(&mut self, _node: &Node) -> ValueType {
-        return ValueType::None(());
+    fn visit_assignment(&mut self, node: &Node) -> ValueType {
+        match node {
+            Node::AssignStmnt { id, expression } => {
+                let mut val = ValueType::None(());
+                val = self.visit_expression(expression);
+                let str_id : String = match id.as_ref() {
+                    Node::Identifier(id) => id.clone(),
+                    _ => {
+                        dbg!(node);
+                        panic!("Expected Identifier node");
+                    }
+                };
+                match self.context.variables.get_mut(&str_id) {
+                    Some(value) => {
+                        *value = Box::new(val.clone());
+                    }
+                    None => {
+                        dbg!(node);
+                        panic!("Variable not found");
+                    }
+                }
+                return ValueType::None(());
+            },
+            _ => {
+                dbg!(node);
+                panic!("Expected Assignment node");
+            }
+        }
     }
     fn visit_binary_op(&mut self, node: &Node) -> ValueType {
 
@@ -160,7 +184,6 @@ impl Interpreter {
         };
         let f_lhs = match lhs.accept(self) {
             ValueType::Float(value) => value,
-            ValueType::Int(value) => value as f64,
             _ =>  { 
                 dbg!(node);
                 panic!("Expected float or int");
@@ -168,7 +191,6 @@ impl Interpreter {
         };
         let f_rhs = match rhs.accept(self) {
             ValueType::Float(value) => value,
-            ValueType::Int(value) => value as f64,
             _ => {
                 dbg!(node);
                 panic!("Expected float or int")

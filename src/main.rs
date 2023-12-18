@@ -131,7 +131,7 @@ fn main() -> () {
 
     let mut tokenizer = tokens::create_tokenizer();
 
-    let mut file = File::open("proto.type").expect("Failed to open file");
+    let mut file = File::open("prototyping.scorch").expect("Failed to open file");
     let mut contents = String::new();
     file.read_to_string(&mut contents)
         .expect("Failed to read file");
