@@ -45,8 +45,20 @@ impl Visitor<ValueType> for Interpreter {
             expression,
         } = node
         {
-            let value = expression.accept(self);
+            let mut value = ValueType::None(());
+            match target_type.as_str() {
+                "float" => {
+                    value = self.bin_op_float(node);
+                },
+                "string" => {
+                    value = self.bin_op_string(node);
+                },
+                _ => {
+                    panic!("Unsupported type");
+                }
+            }
             self.context.variables.insert(id.to_string(), Box::new(value));
+
         } else {
             panic!("Expected Declaration node");
         }        
@@ -80,6 +92,27 @@ impl Visitor<ValueType> for Interpreter {
         return ValueType::None(());
     }
     fn visit_binary_op(&mut self, node: &Node) -> ValueType {
+        self.bin_op_float(node)
+    }
+    fn visit_string(&mut self, node: &Node) -> ValueType {
+        if let Node::String(_value) = node {
+            
+        } else {
+            panic!("Expected String node");
+        }
+        return ValueType::None(());
+    }
+    fn visit_expression(&mut self, node: &Node) -> ValueType {
+        if let Node::Expression(root) = node {
+            return root.accept(self);
+        } else {
+            panic!("Expected Expression node");
+        }
+    }
+}
+
+impl Interpreter {
+    fn bin_op_float(&mut self, node: &Node) -> ValueType {
         let mut result: f64 = NAN;
         let (lhs, rhs): (&Box<Node>, &Box<Node>) = match node {
             Node::AddOp(lhs, rhs) |
@@ -107,19 +140,31 @@ impl Visitor<ValueType> for Interpreter {
         }
         ValueType::Float(result)
     }
-    fn visit_string(&mut self, node: &Node) -> ValueType {
-        if let Node::String(_value) = node {
-            
-        } else {
-            panic!("Expected String node");
+
+    fn bin_op_string(&mut self, node: &Node) -> ValueType {
+        let mut result: String = String::from("");
+        let (lhs, rhs): (&Box<Node>, &Box<Node>) = match node {
+            Node::AddOp(lhs, rhs) |
+            Node::SubOp(lhs, rhs) |
+            Node::MulOp(lhs, rhs) |
+            Node::DivOp(lhs, rhs) => (lhs, rhs),
+            _ => {
+                dbg!(node);
+                panic!("Expected binary operation node");
+            }
+        };
+        let f_lhs = match lhs.accept(self) {
+            ValueType::String(value) => value,
+            _ => panic!("Expected float or int"),
+        };
+        let f_rhs = match rhs.accept(self) {
+            ValueType::String(value) => value,
+            _ => panic!("Expected float or int"),
+        };
+        match node {
+            Node::AddOp(_, _) => result = f_lhs + &f_rhs,
+            _ => panic!("Expected binary operation node"),
         }
-        return ValueType::None(());
-    }
-    fn visit_expression(&mut self, node: &Node) -> ValueType {
-        if let Node::Expression(root) = node {
-            return root.accept(self);
-        } else {
-            panic!("Expected Expression node");
-        }
+        ValueType::String(result)
     }
 }
