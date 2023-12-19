@@ -156,10 +156,10 @@ impl Visitor<()> for PrintVisitor {
     fn visit_where_stmnt(&mut self, node: &Node) -> () {
         println!("{}visit_where_stmnt:", " ".repeat(self.indent));
         self.indent += 2;
-        if let Node::WhereStmnt {
+        if let Node::IfStmnt {
             condition,
             block: true_block,
-            or_stmnt,
+            else_block: or_stmnt,
         } = node
         {
             println!("{}condition:", " ".repeat(self.indent));
@@ -182,10 +182,10 @@ impl Visitor<()> for PrintVisitor {
     fn visit_or_stmnt(&mut self, node: &Node) -> () {
         println!("{}visit_or_stmnt:", " ".repeat(self.indent));
         self.indent += 2;
-        if let Node::OrStmnt {
+        if let Node::ElseStmnt {
             condition: _,
             block,
-            or_stmnt: _,
+            else_block: _,
         } = node
         {
             block.accept(self);

@@ -5,12 +5,8 @@ pub fn create_tokenizer() -> Tokenizer {
     let mut operators: HashMap<String, TokenKind> = HashMap::new();
     let mut keywords: HashMap<String, TokenKind> = HashMap::new();
 
-    keywords.insert(String::from("for"), TokenKind::For);
-    keywords.insert(String::from("loop"), TokenKind::Loop);
-
-    keywords.insert(String::from("break"), TokenKind::Break);
-    keywords.insert(String::from("typedef"), TokenKind::Typedef);
-    
+    keywords.insert(String::from("if"), TokenKind::If);
+    keywords.insert(String::from("else"), TokenKind::Else);
     operators.insert(String::from("("), TokenKind::OpenParenthesis);
     operators.insert(String::from(")"), TokenKind::CloseParenthesis);
     operators.insert(String::from("{"), TokenKind::OpenBrace);
@@ -105,12 +101,11 @@ pub enum TokenKind {
     Semicolon,
     Colon,
     Period,
-
-    For,
-    Loop,
-    Break,
-    Typedef,
-
+    
+    If,
+    Else,
+    Return,
+    
     // special operators
     Lambda,        // =>, Extract out.
     DubColon,

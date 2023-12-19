@@ -11,6 +11,17 @@ last_name := 'Kivals'
 
 full_name := first_name + ' ' + last_name
 
+mario := 'gay'
+
+if mario == 'gay' {
+    xaryu := 'straight'
+}
+else {
+    xaryu := 'gay'
+}
+
+
+
 birthplace := 'The
 Most
 American

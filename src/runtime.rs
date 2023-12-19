@@ -214,10 +214,10 @@ impl Visitor<ValueType> for Interpreter {
         }
     }
     fn visit_where_stmnt(&mut self, node: &Node) -> ValueType {
-        if let Node::WhereStmnt {
+        if let Node::IfStmnt {
             condition,
             block: true_block,
-            or_stmnt,
+            else_block: or_stmnt,
         } = node
         {
             if let ValueType::Bool(value) = condition.accept(self) {
@@ -237,10 +237,10 @@ impl Visitor<ValueType> for Interpreter {
         return ValueType::None(());
     }
     fn visit_or_stmnt(&mut self, node: &Node) -> ValueType {
-        if let Node::OrStmnt {
+        if let Node::ElseStmnt {
             condition,
             block: true_block,
-            or_stmnt,
+            else_block: or_stmnt,
         } = node
         {
             if let ValueType::Bool(value) = condition.as_ref().unwrap().accept(self) {
