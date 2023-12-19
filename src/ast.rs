@@ -173,14 +173,13 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
     if *index >= tokens.len() {
         return Err(());
     }
-
-    let mut token = get_current(tokens, index);
-    token = consume_newlines(index, tokens);
-
+    
+    let token = consume_newlines(index, tokens);
+    
     if *index + 1 >= tokens.len() {
         return Err(()); // probably a newline
     }
-
+    
     let next = tokens.get(*index + 1).unwrap();
 
     match token.family {

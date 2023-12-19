@@ -28,6 +28,8 @@ fn main() -> () {
     
     //test_fields_vars_literal();
     //test_rel_expr();
+	test_if_else_statements();
+	return;
     
     let (tokens, root, ctx) = execute_file(String::from("test_if_else.scorch"));
     if flags.contains_key("dump") {
