@@ -4,7 +4,7 @@ pub mod tokens;
 
 use std::{env, collections::HashMap};
 use std::fs::File;
-use std::io::Read;
+use std::io::{Read, Write};
 
 use ast::{Node, Visitor};
 use runtime::{Interpreter, Context, ValueType};
@@ -26,13 +26,17 @@ fn main() -> () {
     
     let flags = parse_cmd_line_args();
     
+    //test_fields_vars_literal();
+    //test_rel_expr();
+    let (tokens, root, ctx) = execute_file(String::from("test_fields_vars_literal.scorch"));
     if flags.contains_key("dump") {
-        
+		println!("Tokens:");
+        dbg!(tokens);
+		println!("AST Root:");
+        dbg!(root);
+		println!("Global Context:");
+        dbg!(ctx);
     }
-    
-    test_fields_vars_literal();
-    test_rel_expr();
-    test_if_else_statements();
 }
 
 fn test_if_else_statements() {
@@ -90,17 +94,31 @@ fn execute_return_global_ctx(filename: String) -> Box<Context> {
     file.read_to_string(&mut contents)
         .expect("Failed to read file");
     tokenizer.tokenize(&contents.as_str());
-
+    
     let tokens = tokenizer.tokens;
-    let ast_root = ast::parse_program(&tokens);
-
+	let ast_root = ast::parse_program(&tokens);
     let mut interpreter = Interpreter {
         context: runtime::Context::new(),
     };
-
+    
     ast_root.accept(&mut interpreter);
     
     let ctx = interpreter.context;
-    
     return Box::new(ctx);
+}
+fn execute_file(filename: String) -> (Vec<Token>, Node, Context) {
+    let mut tokenizer = tokens::create_tokenizer();
+    let mut file = File::open(filename).expect("Failed to open file");
+    let mut contents = String::new();
+
+    file.read_to_string(&mut contents)
+        .expect("Failed to read file");
+    tokenizer.tokenize(&contents.as_str());
+    let tokens = tokenizer.tokens;
+	let ast_root = ast::parse_program(&tokens);
+    let mut interpreter = Interpreter {
+        context: runtime::Context::new(),
+    };
+    ast_root.accept(&mut interpreter);
+    return (tokens, ast_root, interpreter.context);
 }

@@ -1,1 +1,1 @@
-cargo run >output.txt 2>&1
+cargo run -- dump >output.txt 2>&1
