@@ -3,5 +3,8 @@
         ".\\Cargo.toml",
         ".\\Cargo.toml"
     ],
+    "files.associations": {
+        "*.scorch": "coffeescript"
+    },
     "rust-analyzer.showUnlinkedFileNotification": false
 }

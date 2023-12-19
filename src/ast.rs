@@ -403,10 +403,20 @@ fn parse_factor(tokens: &Vec<Token>, index: &mut usize) -> Node {
             }
             TokenKind::Subtract => {
                 let node = parse_factor(tokens, index);
+                
+                if let Node::NegOp(node) = node {
+                    panic!("Double not operations are not allowed");                    
+                }
+                
                 Node::NegOp(Box::new(node))
             }
             TokenKind::Not => {
                 let node = parse_factor(tokens, index);
+                
+                if let Node::NotOp(node) = node {
+                    panic!("Double not operations are not allowed");                    
+                }
+                
                 Node::NotOp(Box::new(node))
             }
             TokenKind::Bool => {

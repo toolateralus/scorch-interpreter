@@ -242,8 +242,9 @@ impl Visitor<()> for PrintVisitor {
 }
 
 fn main() -> () {
-    //run_then_dump_ctx(String::from("prototyping.scorch"));
-    run_test_assert();
+    let ctx = execute_return_global_ctx(String::from("prototyping.scorch"));
+    dbg!(ctx);
+    //run_test_assert();
 }
 
 fn run_test_assert() {
@@ -271,7 +272,7 @@ fn run_test_assert() {
         let expected_result = expected_results[i];
         let value = *ctx.variables[*&variable].clone();
         if let ValueType::Bool(v) = value {
-            if (v == expected_result) {
+            if v == expected_result {
                 println!("test passed: {}", variable);
             } else {
                 panic!("failed test: bool value");

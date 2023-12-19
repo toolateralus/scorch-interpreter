@@ -270,6 +270,20 @@ impl Visitor<ValueType> for Interpreter {
             let lhs_value = lhs.accept(self);
             let rhs_value = rhs.accept(self);
             match (lhs_value, rhs_value) {
+                (ValueType::Bool(lhs_float), ValueType::Bool(rhs_float)) => {
+                    match op {
+                        TokenKind::LeftAngle => return ValueType::Bool(lhs_float < rhs_float),
+                        TokenKind::LessThanEquals  => return ValueType::Bool(lhs_float <= rhs_float),
+                        TokenKind::RightAngle => return ValueType::Bool(lhs_float > rhs_float),
+                        TokenKind::GreaterThanEquals  => return ValueType::Bool(lhs_float >= rhs_float),
+                        TokenKind::Equals => return ValueType::Bool(lhs_float == rhs_float),
+                        TokenKind::NotEquals  => return ValueType::Bool(lhs_float != rhs_float),
+                        _ => {
+                            dbg!(node);
+                            panic!("invalid operator");
+                        }
+                    }
+                }
                 (ValueType::Float(lhs_float), ValueType::Float(rhs_float)) => {
                     match op {
                         TokenKind::LeftAngle => return ValueType::Bool(lhs_float < rhs_float),

@@ -260,12 +260,12 @@ impl TokenProcessor for Tokenizer {
                     self.tokens.push(token);
                 }
             }
-            if current.is_alphabetic() || current == '_' || current == '-' {
+            if current.is_alphabetic() || current == '_' {
                 let mut identifier: String = String::new();
                 loop {
                     identifier.push(current);
                     if !self.consume(&mut current)
-                        || (!current.is_alphanumeric() && current != '_' && current != '-')
+                        || (!current.is_alphanumeric() && current != '_')
                     {
                         break;
                     }
