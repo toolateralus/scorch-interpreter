@@ -1,5 +1,5 @@
-use core::panic;
 use crate::tokens::*;
+use core::panic;
 pub trait Visitor<T> {
     fn visit_number(&mut self, node: &Node) -> T;
     fn visit_term(&mut self, node: &Node) -> T;
@@ -24,65 +24,54 @@ pub trait Visitor<T> {
 }
 #[derive(Debug)]
 pub enum Node {
-    
     // todo: add a program node
     // the highest level AST node.
     Block(Vec<Box<Node>>),
-    
+
     // literal & values
     Undefined(),
     Number(f64),
     String(String),
     Identifier(String),
     Bool(bool),
-    
+
     // Expressions
-    LogicalExpression { 
+    LogicalExpression {
         lhs: Box<Node>,
         op: TokenKind,
-        rhs: Box<Node> 
+        rhs: Box<Node>,
     },
     RelationalExpression {
-        lhs : Box<Node>,
-        op : TokenKind, 
-        rhs : Box<Node>,
+        lhs: Box<Node>,
+        op: TokenKind,
+        rhs: Box<Node>,
     },
     BinaryOperation {
-        lhs : Box<Node>,
-        op : TokenKind, 
-        rhs : Box<Node>,
+        lhs: Box<Node>,
+        op: TokenKind,
+        rhs: Box<Node>,
     },
-    
-    
     // todo: implement remainder operator.
-    // todo: remove the individual binary operations
-    // and use the BinaryOperation node with the TokenKind 
-    // operator field.
-    AddOp(Box<Node>, Box<Node>),
-    SubOp(Box<Node>, Box<Node>),
-    MulOp(Box<Node>, Box<Node>),
-    DivOp(Box<Node>, Box<Node>),
-        
-    // todo: do the same with Unary operations : 
-    // we can have a special noed for these instead of 
+
+    // todo: do the same with Unary operations :
+    // we can have a special noed for these instead of
     // weaving it in with factors.
     NegOp(Box<Node>), // for unary -
     NotOp(Box<Node>), // for unary !
-    
+
     Expression(Box<Node>),
     // Statements
     AssignStmnt {
         id: Box<Node>,
         expression: Box<Node>,
     },
-    
+
     DeclStmt {
         target_type: String,
         id: String,
         expression: Box<Node>,
     },
-    
-    
+
     // not implemented
     WhereStmnt {
         condition: Box<Node>,
@@ -101,10 +90,6 @@ impl Node {
             Node::Undefined() => visitor.visit_eof(self),
             Node::Identifier(_key) => visitor.visit_identifier(self),
             Node::Number(_value) => visitor.visit_number(self),
-            Node::AddOp(_lhs, _rhs) => visitor.visit_binary_op(self),
-            Node::SubOp(_lhs, _rhs) => visitor.visit_binary_op(self),
-            Node::MulOp(_lhs, _rhs) => visitor.visit_binary_op(self),
-            Node::DivOp(_lhs, _rhs) => visitor.visit_binary_op(self),
             Node::AssignStmnt {
                 id: _,
                 expression: _,
@@ -130,7 +115,9 @@ impl Node {
                 block: _,
                 or_stmnt: _,
             } => visitor.visit_or_stmnt(self),
-            Node::RelationalExpression { lhs, op, rhs } => visitor.visit_relational_expression(self),
+            Node::RelationalExpression { lhs, op, rhs } => {
+                visitor.visit_relational_expression(self)
+            }
             Node::LogicalExpression { lhs, op, rhs } => visitor.visit_logical_expression(self),
             Node::BinaryOperation { lhs, op, rhs } => visitor.visit_binary_op(self),
         }
@@ -171,7 +158,7 @@ fn parse_block(tokens: &Vec<Token>, index: &mut usize) -> Node {
             break;
         }
         let statement = parse_statement(tokens, index);
-        
+
         match statement {
             Ok(node) => statements.push(Box::new(node)),
             Err(_) => {
@@ -292,14 +279,13 @@ fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Node {
 
     while let Some(token) = tokens.get(*index) {
         match token.kind {
-            TokenKind::LogicalAnd | 
-            TokenKind::LogicalOr => {
+            TokenKind::LogicalAnd | TokenKind::LogicalOr => {
                 *index += 1;
                 let right = parse_logical_expr(tokens, index);
                 left = Node::LogicalExpression {
-                    lhs : Box::new(left),
-                    op : token.kind,
-                    rhs : Box::new(right) 
+                    lhs: Box::new(left),
+                    op: token.kind,
+                    rhs: Box::new(right),
                 };
             }
             TokenKind::CloseParenthesis => {
@@ -318,7 +304,7 @@ fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Node {
                 *index += 1;
                 break;
             }
-            
+
             _ => {
                 println!("left");
                 dbg!(left);
@@ -334,14 +320,13 @@ fn parse_logical_expr(tokens: &Vec<Token>, index: &mut usize) -> Node {
     let mut left = parse_relational_expr(tokens, index);
     while let Some(token) = tokens.get(*index) {
         match token.kind {
-            TokenKind::LogicalAnd |
-            TokenKind::LogicalOr => {
+            TokenKind::LogicalAnd | TokenKind::LogicalOr => {
                 *index += 1;
                 let right = parse_relational_expr(tokens, index);
                 left = Node::LogicalExpression {
-                    lhs : Box::new(left),
-                    op :token.kind, 
-                    rhs : Box::new(right)
+                    lhs: Box::new(left),
+                    op: token.kind,
+                    rhs: Box::new(right),
                 };
             }
             _ => break,
@@ -353,18 +338,17 @@ fn parse_relational_expr(tokens: &Vec<Token>, index: &mut usize) -> Node {
     let mut left = parse_addition(tokens, index);
     while let Some(token) = tokens.get(*index) {
         match token.kind {
-            TokenKind::Equals |
-            TokenKind::NotEquals |
-            TokenKind::LessThanEquals |
-            TokenKind::GreaterThanEquals |
-            TokenKind::LeftAngle |
-            TokenKind::RightAngle
-            => {
+            TokenKind::Equals
+            | TokenKind::NotEquals
+            | TokenKind::LessThanEquals
+            | TokenKind::GreaterThanEquals
+            | TokenKind::LeftAngle
+            | TokenKind::RightAngle => {
                 *index += 1;
                 let right = parse_addition(tokens, index);
                 left = Node::RelationalExpression {
                     lhs: Box::new(left),
-                    op : token.kind,
+                    op: token.kind,
                     rhs: Box::new(right),
                 };
             }
@@ -372,21 +356,19 @@ fn parse_relational_expr(tokens: &Vec<Token>, index: &mut usize) -> Node {
         };
     }
     left
-    
 }
 fn parse_addition(tokens: &Vec<Token>, index: &mut usize) -> Node {
     let mut left = parse_term(tokens, index);
     while let Some(token) = tokens.get(*index) {
         match token.kind {
-            TokenKind::Add => {
+            TokenKind::Add | TokenKind::Subtract => {
                 *index += 1;
                 let right = parse_term(tokens, index);
-                left = Node::AddOp(Box::new(left), Box::new(right));
-            }
-            TokenKind::Subtract => {
-                *index += 1;
-                let right = parse_term(tokens, index);
-                left = Node::SubOp(Box::new(left), Box::new(right));
+                left = Node::BinaryOperation {
+                    lhs: Box::new(left),
+                    op: token.kind,
+                    rhs: Box::new(right),
+                };
             }
             _ => break,
         }
@@ -397,15 +379,14 @@ fn parse_term(tokens: &Vec<Token>, index: &mut usize) -> Node {
     let mut left = parse_factor(tokens, index);
     while let Some(token) = tokens.get(*index) {
         match token.kind {
-            TokenKind::Multiply => {
+            TokenKind::Multiply | TokenKind::Divide => {
                 *index += 1;
                 let right = parse_factor(tokens, index);
-                left = Node::MulOp(Box::new(left), Box::new(right));
-            }
-            TokenKind::Divide => {
-                *index += 1;
-                let right = parse_factor(tokens, index);
-                left = Node::DivOp(Box::new(left), Box::new(right));
+                left = Node::BinaryOperation {
+                    lhs: Box::new(left),
+                    op: token.kind,
+                    rhs: Box::new(right),
+                };
             }
             _ => break,
         }
@@ -431,20 +412,20 @@ fn parse_factor(tokens: &Vec<Token>, index: &mut usize) -> Node {
             }
             TokenKind::Subtract => {
                 let node = parse_factor(tokens, index);
-                
+
                 if let Node::NegOp(node) = node {
-                    panic!("Double not operations are not allowed");                    
+                    panic!("Double not operations are not allowed");
                 }
-                
+
                 Node::NegOp(Box::new(node))
             }
             TokenKind::Not => {
                 let node = parse_factor(tokens, index);
-                
+
                 if let Node::NotOp(node) = node {
-                    panic!("Double not operations are not allowed");                    
+                    panic!("Double not operations are not allowed");
                 }
-                
+
                 Node::NotOp(Box::new(node))
             }
             TokenKind::Bool => {
