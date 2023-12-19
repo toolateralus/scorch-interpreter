@@ -285,13 +285,13 @@ impl Visitor<ValueType> for Interpreter {
                     }
                 }
                 (ValueType::String(lhs_string), ValueType::String(rhs_string)) => {
-                    match op.as_str() {
-                        "<" => return ValueType::Bool(lhs_string < rhs_string),
-                        "<=" => return ValueType::Bool(lhs_string <= rhs_string),
-                        ">" => return ValueType::Bool(lhs_string > rhs_string),
-                        ">=" => return ValueType::Bool(lhs_string >= rhs_string),
-                        "==" => return ValueType::Bool(lhs_string == rhs_string),
-                        "!=" => return ValueType::Bool(lhs_string != rhs_string),
+                    match op {
+                        TokenKind::LeftAngle => return ValueType::Bool(lhs_string < rhs_string),
+                        TokenKind::LessThanEquals => return ValueType::Bool(lhs_string <= rhs_string),
+                        TokenKind::RightAngle=> return ValueType::Bool(lhs_string > rhs_string),
+                        TokenKind::GreaterThanEquals => return ValueType::Bool(lhs_string >= rhs_string),
+                        TokenKind::Equals => return ValueType::Bool(lhs_string == rhs_string),
+                        TokenKind::NotEquals => return ValueType::Bool(lhs_string != rhs_string),
                         _ => {
                             dbg!(node);
                             panic!("invalid operator");
