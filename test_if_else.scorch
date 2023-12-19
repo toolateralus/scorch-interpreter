@@ -1,10 +1,5 @@
-result := 'unassigned'
-
-x := 5
-
-if x > 10 {
-    result = 'if_block'
-}
-else 1 != 1 {
-	result = 'first_else'
+if 1 < 2 {
+    
+} else 2 < 1 {
+    
 }

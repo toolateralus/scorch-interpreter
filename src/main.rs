@@ -240,10 +240,34 @@ impl Visitor<()> for PrintVisitor {
         self.indent -= 2;
     }
 }
+
+fn parse_cmd_line_args() -> HashMap<String, bool> {
+    let mut flags = HashMap::new();
+    let args: Vec<String> = env::args().collect();
+    let mut i = 0;
+    while i < args.len() {
+        let arg = args[i].clone();
+        flags.insert(arg, true);
+        i += 1;
+    }
+    return flags;
+}
+
 fn main() -> () {
+    
+    let flags = parse_cmd_line_args();
+    
     //test_fields_vars_literal();
     //test_rel_expr();
-    test_if_else_statements();
+    let (tokens, root, ctx) = execute_file(String::from("test_fields_vars_literal.scorch"));
+    if flags.contains_key("dump") {
+		println!("Tokens:");
+        dbg!(tokens);
+		println!("AST Root:");
+        dbg!(root);
+		println!("Global Context:");
+        dbg!(ctx);
+    }
 }
 
 fn test_if_else_statements() {
@@ -295,12 +319,6 @@ fn test_rel_expr() {
 }
 
 fn execute_return_global_ctx(filename: String) -> Box<Context> {
-	let mut dump = false;
-	for arg in env::args() {
-		if arg == "dump" {
-			dump = true;
-		}
-	}
     let mut tokenizer = tokens::create_tokenizer();
     let mut file = File::open(filename).expect("Failed to open file");
     let mut contents = String::new();
@@ -313,16 +331,25 @@ fn execute_return_global_ctx(filename: String) -> Box<Context> {
     let mut interpreter = Interpreter {
         context: runtime::Context::new(),
     };
-
+    
     ast_root.accept(&mut interpreter);
     
     let ctx = interpreter.context;
-	if dump {
-		dbg!(&tokens);
-		dbg!(&ast_root);
-		dbg!(&ctx);
-	}
-    
-    
     return Box::new(ctx);
+}
+fn execute_file(filename: String) -> (Vec<Token>, Node, Context) {
+    let mut tokenizer = tokens::create_tokenizer();
+    let mut file = File::open(filename).expect("Failed to open file");
+    let mut contents = String::new();
+
+    file.read_to_string(&mut contents)
+        .expect("Failed to read file");
+    tokenizer.tokenize(&contents.as_str());
+    let tokens = tokenizer.tokens;
+	let ast_root = ast::parse_program(&tokens);
+    let mut interpreter = Interpreter {
+        context: runtime::Context::new(),
+    };
+    ast_root.accept(&mut interpreter);
+    return (tokens, ast_root, interpreter.context);
 }

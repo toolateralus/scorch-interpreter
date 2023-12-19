@@ -26,8 +26,8 @@ height := '6 feet, 3.758168 inches'
 
 //# concatenating strings:
 
-first_name := 'Cyitlec' //#ch yee t' leck
-last_name := 'Kivals' //# kih vahlS
+first_name := 'Cyitlec' //# ch yee t' leck
+last_name := 'Kivals' //  # kih vahlS
 full_name := first_name + ' ' + last_name
 
 
