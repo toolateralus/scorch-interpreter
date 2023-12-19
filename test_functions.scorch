@@ -1,24 +1,4 @@
-
-private const implicit := {
-    return;
-}
-
-private var implicit := {
-    return;
-}
-
-implicit_str := fn (a : var dynamic, b : var dynamic) {
-    return "implicit";
-}
-
-implicit_num : fn (a : String) -> bool = {
-    return 1;
-}
-
-explicit_str : string() = {
-    return "explicit";
-}
-
-explicit_num : num = {
-    return 2;
+implicit := (a: string, b: num) {
+    xaryu := 100;
+    this_was := 'from the function'
 }

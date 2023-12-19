@@ -22,13 +22,15 @@ fn parse_cmd_line_args() -> HashMap<String, bool> {
     return flags;
 }
 
+
 fn main() -> () {
     let flags = parse_cmd_line_args();
     
     //test_fields_vars_literal();
     //test_rel_expr();
-    test_if_else_statements();
     
+    //test_if_else_statements();
+    test_functions();
     return;
     let (tokens, root, ctx) = execute_file(String::from("test_fields_vars_literal.scorch"));
     if flags.contains_key("dump") {
@@ -40,17 +42,18 @@ fn main() -> () {
         dbg!(ctx);
     }
 }
-
+fn test_functions() {
+    let ctx = execute_return_global_ctx(String::from("test_functions.scorch"));
+    dbg!(ctx);
+}
 fn test_if_else_statements() {
     let ctx = execute_return_global_ctx(String::from("test_if_else.scorch"));
     dbg!(ctx);
 }
-
 fn test_fields_vars_literal() {
     let ctx = execute_return_global_ctx(String::from("test_fields_vars_literal.scorch"));
     dbg!(ctx);
 }
-
 fn test_rel_expr() {
     let ctx = execute_return_global_ctx(String::from("test_rel_expr.scorch"));
     let variables = [
@@ -88,7 +91,6 @@ fn test_rel_expr() {
         }
     }
 }
-
 fn execute_return_global_ctx(filename: String) -> Box<Context> {
     let mut tokenizer = tokens::create_tokenizer();
     let mut file = File::open(filename).expect("Failed to open file");

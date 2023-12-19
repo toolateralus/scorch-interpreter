@@ -8,6 +8,7 @@ pub trait Visitor<T> {
     fn visit_eof(&mut self, node: &Node) -> T;
     fn visit_binary_op(&mut self, node: &Node) -> T;
     fn visit_function_decl(&mut self, node: &Node) -> T;
+    fn visit_param_decl(&mut self, node: &Node) -> T;
     fn visit_relational_expression(&mut self, node: &Node) -> T;
     fn visit_logical_expression(&mut self, node: &Node) -> T;
     // unary operations
@@ -96,6 +97,7 @@ pub enum Node {
         else_stmnt: Option<Box<Node>>,
     },
     FnDeclStmnt { id: String, body: Box<Node>, params: Vec<Node>, return_type: String },
+    ParamDeclNode { varname: Box<Node>, typename: Box<Node> },
 }
 impl Node {
     pub fn accept<T>(&self, visitor: &mut dyn Visitor<T>) -> T {
@@ -136,6 +138,7 @@ impl Node {
             Node::LogicalExpression { lhs, op, rhs } => visitor.visit_logical_expression(self),
             Node::BinaryOperation { lhs, op, rhs } => visitor.visit_binary_op(self),
             Node::FnDeclStmnt { id, body, params, return_type } => visitor.visit_function_decl(self),
+            Node::ParamDeclNode { varname, typename } => visitor.visit_param_decl(self),
         }
     }
 }
@@ -329,6 +332,66 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
 
 fn parse_parameters(tokens: &Vec<Token>, index: &mut usize) -> Vec<Node> {
     *index += 1; // discard open_paren
+    
+    let mut params = Vec::new();
+    
+    loop {
+        let mut token = get_current(tokens, index);
+        
+        if token.kind == TokenKind::CloseParenthesis {
+            *index += 1;
+            break;
+        }
+        
+        // parsing varname
+        // ^varname: Typename
+        if token.family != TokenFamily::Identifier {
+            panic!("Expected variable name in parameter declaration");
+        }
+        
+        let varname = parse_factor(tokens, index);
+        
+        token = get_current(tokens, index);
+        //parsing colon 
+        // varname^: Typename
+        match token.kind {
+            TokenKind::ColonEquals => {
+                panic!("implicit default value & parameter type not yet implement")
+            }
+            TokenKind::Colon => {
+                // got our valid case.
+                *index += 1;
+            }
+            _ => {
+                dbg!(token);
+                panic!("Expected colon token after variable name in parameter declaration got");
+            }
+        }
+        
+        // parsing type
+        // varname: ^Typename
+        let typename = parse_factor(tokens, index);
+        
+        // consume comma if there is one.
+        if get_current(tokens, index).kind == TokenKind::Comma {
+            *index += 1;
+        }
+        
+        let param_decl_node = Node::ParamDeclNode {
+            varname: Box::new(varname),
+            typename: Box::new(typename)
+        };
+        
+        params.push(param_decl_node);
+    }
+    
+    params
+}
+
+fn parse_arguments(tokens: &Vec<Token>, index: &mut usize) -> Vec<Node> {
+    *index += 1; // discard open_paren
+    
+    
     
     let mut params = Vec::new();
     

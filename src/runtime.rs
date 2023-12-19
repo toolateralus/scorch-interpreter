@@ -361,6 +361,10 @@ impl Visitor<ValueType> for Interpreter {
     fn visit_function_decl(&mut self, node: &Node) -> ValueType {
         todo!()
     }
+
+    fn visit_param_decl(&mut self, node: &Node) -> ValueType {
+        todo!()
+    }
 }
 
 // binary operation definitions
