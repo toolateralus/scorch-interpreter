@@ -19,8 +19,8 @@ pub trait Visitor<T> {
     fn visit_identifier(&mut self, node: &Node) -> T;
     fn visit_bool(&mut self, node: &Node) -> T;
 
-    fn visit_where_stmnt(&mut self, node: &Node) -> T;
-    fn visit_or_stmnt(&mut self, node: &Node) -> T;
+    fn visit_if_stmnt(&mut self, node: &Node) -> T;
+    fn visit_else_stmnt(&mut self, node: &Node) -> T;
 }
 #[derive(Debug, Clone)]
 pub enum Node {
@@ -123,12 +123,12 @@ impl Node {
                 condition: _,
                 block: _true_block,
                 else_block: _,
-            } => visitor.visit_where_stmnt(self),
+            } => visitor.visit_if_stmnt(self),
             Node::ElseStmnt {
                 condition: _,
                 block: _,
                 else_block: _,
-            } => visitor.visit_or_stmnt(self),
+            } => visitor.visit_else_stmnt(self),
             Node::RelationalExpression { lhs, op, rhs } => visitor.visit_relational_expression(self),
             Node::LogicalExpression { lhs, op, rhs } => visitor.visit_logical_expression(self),
             Node::BinaryOperation { lhs, op, rhs } => visitor.visit_binary_op(self),

@@ -153,7 +153,7 @@ impl Visitor<()> for PrintVisitor {
             panic!("Expected Bool node");
         }
     }
-    fn visit_where_stmnt(&mut self, node: &Node) -> () {
+    fn visit_if_stmnt(&mut self, node: &Node) -> () {
         println!("{}visit_where_stmnt:", " ".repeat(self.indent));
         self.indent += 2;
         if let Node::IfStmnt {
@@ -179,7 +179,7 @@ impl Visitor<()> for PrintVisitor {
         }
         self.indent -= 2;
     }
-    fn visit_or_stmnt(&mut self, node: &Node) -> () {
+    fn visit_else_stmnt(&mut self, node: &Node) -> () {
         println!("{}visit_or_stmnt:", " ".repeat(self.indent));
         self.indent += 2;
         if let Node::ElseStmnt {

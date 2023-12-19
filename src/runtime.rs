@@ -213,19 +213,19 @@ impl Visitor<ValueType> for Interpreter {
             panic!("Expected Bool node");
         }
     }
-    fn visit_where_stmnt(&mut self, node: &Node) -> ValueType {
+    fn visit_if_stmnt(&mut self, node: &Node) -> ValueType {
         if let Node::IfStmnt {
             condition,
             block: true_block,
             else_block: or_stmnt,
         } = node
         {
-            if let ValueType::Bool(value) = condition.accept(self) {
-                if value {
+            if let ValueType::Bool(condition_result) = condition.accept(self) {
+                if condition_result {
                     true_block.accept(self);
                 } else {
-                    if let Some(or_stmnt) = or_stmnt {
-                        or_stmnt.accept(self);
+                    if let Some(else_stmnt) = or_stmnt {
+                        else_stmnt.accept(self);
                     }
                 }
             } else {
@@ -236,29 +236,29 @@ impl Visitor<ValueType> for Interpreter {
         }
         return ValueType::None(());
     }
-    fn visit_or_stmnt(&mut self, node: &Node) -> ValueType {
+    fn visit_else_stmnt(&mut self, node: &Node) -> ValueType {
         if let Node::ElseStmnt {
             condition,
             block: true_block,
             else_block: or_stmnt,
         } = node
         {
-			let value : bool;
+			let condition_result : bool;
 			match condition.as_ref() {
 				Some(expression) => {
         			let ValueType::Bool(val) = expression.accept(self) else {
 						panic!("Expected boolean condition");
 					};
-					value = val;
+					condition_result = val;
     			}
 				None => {
-					value = false;
+					condition_result = false;
 				}
 			}
-			if value {
+			if condition_result {
 				true_block.accept(self);
 			} else if let Some(or_stmnt) = or_stmnt {
-					or_stmnt.accept(self);
+                or_stmnt.accept(self);
 			} else {
 				panic!("Cannot unpack or_stmnt:\n{:?}", or_stmnt);
 			}
