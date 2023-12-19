@@ -53,6 +53,8 @@ pub fn create_tokenizer() -> Tokenizer {
         tokens: Vec::<Token>::new(),
         source: String::new(),
         index: 0,
+		line: 1,
+		column: 1,
         length: 0,
     };
     tokenizer
@@ -121,8 +123,8 @@ pub struct Token {
     pub family: TokenFamily,
     pub kind: TokenKind,
     pub value: String,
-	pub line: u32,
-	pub line: u32,
+	pub line: usize,
+	pub column: usize,
 }
 pub trait TokenProcessor {
     fn tokenize(&mut self, input: &str) -> ();
@@ -132,6 +134,8 @@ pub struct Tokenizer {
     pub tokens: Vec<Token>,
     source: String,
     index: usize,
+	line: usize,
+	column: usize,
     length: usize,
     keywords: HashMap<String, TokenKind>,
     operators: HashMap<String, TokenKind>,
@@ -139,6 +143,7 @@ pub struct Tokenizer {
 impl TokenProcessor for Tokenizer {
     fn consume(&mut self, current: &mut char) -> bool {
         self.index += 1;
+		self.column += 1;
         if self.index < self.length {
             *current = self.source.chars().nth(self.index).unwrap();
             return true;
@@ -148,29 +153,37 @@ impl TokenProcessor for Tokenizer {
     fn tokenize(&mut self, original_input: &str) {
         let comment_regex = Regex::new(r"(//.*\n)|(/\*.*?\*/)").unwrap();
         let input = comment_regex.replace_all(original_input, "");
-
+        
         self.length = input.len();
         self.source = String::from(input);
         while self.index < self.length {
             let mut current = self.source.chars().nth(self.index).unwrap();
-            
+            let mut size_at_last_newline = 0;
             if current == '\'' || current == '\"' {
-                let mut string: String = String::new();
+                let mut string = String::new();
                 loop {
+					if current == '\n' || current == '\r' {
+						self.line += 1;
+						self.column = 1;
+						size_at_last_newline = string.len();
+					}
                     if !self.consume(&mut current) {
                         panic!("Expected end of string.");
                     }
-                    
                     if current == '\'' || current == '\"' {
                         self.index += 1;
+						self.column += 1;
                         break;
                     }
                     string.push(current);
                 }
+                let len = string.len();
                 let token = Token {
                     family: TokenFamily::Value,
                     kind: TokenKind::String,
                     value: string,
+					line: self.line,
+					column: self.column + size_at_last_newline - len,
                 };
                 self.tokens.push(token);
                 continue;
@@ -180,13 +193,18 @@ impl TokenProcessor for Tokenizer {
                     family: TokenFamily::Operator,
                     kind: TokenKind::Newline,
                     value: String::from("\n"),
+					line: self.line,
+					column: self.column - 1,
                 };
                 self.tokens.push(token);
                 self.index += 1;
+				self.line += 1;
+				self.column = 1;
                 continue;
             }
             if current.is_whitespace() {
                 self.index += 1;
+				self.column += 1;
                 continue;
             }
             if current.is_numeric() {
@@ -199,10 +217,13 @@ impl TokenProcessor for Tokenizer {
                         break;
                     }
                 }
+                let len = digit.len();
                 let token = Token {
                     family: TokenFamily::Value,
                     kind: TokenKind::Number,
                     value: digit,
+					line: self.line,
+					column: self.column - len,
                 };
                 self.tokens.push(token);
                 continue;
@@ -228,10 +249,13 @@ impl TokenProcessor for Tokenizer {
                     matches.sort_by(|a, b| b.len().cmp(&a.len()));
                     let match_ = matches[0].clone();
                     let kind = self.operators.get(&match_);
+                    let len = match_.len();
                     let token = Token {
                         family: TokenFamily::Operator,
                         kind: *kind.unwrap(),
                         value: match_,
+						line: self.line,
+						column: self.column - len,
                     };
                     self.tokens.push(token);
                 }
@@ -247,11 +271,14 @@ impl TokenProcessor for Tokenizer {
                     }
                 }
 
+				let len = identifier.len();
                 if identifier == "true" || identifier == "false" {
                     let token = Token {
                         family: TokenFamily::Value,
                         kind: TokenKind::Bool,
                         value: identifier,
+						line: self.line,
+						column: self.column - len,
                     };
                     self.tokens.push(token);
                     continue;
@@ -263,6 +290,8 @@ impl TokenProcessor for Tokenizer {
                         family: TokenFamily::Keyword,
                         kind: *kind.unwrap(),
                         value: identifier,
+						line: self.line,
+						column: self.column - len,
                     };
                     self.tokens.push(token);
                     continue;
@@ -270,11 +299,12 @@ impl TokenProcessor for Tokenizer {
 
                 // todo: implement const-first rule;
                 // variables are explicit.
-
                 let token = Token {
                     family: TokenFamily::Identifier,
                     kind: TokenKind::Identifier,
                     value: identifier,
+					line: self.line,
+					column: self.column - len,
                 };
                 self.tokens.push(token);
             }
