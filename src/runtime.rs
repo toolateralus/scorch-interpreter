@@ -1,4 +1,7 @@
-use crate::{ast::{Node, Visitor}, tokens::TokenKind};
+use crate::{
+    ast::{Node, Visitor},
+    tokens::TokenKind,
+};
 use std::{collections::HashMap, f64::NAN};
 #[derive(Debug, Clone)]
 pub enum ValueType {
@@ -48,7 +51,7 @@ impl Visitor<ValueType> for Interpreter {
 
             match target_type.as_str() {
                 "dynamic" | "num" | "string" => {
-					// todo: add an actual type system.
+                    // todo: add an actual type system.
                     value = expression.accept(self);
                 }
                 _ => {
@@ -63,14 +66,13 @@ impl Visitor<ValueType> for Interpreter {
             if self.context.variables.contains_key(&str_id) {
                 dbg!(node);
                 panic!("redefinition of variable");
-            }
-            else {
+            } else {
                 self.context.variables.insert(str_id, Box::new(value));
             }
         } else {
             panic!("Expected Declaration node");
         }
-       ValueType::None(())
+        ValueType::None(())
     }
     fn visit_identifier(&mut self, node: &Node) -> ValueType {
         let Node::Identifier(id) = node else {
@@ -134,30 +136,24 @@ impl Visitor<ValueType> for Interpreter {
         }
     }
     fn visit_binary_op(&mut self, node: &Node) -> ValueType {
-        match node {
-            Node::AddOp(lhs, rhs)
-            | Node::SubOp(lhs, rhs)
-            | Node::MulOp(lhs, rhs)
-            | Node::DivOp(lhs, rhs) => {
-                let e_lhs = lhs.accept(self);
-                let e_rhs = rhs.accept(self);
-                match (e_lhs, e_rhs) {
-                    (ValueType::Float(lhs_float), ValueType::Float(rhs_float)) => {
-                        return self.bin_op_float(node, &lhs_float, &rhs_float);
-                    }
-                    (ValueType::String(lhs_string), ValueType::String(rhs_string)) => {
-                        return self.bin_op_string(node, &lhs_string, &rhs_string);
-                    }
-                    _ => {
-                        dbg!(node);
-                        panic!("mismatched type in binary operation");
-                    }
+        if let Node::BinaryOperation { lhs, op, rhs } = node {
+            let e_lhs = lhs.accept(self);
+            let e_rhs = rhs.accept(self);
+            match (e_lhs, e_rhs) {
+                (ValueType::Float(lhs_float), ValueType::Float(rhs_float)) => {
+                    return self.bin_op_float(op, &lhs_float, &rhs_float);
+                }
+                (ValueType::String(lhs_string), ValueType::String(rhs_string)) => {
+                    return self.bin_op_string(op, &lhs_string, &rhs_string);
+                }
+                _ => {
+                    dbg!(node);
+                    panic!("mismatched type in binary operation");
                 }
             }
-            _ => {
-                dbg!(node);
-                panic!("Expected binary operation node");
-            }
+        } else {
+            dbg!(node);
+            panic!("Expected binary operation node");
         }
     }
     fn visit_string(&mut self, node: &Node) -> ValueType {
@@ -269,57 +265,38 @@ impl Visitor<ValueType> for Interpreter {
     }
 
     fn visit_relational_expression(&mut self, node: &Node) -> ValueType {
-        if let Node::RelationalExpression {
-            lhs,
-            op,
-            rhs,
-        } = node
-        {
+        if let Node::RelationalExpression { lhs, op, rhs } = node {
             let lhs_value = lhs.accept(self);
             let rhs_value = rhs.accept(self);
             match (lhs_value, rhs_value) {
-                (ValueType::Bool(lhs_float), ValueType::Bool(rhs_float)) => {
-                    match op {
-                        TokenKind::LeftAngle => return ValueType::Bool(lhs_float < rhs_float),
-                        TokenKind::LessThanEquals  => return ValueType::Bool(lhs_float <= rhs_float),
-                        TokenKind::RightAngle => return ValueType::Bool(lhs_float > rhs_float),
-                        TokenKind::GreaterThanEquals  => return ValueType::Bool(lhs_float >= rhs_float),
-                        TokenKind::Equals => return ValueType::Bool(lhs_float == rhs_float),
-                        TokenKind::NotEquals  => return ValueType::Bool(lhs_float != rhs_float),
-                        _ => {
-                            dbg!(node);
-                            panic!("invalid operator");
-                        }
+                (ValueType::Bool(lhs_bool), ValueType::Bool(rhs_bool)) => match op {
+                    TokenKind::Equals => return ValueType::Bool(lhs_bool == rhs_bool),
+                    TokenKind::NotEquals => return ValueType::Bool(lhs_bool != rhs_bool),
+                    _ => {
+                        dbg!(node);
+                        panic!("invalid operator");
                     }
-                }
-                (ValueType::Float(lhs_float), ValueType::Float(rhs_float)) => {
-                    match op {
-                        TokenKind::LeftAngle => return ValueType::Bool(lhs_float < rhs_float),
-                        TokenKind::LessThanEquals  => return ValueType::Bool(lhs_float <= rhs_float),
-                        TokenKind::RightAngle => return ValueType::Bool(lhs_float > rhs_float),
-                        TokenKind::GreaterThanEquals  => return ValueType::Bool(lhs_float >= rhs_float),
-                        TokenKind::Equals => return ValueType::Bool(lhs_float == rhs_float),
-                        TokenKind::NotEquals  => return ValueType::Bool(lhs_float != rhs_float),
-                        _ => {
-                            dbg!(node);
-                            panic!("invalid operator");
-                        }
+                },
+                (ValueType::Float(lhs_float), ValueType::Float(rhs_float)) => match op {
+                    TokenKind::LeftAngle => return ValueType::Bool(lhs_float < rhs_float),
+                    TokenKind::LessThanEquals => return ValueType::Bool(lhs_float <= rhs_float),
+                    TokenKind::RightAngle => return ValueType::Bool(lhs_float > rhs_float),
+                    TokenKind::GreaterThanEquals => return ValueType::Bool(lhs_float >= rhs_float),
+                    TokenKind::Equals => return ValueType::Bool(lhs_float == rhs_float),
+                    TokenKind::NotEquals => return ValueType::Bool(lhs_float != rhs_float),
+                    _ => {
+                        dbg!(node);
+                        panic!("invalid operator");
                     }
-                }
-                (ValueType::String(lhs_string), ValueType::String(rhs_string)) => {
-                    match op {
-                        TokenKind::LeftAngle => return ValueType::Bool(lhs_string < rhs_string),
-                        TokenKind::LessThanEquals => return ValueType::Bool(lhs_string <= rhs_string),
-                        TokenKind::RightAngle=> return ValueType::Bool(lhs_string > rhs_string),
-                        TokenKind::GreaterThanEquals => return ValueType::Bool(lhs_string >= rhs_string),
-                        TokenKind::Equals => return ValueType::Bool(lhs_string == rhs_string),
-                        TokenKind::NotEquals => return ValueType::Bool(lhs_string != rhs_string),
-                        _ => {
-                            dbg!(node);
-                            panic!("invalid operator");
-                        }
+                },
+                (ValueType::String(lhs_string), ValueType::String(rhs_string)) => match op {
+                    TokenKind::Equals => return ValueType::Bool(lhs_string == rhs_string),
+                    TokenKind::NotEquals => return ValueType::Bool(lhs_string != rhs_string),
+                    _ => {
+                        dbg!(node);
+                        panic!("invalid operator");
                     }
-                }
+                },
                 _ => {
                     dbg!(node);
                     panic!("mismatched type in relative expression");
@@ -331,25 +308,18 @@ impl Visitor<ValueType> for Interpreter {
     }
 
     fn visit_logical_expression(&mut self, node: &Node) -> ValueType {
-        if let Node::LogicalExpression {
-            lhs,
-            op,
-            rhs,
-        } = node
-        {
+        if let Node::LogicalExpression { lhs, op, rhs } = node {
             let lhs_value = lhs.accept(self);
             let rhs_value = rhs.accept(self);
             match (lhs_value, rhs_value) {
-                (ValueType::Bool(lhs_bool), ValueType::Bool(rhs_bool)) => {
-                    match op {
-                        TokenKind::LogicalAnd => return ValueType::Bool(lhs_bool && rhs_bool),
-                        TokenKind::LogicalOr => return ValueType::Bool(lhs_bool || rhs_bool),
-                        _ => {
-                            dbg!(node);
-                            panic!("invalid operator");
-                        }
+                (ValueType::Bool(lhs_bool), ValueType::Bool(rhs_bool)) => match op {
+                    TokenKind::LogicalAnd => return ValueType::Bool(lhs_bool && rhs_bool),
+                    TokenKind::LogicalOr => return ValueType::Bool(lhs_bool || rhs_bool),
+                    _ => {
+                        dbg!(node);
+                        panic!("invalid operator");
                     }
-                }
+                },
                 _ => {
                     dbg!(node);
                     panic!("mismatched type in logical expression");
@@ -363,27 +333,27 @@ impl Visitor<ValueType> for Interpreter {
 
 // binary operation definitions
 impl Interpreter {
-    fn bin_op_float(&mut self, node: &Node, lhs: &f64, rhs: &f64) -> ValueType {
+    fn bin_op_float(&mut self, op: &TokenKind, lhs: &f64, rhs: &f64) -> ValueType {
         let mut result: f64 = NAN;
-        match node {
-            Node::AddOp(_, _) => result = lhs + rhs,
-            Node::SubOp(_, _) => result = lhs - rhs,
-            Node::MulOp(_, _) => result = lhs * rhs,
-            Node::DivOp(_, _) => result = lhs / rhs,
+        match op {
+            TokenKind::Add => result = lhs + rhs,
+            TokenKind::Subtract => result = lhs - rhs,
+            TokenKind::Multiply => result = lhs * rhs,
+            TokenKind::Divide => result = lhs / rhs,
             _ => {
-                dbg!(node);
+                dbg!(op);
                 panic!("Expected binary operation node");
             }
         }
         ValueType::Float(result)
     }
-    fn bin_op_string(&mut self, node: &Node, lhs: &String, rhs: &String) -> ValueType {
+    fn bin_op_string(&mut self, op: &TokenKind, lhs: &String, rhs: &String) -> ValueType {
         let result: String;
-        match node {
-            Node::AddOp(_, _) => result = format!("{}{}", lhs, rhs),
+        match op {
+            TokenKind::Add => result = format!("{}{}", lhs, rhs),
             _ => {
-                dbg!(node);
-                panic!("invalid binary operation on strings");
+                dbg!(op);
+                panic!("Invalid binary operation on strings");
             }
         }
         ValueType::String(result)
