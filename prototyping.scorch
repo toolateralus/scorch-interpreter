@@ -1,5 +1,5 @@
 x := 100.0
-vvz := --10
+vvz := -10
 
 my_sexy_bool := (true == true) != (false != false)
 

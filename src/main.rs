@@ -242,9 +242,9 @@ impl Visitor<()> for PrintVisitor {
 }
 
 fn main() -> () {
+    run_test_assert();
     let ctx = execute_return_global_ctx(String::from("prototyping.scorch"));
     dbg!(ctx);
-    //run_test_assert();
 }
 
 fn run_test_assert() {
