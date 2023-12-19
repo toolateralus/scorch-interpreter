@@ -8,7 +8,6 @@ first_name := 'Cyitlec'
 last_name := 'Kivals'
 full_name := first_name + ' ' + last_name
 
-
 birthplace := 'The
 Most
 American

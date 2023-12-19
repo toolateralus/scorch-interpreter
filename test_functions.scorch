@@ -1,0 +1,23 @@
+implicit := {
+    return;
+}
+
+implicit_str := {
+    return "implicit";
+}
+
+implicit_num := {
+    return 1;
+}
+
+explicit : bool = {
+    return false;
+}
+
+explicit_str : string = {
+    return "explicit";
+}
+
+explicit_num : num = {
+    return 2;
+}
