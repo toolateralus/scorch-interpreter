@@ -47,7 +47,8 @@ impl Visitor<ValueType> for Interpreter {
             let mut value: ValueType = ValueType::None(());
 
             match target_type.as_str() {
-                "dynamic" | "num" | "string" => { // todo: add an actual type system.
+                "dynamic" | "num" | "string" => {
+                    // todo: add an actual type system.
                     value = self.visit_expression(expression);
                 }
                 _ => {
@@ -72,27 +73,31 @@ impl Visitor<ValueType> for Interpreter {
         }
         return ValueType::None(());
     }
-    fn visit_identifier(&mut self, _node: &Node) -> ValueType {
-        return ValueType::None(());
+    fn visit_identifier(&mut self, node: &Node) -> ValueType {
+        let Node::Identifier(id) = node else {
+            dbg!(node);
+            panic!("Expected Identifier");
+        };
+        match self.context.variables.get(id) {
+            Some(value) => *value.clone(), // todo : fix copy on value type references here.
+            None => {
+                dbg!(node);
+                panic!("Variable not found");
+            }
+        }
     }
-    fn visit_number(&mut self, _node: &Node) -> ValueType {
-        return ValueType::None(());
+    fn visit_number(&mut self, node: &Node) -> ValueType {
+        let Node::Number(value) = node else {
+            dbg!(node);
+            panic!("Expected Number");
+        };
+        ValueType::Float(*value)
     }
     fn visit_term(&mut self, _node: &Node) -> ValueType {
         return ValueType::None(());
     }
     fn visit_factor(&mut self, node: &Node) -> ValueType {
         match node {
-            Node::Number(value) => return ValueType::Float(*value),
-            Node::Identifier(_id) => {
-                match self.context.variables.get(_id) {
-                    Some(value) => *value.clone(), // todo : fix copy on value type references here.
-                    None => {
-                        dbg!(node);
-                        panic!("Variable not found");
-                    }
-                }
-            }
             Node::Expression(root) => root.accept(self),
             _ => {
                 dbg!(node);
@@ -157,12 +162,11 @@ impl Visitor<ValueType> for Interpreter {
         }
     }
     fn visit_string(&mut self, node: &Node) -> ValueType {
-        if let Node::String(_value) = node {
-            return ValueType::String(_value.clone());
+        if let Node::String(value) = node {
+            return ValueType::String(value.clone());
         } else {
             panic!("Expected String node");
         }
-        return ValueType::None(());
     }
     fn visit_expression(&mut self, node: &Node) -> ValueType {
         if let Node::Expression(root) = node {

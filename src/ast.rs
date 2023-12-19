@@ -67,8 +67,8 @@ impl Node {
     pub fn accept<T>(&self, visitor: &mut dyn Visitor<T>) -> T {
         match self {
             Node::Undefined() => visitor.visit_eof(self),
-            Node::Identifier(_key) => visitor.visit_factor(self),
-            Node::Number(_value) => visitor.visit_factor(self),
+            Node::Identifier(_key) => visitor.visit_identifier(self),
+            Node::Number(_value) => visitor.visit_number(self),
             Node::AddOp(_lhs, _rhs) => visitor.visit_binary_op(self),
             Node::SubOp(_lhs, _rhs) => visitor.visit_binary_op(self),
             Node::MulOp(_lhs, _rhs) => visitor.visit_binary_op(self),
@@ -233,7 +233,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
         }
     }
 }
-fn get_current<'a>(tokens : &'a Vec<Token>, index: &mut usize) -> &'a Token {
+fn get_current<'a>(tokens: &'a Vec<Token>, index: &mut usize) -> &'a Token {
     if let Some(token) = tokens.get(*index) {
         return token;
     } else {

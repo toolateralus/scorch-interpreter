@@ -10,7 +10,7 @@ pub fn create_tokenizer() -> Tokenizer {
 
     keywords.insert(String::from("break"), TokenKind::Break);
     keywords.insert(String::from("typedef"), TokenKind::Typedef);
-   
+    
     operators.insert(String::from("("), TokenKind::OpenParenthesis);
     operators.insert(String::from(")"), TokenKind::CloseParenthesis);
     operators.insert(String::from("{"), TokenKind::OpenBrace);
@@ -196,7 +196,11 @@ impl TokenProcessor for Tokenizer {
                     if self.operators.contains_key(&punctuation) {
                         matches.push(punctuation.clone());
                     }
-                    if !self.consume(&mut current) || !self.operators.contains_key(&(punctuation.clone() + &current.to_string())) {
+                    if !self.consume(&mut current)
+                        || !self
+                            .operators
+                            .contains_key(&(punctuation.clone() + &current.to_string()))
+                    {
                         break;
                     }
                 }
