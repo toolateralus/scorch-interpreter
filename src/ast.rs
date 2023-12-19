@@ -24,11 +24,24 @@ pub trait Visitor<T> {
 }
 #[derive(Debug)]
 pub enum Node {
+    
+    // todo: add a program node
+    // the highest level AST node.
+    Block(Vec<Box<Node>>),
+    
     // literal & values
     Undefined(),
     Number(f64),
     String(String),
     Identifier(String),
+    Bool(bool),
+    
+    // Expressions
+    LogicalExpression { 
+        lhs: Box<Node>,
+        op: TokenKind,
+        rhs: Box<Node> 
+    },
     RelationalExpression {
         lhs : Box<Node>,
         op : TokenKind, 
@@ -39,25 +52,38 @@ pub enum Node {
         op : TokenKind, 
         rhs : Box<Node>,
     },
-    // binary operations
+    
+    
+    // todo: implement remainder operator.
+    // todo: remove the individual binary operations
+    // and use the BinaryOperation node with the TokenKind 
+    // operator field.
     AddOp(Box<Node>, Box<Node>),
     SubOp(Box<Node>, Box<Node>),
     MulOp(Box<Node>, Box<Node>),
     DivOp(Box<Node>, Box<Node>),
-    NegOp(Box<Node>), // for unary minus
-    NotOp(Box<Node>), // for unary not
-    // todo: implement Modulo & Unary operations.
+        
+    // todo: do the same with Unary operations : 
+    // we can have a special noed for these instead of 
+    // weaving it in with factors.
+    NegOp(Box<Node>), // for unary -
+    NotOp(Box<Node>), // for unary !
+    
     Expression(Box<Node>),
     // Statements
     AssignStmnt {
         id: Box<Node>,
         expression: Box<Node>,
     },
+    
     DeclStmt {
         target_type: String,
         id: String,
         expression: Box<Node>,
     },
+    
+    
+    // not implemented
     WhereStmnt {
         condition: Box<Node>,
         block: Box<Node>,
@@ -68,9 +94,6 @@ pub enum Node {
         block: Box<Node>,
         or_stmnt: Option<Box<Node>>,
     },
-    Block(Vec<Box<Node>>),
-    Bool(bool),
-    LogicalExpression { lhs: Box<Node>, op: TokenKind, rhs: Box<Node> },
 }
 impl Node {
     pub fn accept<T>(&self, visitor: &mut dyn Visitor<T>) -> T {
@@ -113,6 +136,26 @@ impl Node {
         }
     }
 }
+fn get_current<'a>(tokens: &'a Vec<Token>, index: &mut usize) -> &'a Token {
+    if let Some(token) = tokens.get(*index) {
+        return token;
+    } else {
+        panic!("Unexpected end of tokens")
+    }
+}
+fn consume_newlines<'a>(index: &mut usize, tokens: &'a Vec<Token>) -> &'a Token {
+    let mut current = get_current(tokens, index);
+    while *index + 1 < tokens.len() && current.kind == TokenKind::Newline {
+        *index += 1;
+        current = get_current(tokens, index);
+    }
+    return current;
+}
+// ########################################
+// START PARSER FUNCTION HIERARCHY
+// TOP -> BOTTOM
+// GREATEST -> LEAST PRECEDENCE
+// ########################################
 pub fn parse_program(tokens: &Vec<Token>) -> Node {
     let mut index = 0;
     let program = parse_block(tokens, &mut index);
@@ -243,21 +286,6 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
             panic!("Expected keyword, identifier or operator token");
         }
     }
-}
-fn get_current<'a>(tokens: &'a Vec<Token>, index: &mut usize) -> &'a Token {
-    if let Some(token) = tokens.get(*index) {
-        return token;
-    } else {
-        panic!("Unexpected end of tokens")
-    }
-}
-fn consume_newlines<'a>(index: &mut usize, tokens: &'a Vec<Token>) -> &'a Token {
-    let mut current = get_current(tokens, index);
-    while *index + 1 < tokens.len() && current.kind == TokenKind::Newline {
-        *index += 1;
-        current = get_current(tokens, index);
-    }
-    return current;
 }
 fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Node {
     let mut left = parse_logical_expr(tokens, index);
@@ -430,3 +458,6 @@ fn parse_factor(tokens: &Vec<Token>, index: &mut usize) -> Node {
         panic!("Unexpected end of tokens")
     }
 }
+// ########################################
+// END PARSER FUNCTION HIERARCHY
+// ########################################

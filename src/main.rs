@@ -242,13 +242,17 @@ impl Visitor<()> for PrintVisitor {
 }
 
 fn main() -> () {
-    run_test_assert();
-    let ctx = execute_return_global_ctx(String::from("prototyping.scorch"));
+    test_fields_vars_literal();
+    test_rel_expr(); // 
+}
+
+fn test_fields_vars_literal() {
+    let ctx = execute_return_global_ctx(String::from("test_fields_vars_literal.scorch"));
     dbg!(ctx);
 }
 
-fn run_test_assert() {
-    let ctx = execute_return_global_ctx(String::from("test.scorch"));
+fn test_rel_expr() {
+    let ctx = execute_return_global_ctx(String::from("test_rel_expr.scorch"));
     let variables = [
         "rel_t1", "rel_t2", "rel_t3", "rel_t4", "rel_t5", "rel_t6", "rel_t7", "rel_t8",
         "rel_t9", "rel_t10", "rel_t11", "rel_t12",

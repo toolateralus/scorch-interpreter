@@ -1,7 +1,10 @@
 x := 100.0
 vvz := -10
 
-my_sexy_bool := (true == true) != (false != false)
+not_true := !true
+not_false := !false
+
+my_bool := true
 
 first_name := 'Cyitlec'
 last_name := 'Kivals'
