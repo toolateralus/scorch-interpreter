@@ -117,7 +117,7 @@ fn parse_block(tokens: &Vec<Token>, index: &mut usize) -> Node {
             break;
         }
         let statement = parse_statement(tokens, index);
-
+        
         match statement {
             Ok(node) => statements.push(Box::new(node)),
             Err(_) => {

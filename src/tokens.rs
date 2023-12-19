@@ -121,6 +121,8 @@ pub struct Token {
     pub family: TokenFamily,
     pub kind: TokenKind,
     pub value: String,
+	pub line: u32,
+	pub line: u32,
 }
 pub trait TokenProcessor {
     fn tokenize(&mut self, input: &str) -> ();
@@ -151,14 +153,14 @@ impl TokenProcessor for Tokenizer {
         self.source = String::from(input);
         while self.index < self.length {
             let mut current = self.source.chars().nth(self.index).unwrap();
-
+            
             if current == '\'' || current == '\"' {
                 let mut string: String = String::new();
                 loop {
                     if !self.consume(&mut current) {
                         panic!("Expected end of string.");
                     }
-
+                    
                     if current == '\'' || current == '\"' {
                         self.index += 1;
                         break;
