@@ -300,9 +300,12 @@ fn parse_if_else(tokens: &Vec<Token>, index: &mut usize) -> Node {
     let if_condition = parse_expression(tokens, index);
     let block = parse_block(tokens, index);
     
-    if *index + 1 > tokens.len() || tokens.get(*index + 1).unwrap().kind != TokenKind::Else {
-        // if, no else.
-        return Node::IfStmnt { condition : Box::new(if_condition), block : Box::new(block), else_block: Option::None };
+    // if, no else.
+    
+    if let Some(token) = tokens.get(*index + 1) {
+        if  token.kind != TokenKind::Else {
+            return Node::IfStmnt { condition : Box::new(if_condition), block : Box::new(block), else_block: Option::None };
+        }
     }
     
     *index += 2;

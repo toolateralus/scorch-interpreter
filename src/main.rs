@@ -242,8 +242,14 @@ impl Visitor<()> for PrintVisitor {
 }
 
 fn main() -> () {
-    test_fields_vars_literal();
-    test_rel_expr(); // 
+    //test_fields_vars_literal();
+    //test_rel_expr();
+    test_if_else_statements();
+}
+
+fn test_if_else_statements() {
+    let ctx = execute_return_global_ctx(String::from("test_if_else.scorch"));
+    dbg!(ctx);
 }
 
 fn test_fields_vars_literal() {

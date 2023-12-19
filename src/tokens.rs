@@ -15,27 +15,20 @@ pub fn create_tokenizer() -> Tokenizer {
     operators.insert(String::from("]"), TokenKind::CloseBracket);
     operators.insert(String::from(","), TokenKind::Comma);
     operators.insert(String::from(";"), TokenKind::Semicolon);
-    
     operators.insert(String::from("::"), TokenKind::DubColon);
     operators.insert(String::from(":"), TokenKind::Colon);
     operators.insert(String::from(":="), TokenKind::ColonEquals);
     operators.insert(String::from("."), TokenKind::Period);
-    
     operators.insert(String::from("="), TokenKind::Assignment);
-
     operators.insert(String::from("=="), TokenKind::Equals);
     operators.insert(String::from("!="), TokenKind::NotEquals);
-    
     operators.insert(String::from("<="), TokenKind::LessThanEquals);
     operators.insert(String::from(">="), TokenKind::GreaterThanEquals);
     operators.insert(String::from("<"), TokenKind::LeftAngle);
     operators.insert(String::from(">"), TokenKind::RightAngle);
-    
     operators.insert(String::from("&&"), TokenKind::LogicalAnd);
     operators.insert(String::from("||"), TokenKind::LogicalOr);
-    
     operators.insert(String::from("=>"), TokenKind::Lambda);
-
     operators.insert(String::from("+"), TokenKind::Add);
     operators.insert(String::from("-"), TokenKind::Subtract);
     operators.insert(String::from("*"), TokenKind::Multiply);

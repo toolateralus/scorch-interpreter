@@ -3,19 +3,10 @@ vvz := -10
 not_true := !true
 not_false := !false
 my_bool := true
+
 first_name := 'Cyitlec'
 last_name := 'Kivals'
 full_name := first_name + ' ' + last_name
-
-
-mario := 'gay'
-
-if mario == 'gay' {
-    xaryu := 'straight'
-}
-else x < y {
-    xaryu := 'gay'
-}
 
 
 birthplace := 'The
