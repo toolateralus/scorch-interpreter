@@ -7,6 +7,7 @@ pub trait Visitor<T> {
     fn visit_factor(&mut self, node: &Node) -> T;
     fn visit_eof(&mut self, node: &Node) -> T;
     fn visit_binary_op(&mut self, node: &Node) -> T;
+    fn visit_function_decl(&mut self, node: &Node) -> T;
     fn visit_relational_expression(&mut self, node: &Node) -> T;
     fn visit_logical_expression(&mut self, node: &Node) -> T;
     // unary operations
@@ -94,6 +95,7 @@ pub enum Node {
         block: Box<Node>,
         else_stmnt: Option<Box<Node>>,
     },
+    FnDeclStmnt { id: String, body: Box<Node>, params: Vec<Node>, return_type: String },
 }
 impl Node {
     pub fn accept<T>(&self, visitor: &mut dyn Visitor<T>) -> T {
@@ -133,6 +135,7 @@ impl Node {
             Node::RelationalExpression { lhs, op, rhs } => visitor.visit_relational_expression(self),
             Node::LogicalExpression { lhs, op, rhs } => visitor.visit_logical_expression(self),
             Node::BinaryOperation { lhs, op, rhs } => visitor.visit_binary_op(self),
+            Node::FnDeclStmnt { id, body, params, return_type } => visitor.visit_function_decl(self),
         }
     }
 }
@@ -220,11 +223,39 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
                 // varname := default;
                 // declaring a variable with implicit type.
                 TokenKind::ColonEquals => {
-                    *index += 2;
-
+                    *index += 2; // skip id, := tokens
+                    
+                    
+                    // function defintion : implicit, parameterless
+                    // example : foo := {...}
+                    if get_current(tokens, index).kind == TokenKind::OpenBrace {
+                        let body = parse_block(tokens, index);
+                        let node = Node::FnDeclStmnt {
+                            id,
+                            body: Box::new(body),
+                            params: Vec::new(),
+                            return_type: String::from("dynamic")
+                        };
+                        return Ok(node);
+                    }
+                    
+                    // function definition : implicit, with parameters
+                    // example : foo := (a, b) {...}
+                    if get_current(tokens, index).kind == TokenKind::OpenParenthesis {
+                        let params = parse_parameters(tokens, index);
+                        let body = parse_block(tokens, index);
+                        let node = Node::FnDeclStmnt{
+                            id,
+                            body: Box::new(body),
+                            params,
+                            return_type: String::from("dynamic")
+                        };
+                        return Ok(node);
+                    }
+                    
                     // varname := ^default;
                     let value = parse_expression(tokens, index);
-
+                    
                     Ok(Node::DeclStmt {
                         target_type: String::from("dynamic"),
                         id,
@@ -294,6 +325,23 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
             panic!("Expected keyword, identifier or operator token");
         }
     }
+}
+
+fn parse_parameters(tokens: &Vec<Token>, index: &mut usize) -> Vec<Node> {
+    *index += 1; // discard open_paren
+    
+    let mut params = Vec::new();
+    
+    while let Some(token) = tokens.get(*index) {
+        if token.kind == TokenKind::CloseParenthesis {
+            *index += 1;
+            break;
+        }
+        let param = parse_expression(tokens, index);
+        params.push(param);
+    }
+    
+    params
 }
 fn parse_if_else(tokens: &Vec<Token>, index: &mut usize) -> Node {
     *index += 1; // discard 'if'

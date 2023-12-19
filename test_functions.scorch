@@ -1,20 +1,21 @@
-implicit := {
+
+private const implicit := {
     return;
 }
 
-implicit_str := {
+private var implicit := {
+    return;
+}
+
+implicit_str := fn (a : var dynamic, b : var dynamic) {
     return "implicit";
 }
 
-implicit_num := {
+implicit_num : fn (a : String) -> bool = {
     return 1;
 }
 
-explicit : bool = {
-    return false;
-}
-
-explicit_str : string = {
+explicit_str : string() = {
     return "explicit";
 }
 

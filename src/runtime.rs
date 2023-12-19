@@ -267,7 +267,6 @@ impl Visitor<ValueType> for Interpreter {
 
         ValueType::None(())
     }
-
     fn visit_relational_expression(&mut self, node: &Node) -> ValueType {
         if let Node::RelationalExpression {
             lhs,
@@ -329,7 +328,6 @@ impl Visitor<ValueType> for Interpreter {
             panic!("Expected RelativeExpression node");
         }
     }
-
     fn visit_logical_expression(&mut self, node: &Node) -> ValueType {
         if let Node::LogicalExpression {
             lhs,
@@ -358,6 +356,10 @@ impl Visitor<ValueType> for Interpreter {
         } else {
             panic!("Expected LogicalExpression node");
         }
+    }
+
+    fn visit_function_decl(&mut self, node: &Node) -> ValueType {
+        todo!()
     }
 }
 
