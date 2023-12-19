@@ -91,7 +91,7 @@ pub enum Node {
     ElseStmnt {
         condition: Option<Box<Node>>,
         block: Box<Node>,
-        else_block: Option<Box<Node>>,
+        else_stmnt: Option<Box<Node>>,
     },
 }
 impl Node {
@@ -127,7 +127,7 @@ impl Node {
             Node::ElseStmnt {
                 condition: _,
                 block: _,
-                else_block: _,
+                else_stmnt: _,
             } => visitor.visit_else_stmnt(self),
             Node::RelationalExpression { lhs, op, rhs } => visitor.visit_relational_expression(self),
             Node::LogicalExpression { lhs, op, rhs } => visitor.visit_logical_expression(self),
@@ -316,7 +316,7 @@ fn parse_if_else(tokens: &Vec<Token>, index: &mut usize) -> Node {
         let else_stmnt = Node::ElseStmnt { 
             condition : Option::Some(Box::new(else_condition.clone())), 
             block : Box::new(block.clone()),
-             else_block: Option::Some(Box::new(else_block)) 
+             else_stmnt: Option::Some(Box::new(else_block)) 
         };
         let if_stmnt = Node::IfStmnt { 
             condition : Box::new(if_condition.clone()),
@@ -327,10 +327,12 @@ fn parse_if_else(tokens: &Vec<Token>, index: &mut usize) -> Node {
         // if else with no comparison
     } else {
         let else_block = parse_block(tokens, index);
-        let else_stmnt =Node::ElseStmnt { 
+        
+        let else_stmnt = Node::ElseStmnt { 
             condition : Option::None, 
             block : Box::new(block.clone()),
-            else_block: Option::Some(Box::new(else_block)) };
+            else_stmnt: Option::Some(Box::new(else_block)) };
+            
         let if_stmnt = Node::IfStmnt {
             condition : Box::new(if_condition),
             block : Box::new(block.clone()),

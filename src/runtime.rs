@@ -217,14 +217,14 @@ impl Visitor<ValueType> for Interpreter {
         if let Node::IfStmnt {
             condition,
             block: true_block,
-            else_block: or_stmnt,
+            else_block,
         } = node
         {
             if let ValueType::Bool(condition_result) = condition.accept(self) {
                 if condition_result {
                     true_block.accept(self);
                 } else {
-                    if let Some(else_stmnt) = or_stmnt {
+                    if let Some(else_stmnt) = else_block {
                         else_stmnt.accept(self);
                     }
                 }
@@ -240,7 +240,7 @@ impl Visitor<ValueType> for Interpreter {
         if let Node::ElseStmnt {
             condition,
             block: true_block,
-            else_block: or_stmnt,
+            else_stmnt,
         } = node
         {
 			let condition_result : bool;
@@ -257,10 +257,10 @@ impl Visitor<ValueType> for Interpreter {
 			}
 			if condition_result {
 				true_block.accept(self);
-			} else if let Some(or_stmnt) = or_stmnt {
-                or_stmnt.accept(self);
+			} else if let Some(else_statement) = else_stmnt {
+                else_statement.accept(self);
 			} else {
-				panic!("Cannot unpack or_stmnt:\n{:?}", or_stmnt);
+				panic!("Cannot unpack or_stmnt:\n{:?}", else_stmnt);
 			}
         } else {
             panic!("Expected OrStmnt node");

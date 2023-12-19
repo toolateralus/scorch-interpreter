@@ -1,8 +1,10 @@
 result := 'unassigned'
+
 x := 5
+
 if x > 10 {
-    result = 'true'
+    result = 'if_block'
 }
 else 1 != 1 {
-	result = 'false'
+	result = 'first_else'
 }
