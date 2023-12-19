@@ -300,12 +300,12 @@ fn parse_if_else(tokens: &Vec<Token>, index: &mut usize) -> Node {
     let if_condition = parse_expression(tokens, index);
     let block = parse_block(tokens, index);
     
-    if *index + 1 > tokens.len() || tokens.get(*index).unwrap().kind != TokenKind::Else {
+    if *index + 1 > tokens.len() || tokens.get(*index + 1).unwrap().kind != TokenKind::Else {
         // if, no else.
         return Node::IfStmnt { condition : Box::new(if_condition), block : Box::new(block), else_block: Option::None };
     }
     
-    *index += 1;
+    *index += 2;
     // if else with comparison
     if tokens.get(*index).unwrap().kind != TokenKind::OpenBrace {
         let else_condition = parse_expression(tokens, index);
@@ -504,7 +504,10 @@ fn parse_factor(tokens: &Vec<Token>, index: &mut usize) -> Node {
                 let boolean = Node::Bool(token.value.parse::<bool>().unwrap());
                 boolean
             }
-            _ => panic!("Expected number or identifier token"),
+            _ => {
+                dbg!(token);   
+                panic!("Expected number or identifier token");
+            }
         };
         node
     } else {
