@@ -86,7 +86,7 @@ pub enum Node {
     IfStmnt {
         condition: Box<Node>,
         block: Box<Node>,
-        else_block: Option<Box<Node>>,
+        else_stmnt: Option<Box<Node>>,
     },
     ElseStmnt {
         condition: Option<Box<Node>>,
@@ -122,7 +122,7 @@ impl Node {
             Node::IfStmnt {
                 condition: _,
                 block: _true_block,
-                else_block: _,
+                else_stmnt: _,
             } => visitor.visit_if_stmnt(self),
             Node::ElseStmnt {
                 condition: _,
@@ -298,45 +298,48 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
 fn parse_if_else(tokens: &Vec<Token>, index: &mut usize) -> Node {
     *index += 1;
     let if_condition = parse_expression(tokens, index);
-    let block = parse_block(tokens, index);
+    let if_block = parse_block(tokens, index);
     
     // if, no else.
     
     if let Some(token) = tokens.get(*index + 1) {
         if  token.kind != TokenKind::Else {
-            return Node::IfStmnt { condition : Box::new(if_condition), block : Box::new(block), else_block: Option::None };
+            return Node::IfStmnt { condition : Box::new(if_condition), block : Box::new(if_block), else_stmnt: Option::None };
         }
     }
     
     *index += 2;
     // if else with comparison
-    if tokens.get(*index).unwrap().kind != TokenKind::OpenBrace {
+    if get_current(tokens, index).kind != TokenKind::OpenBrace {
         let else_condition = parse_expression(tokens, index);
         let else_block = parse_block(tokens, index);
+        
         let else_stmnt = Node::ElseStmnt { 
             condition : Option::Some(Box::new(else_condition.clone())), 
-            block : Box::new(block.clone()),
-             else_stmnt: Option::Some(Box::new(else_block)) 
+            block : Box::new(if_block.clone()),
+            else_stmnt: Option::Some(Box::new(else_block)) 
         };
+        
         let if_stmnt = Node::IfStmnt { 
             condition : Box::new(if_condition.clone()),
-            block : Box::new(block.clone()),
-            else_block: Option::Some(Box::new(else_stmnt)) 
+            block : Box::new(if_block.clone()),
+            else_stmnt: Option::Some(Box::new(else_stmnt)) 
         };
         return if_stmnt;
         // if else with no comparison
     } else {
+        
         let else_block = parse_block(tokens, index);
         
         let else_stmnt = Node::ElseStmnt { 
             condition : Option::None, 
-            block : Box::new(block.clone()),
-            else_stmnt: Option::Some(Box::new(else_block)) };
+            block : Box::new(else_block.clone()),
+            else_stmnt: Option::None, };
             
         let if_stmnt = Node::IfStmnt {
             condition : Box::new(if_condition),
-            block : Box::new(block.clone()),
-            else_block: Option::Some(Box::new(else_stmnt)) };
+            block : Box::new(if_block.clone()),
+            else_stmnt: Option::Some(Box::new(else_stmnt)) };
         return if_stmnt;
     }
     

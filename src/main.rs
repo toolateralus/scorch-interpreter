@@ -30,9 +30,9 @@ fn main() -> () {
         
     }
     
-    //test_fields_vars_literal();
-    //test_rel_expr();
-    //test_if_else_statements();
+    test_fields_vars_literal();
+    test_rel_expr();
+    test_if_else_statements();
 }
 
 fn test_if_else_statements() {

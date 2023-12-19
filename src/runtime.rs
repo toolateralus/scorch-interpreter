@@ -217,7 +217,7 @@ impl Visitor<ValueType> for Interpreter {
         if let Node::IfStmnt {
             condition,
             block: true_block,
-            else_block,
+            else_stmnt: else_block,
         } = node
         {
             if let ValueType::Bool(condition_result) = condition.accept(self) {

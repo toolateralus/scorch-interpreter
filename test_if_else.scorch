@@ -1,5 +1,5 @@
-if 1 < 2 {
-    
-} else 2 < 1 {
-    
+if true {
+    xaryu : false
+} else {
+    xaryu : true
 }
