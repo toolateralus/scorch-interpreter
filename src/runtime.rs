@@ -48,7 +48,7 @@ impl Visitor<ValueType> for Interpreter {
 
             match target_type.as_str() {
                 "dynamic" | "num" | "string" => { // todo: add an actual type system.
-                    value = self.visit_expression(expression);
+                    value = expression.accept(self);
                 }
                 _ => {
                     dbg!(node);
@@ -63,14 +63,13 @@ impl Visitor<ValueType> for Interpreter {
                 dbg!(node);
                 panic!("redefinition of variable");
             }
-            // first time declaration
             else {
                 self.context.variables.insert(str_id, Box::new(value));
             }
         } else {
             panic!("Expected Declaration node");
         }
-        return ValueType::None(());
+       ValueType::None(())
     }
     fn visit_identifier(&mut self, _node: &Node) -> ValueType {
         return ValueType::None(());
@@ -146,7 +145,7 @@ impl Visitor<ValueType> for Interpreter {
                     }
                     _ => {
                         dbg!(node);
-                        panic!("Expected float or int");
+                        panic!("mismatched type in binary operation");
                     }
                 }
             }
@@ -203,7 +202,6 @@ impl Visitor<ValueType> for Interpreter {
             panic!("Expected NegOp node");
         }
     }
-
     fn visit_bool(&mut self, node: &Node) -> ValueType {
         if let Node::Bool(value) = node {
             return ValueType::Bool(*value);
@@ -211,7 +209,6 @@ impl Visitor<ValueType> for Interpreter {
             panic!("Expected Bool node");
         }
     }
-
     fn visit_where_stmnt(&mut self, node: &Node) -> ValueType {
         if let Node::WhereStmnt {
             condition,
@@ -235,7 +232,6 @@ impl Visitor<ValueType> for Interpreter {
         }
         return ValueType::None(());
     }
-
     fn visit_or_stmnt(&mut self, node: &Node) -> ValueType {
         if let Node::OrStmnt {
             condition,
@@ -283,7 +279,7 @@ impl Interpreter {
             Node::AddOp(_, _) => result = format!("{}{}", lhs, rhs),
             _ => {
                 dbg!(node);
-                panic!("Expected binary operation node");
+                panic!("invalid binary operation on strings");
             }
         }
         ValueType::String(result)
