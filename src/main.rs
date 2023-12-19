@@ -4,7 +4,7 @@ pub mod tokens;
 
 use std::{env, collections::HashMap};
 use std::fs::File;
-use std::io::Read;
+use std::io::{Read, Write};
 
 use ast::{Node, Visitor};
 use runtime::{Interpreter, Context, ValueType};
@@ -240,7 +240,6 @@ impl Visitor<()> for PrintVisitor {
         self.indent -= 2;
     }
 }
-
 fn main() -> () {
     //test_fields_vars_literal();
     //test_rel_expr();
@@ -296,16 +295,21 @@ fn test_rel_expr() {
 }
 
 fn execute_return_global_ctx(filename: String) -> Box<Context> {
+	let mut dump = false;
+	for arg in env::args() {
+		if arg == "dump" {
+			dump = true;
+		}
+	}
     let mut tokenizer = tokens::create_tokenizer();
     let mut file = File::open(filename).expect("Failed to open file");
     let mut contents = String::new();
     file.read_to_string(&mut contents)
         .expect("Failed to read file");
     tokenizer.tokenize(&contents.as_str());
-
+    
     let tokens = tokenizer.tokens;
-    let ast_root = ast::parse_program(&tokens);
-
+	let ast_root = ast::parse_program(&tokens);
     let mut interpreter = Interpreter {
         context: runtime::Context::new(),
     };
@@ -313,6 +317,12 @@ fn execute_return_global_ctx(filename: String) -> Box<Context> {
     ast_root.accept(&mut interpreter);
     
     let ctx = interpreter.context;
+	if dump {
+		dbg!(&tokens);
+		dbg!(&ast_root);
+		dbg!(&ctx);
+	}
+    
     
     return Box::new(ctx);
 }
