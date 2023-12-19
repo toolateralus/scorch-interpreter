@@ -2,12 +2,12 @@ pub mod ast;
 pub mod runtime;
 pub mod tokens;
 
-use std::env;
+use std::{env, collections::HashMap};
 use std::fs::File;
 use std::io::Read;
 
 use ast::{Node, Visitor};
-use runtime::Interpreter;
+use runtime::{Interpreter, Context, ValueType};
 use tokens::*;
 pub struct PrintVisitor {
     pub indent: usize,
@@ -242,12 +242,51 @@ impl Visitor<()> for PrintVisitor {
 }
 
 fn main() -> () {
-    let args: Vec<String> = env::args().collect();
-    println!("Command-line arguments: {:?}", args);
+    //run_then_dump_ctx(String::from("prototyping.scorch"));
+    run_test_assert();
+}
 
+fn run_test_assert() {
+    let ctx = execute_return_global_ctx(String::from("test.scorch"));
+    let variables = [
+        "rel_t1", "rel_t2", "rel_t3", "rel_t4", "rel_t5", "rel_t6", "rel_t7", "rel_t8",
+        "rel_t9", "rel_t10", "rel_t11", "rel_t12",
+    ];
+    let expected_results = [
+        true,  // rel_t1 := 5 < 10
+        false, // rel_t2 := 5 > 10
+        true,  // rel_t3 := 5 <= 10
+        false, // rel_t4 := 5 >= 10
+        false, // rel_t5 := 5 == 10
+        true,  // rel_t6 := 5 != 10
+        true,  // rel_t7 := 5 == 5
+        false, // rel_t8 := 5 != 5
+        true,  // rel_t9  := 5 <= 5
+        true,  // rel_t10 := 5 >= 5
+        false, // rel_t11 := 5 < 5
+        false, // rel_t12 := 5 > 5
+    ];
+    for i in 0..11 {
+        let variable = variables[i];
+        let expected_result = expected_results[i];
+        let value = *ctx.variables[*&variable].clone();
+        if let ValueType::Bool(v) = value {
+            if (v == expected_result) {
+                println!("test passed: {}", variable);
+            } else {
+                panic!("failed test: bool value");
+            }
+        } else  {
+            dbg!(variables);
+            dbg!(variable);
+            panic!("failed test: bool value");
+        }
+    }
+}
+
+fn execute_return_global_ctx(filename: String) -> Box<Context> {
     let mut tokenizer = tokens::create_tokenizer();
-
-    let mut file = File::open("prototyping.scorch").expect("Failed to open file");
+    let mut file = File::open(filename).expect("Failed to open file");
     let mut contents = String::new();
     file.read_to_string(&mut contents)
         .expect("Failed to read file");
@@ -256,11 +295,13 @@ fn main() -> () {
     let tokens = tokenizer.tokens;
     let ast_root = ast::parse_program(&tokens);
 
-    let mut visitor = Interpreter {
+    let mut interpreter = Interpreter {
         context: runtime::Context::new(),
     };
 
-    ast_root.accept(&mut visitor);
-
-    dbg!(visitor.context);
+    ast_root.accept(&mut interpreter);
+    
+    let ctx = interpreter.context;
+    
+    return Box::new(ctx);
 }
