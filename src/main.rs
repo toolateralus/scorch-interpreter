@@ -241,7 +241,26 @@ impl Visitor<()> for PrintVisitor {
     }
 }
 
+fn parse_cmd_line_args() -> HashMap<String, bool> {
+    let mut flags = HashMap::new();
+    let args: Vec<String> = env::args().collect();
+    let mut i = 0;
+    while i < args.len() {
+        let arg = args[i].clone();
+        flags.insert(arg, true);
+        i += 1;
+    }
+    return flags;
+}
+
 fn main() -> () {
+    
+    let flags = parse_cmd_line_args();
+    
+    if flags.contains_key("dump") {
+        
+    }
+    
     //test_fields_vars_literal();
     //test_rel_expr();
     test_if_else_statements();

@@ -1,0 +1,1 @@
+cargo run >output.txt 2>&1
