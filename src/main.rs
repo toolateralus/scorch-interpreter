@@ -123,11 +123,9 @@ impl Visitor<()> for PrintVisitor {
         }
         self.indent -= 2;
     }
-
     fn visit_eof(&mut self, _node: &Node) -> () {
         () // do nothing.
     }
-
     fn visit_not_op(&mut self, node: &Node) -> () {
         println!("{}visit_not_op:", " ".repeat(self.indent));
         self.indent += 2;
@@ -138,7 +136,6 @@ impl Visitor<()> for PrintVisitor {
         }
         self.indent -= 2;
     }
-
     fn visit_neg_op(&mut self, node: &Node) -> () {
         println!("{}visit_neg_op:", " ".repeat(self.indent));
         self.indent += 2;
@@ -149,7 +146,6 @@ impl Visitor<()> for PrintVisitor {
         }
         self.indent -= 2;
     }
-
     fn visit_bool(&mut self, node: &Node) -> () {
         if let Node::Bool(value) = node {
             println!("{}visit_bool: {}", " ".repeat(self.indent), value);
@@ -157,7 +153,6 @@ impl Visitor<()> for PrintVisitor {
             panic!("Expected Bool node");
         }
     }
-
     fn visit_where_stmnt(&mut self, node: &Node) -> () {
         println!("{}visit_where_stmnt:", " ".repeat(self.indent));
         self.indent += 2;
@@ -184,7 +179,6 @@ impl Visitor<()> for PrintVisitor {
         }
         self.indent -= 2;
     }
-
     fn visit_or_stmnt(&mut self, node: &Node) -> () {
         println!("{}visit_or_stmnt:", " ".repeat(self.indent));
         self.indent += 2;
@@ -197,6 +191,28 @@ impl Visitor<()> for PrintVisitor {
             block.accept(self);
         } else {
             panic!("Expected OrStmnt node");
+        }
+        self.indent -= 2;
+    }
+    fn visit_relative_expression(&mut self, node: &Node) -> () {
+        println!("{}visit_relative_expression:", " ".repeat(self.indent));
+        self.indent += 2;
+        if let Node::RelativeExpression {
+            lhs,
+            op,
+            rhs,
+        } = node
+        {
+            println!("{}lhs:", " ".repeat(self.indent));
+            self.indent += 2;
+            lhs.accept(self);
+            self.indent -= 2;
+            println!("{}op:", " ".repeat(self.indent));
+            self.indent += 2;
+            rhs.accept(self);
+            self.indent -= 2;
+        } else {
+            panic!("Expected RelativeExpression node");
         }
         self.indent -= 2;
     }

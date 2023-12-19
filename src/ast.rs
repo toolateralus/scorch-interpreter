@@ -7,6 +7,7 @@ pub trait Visitor<T> {
     fn visit_factor(&mut self, node: &Node) -> T;
     fn visit_eof(&mut self, node: &Node) -> T;
     fn visit_binary_op(&mut self, node: &Node) -> T;
+    fn visit_relative_expression(&mut self, node: &Node) -> T;
 
     // unary operations
     fn visit_not_op(&mut self, node: &Node) -> T;
@@ -30,7 +31,16 @@ pub enum Node {
     Number(f64),
     String(String),
     Identifier(String),
-
+    RelativeExpression {
+        lhs : Box<Node>,
+        op : TokenKind, 
+        rhs : Box<Node>,
+    },
+    BinaryOperation {
+        lhs : Box<Node>,
+        op : TokenKind, 
+        rhs : Box<Node>,
+    },
     // binary operations
     AddOp(Box<Node>, Box<Node>),
     SubOp(Box<Node>, Box<Node>),
@@ -98,6 +108,8 @@ impl Node {
                 block: _,
                 or_stmnt: _,
             } => visitor.visit_or_stmnt(self),
+            Node::RelativeExpression { lhs, op, rhs } => visitor.visit_relative_expression(self),
+            Node::BinaryOperation { lhs, op, rhs } => visitor.visit_binary_op(self),
         }
     }
 }
