@@ -194,10 +194,10 @@ impl Visitor<()> for PrintVisitor {
         }
         self.indent -= 2;
     }
-    fn visit_relative_expression(&mut self, node: &Node) -> () {
+    fn visit_relational_expression(&mut self, node: &Node) -> () {
         println!("{}visit_relative_expression:", " ".repeat(self.indent));
         self.indent += 2;
-        if let Node::RelativeExpression {
+        if let Node::RelationalExpression {
             lhs,
             op,
             rhs,
@@ -213,6 +213,29 @@ impl Visitor<()> for PrintVisitor {
             self.indent -= 2;
         } else {
             panic!("Expected RelativeExpression node");
+        }
+        self.indent -= 2;
+    }
+
+    fn visit_logical_expression(&mut self, node: &Node) -> () {
+        println!("{}visit_logical_expression:", " ".repeat(self.indent));
+        self.indent += 2;
+        if let Node::LogicalExpression {
+            lhs,
+            op,
+            rhs,
+        } = node
+        {
+            println!("{}lhs:", " ".repeat(self.indent));
+            self.indent += 2;
+            lhs.accept(self);
+            self.indent -= 2;
+            println!("{}op:", " ".repeat(self.indent));
+            self.indent += 2;
+            rhs.accept(self);
+            self.indent -= 2;
+        } else {
+            panic!("Expected LogicalExpression node");
         }
         self.indent -= 2;
     }

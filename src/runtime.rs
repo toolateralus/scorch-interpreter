@@ -260,8 +260,8 @@ impl Visitor<ValueType> for Interpreter {
         return ValueType::None(());
     }
 
-    fn visit_relative_expression(&mut self, node: &Node) -> ValueType {
-        if let Node::RelativeExpression {
+    fn visit_relational_expression(&mut self, node: &Node) -> ValueType {
+        if let Node::RelationalExpression {
             lhs,
             op,
             rhs,
@@ -305,6 +305,36 @@ impl Visitor<ValueType> for Interpreter {
             }
         } else {
             panic!("Expected RelativeExpression node");
+        }
+    }
+
+    fn visit_logical_expression(&mut self, node: &Node) -> ValueType {
+        if let Node::LogicalExpression {
+            lhs,
+            op,
+            rhs,
+        } = node
+        {
+            let lhs_value = lhs.accept(self);
+            let rhs_value = rhs.accept(self);
+            match (lhs_value, rhs_value) {
+                (ValueType::Bool(lhs_bool), ValueType::Bool(rhs_bool)) => {
+                    match op {
+                        TokenKind::LogicalAnd => return ValueType::Bool(lhs_bool && rhs_bool),
+                        TokenKind::LogicalOr => return ValueType::Bool(lhs_bool || rhs_bool),
+                        _ => {
+                            dbg!(node);
+                            panic!("invalid operator");
+                        }
+                    }
+                }
+                _ => {
+                    dbg!(node);
+                    panic!("mismatched type in logical expression");
+                }
+            }
+        } else {
+            panic!("Expected LogicalExpression node");
         }
     }
 }
