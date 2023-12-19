@@ -1,5 +1,4 @@
 use core::panic;
-
 use crate::tokens::*;
 pub trait Visitor<T> {
     fn visit_number(&mut self, node: &Node) -> T;
@@ -23,7 +22,6 @@ pub trait Visitor<T> {
     fn visit_where_stmnt(&mut self, node: &Node) -> T;
     fn visit_or_stmnt(&mut self, node: &Node) -> T;
 }
-
 #[derive(Debug)]
 pub enum Node {
     // literal & values

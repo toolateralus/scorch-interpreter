@@ -7,7 +7,7 @@ pub enum ValueType {
     String(String),
     None(()),
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Context {
     pub parent: Option<Box<Context>>,
     pub children: Vec<Box<Context>>,
