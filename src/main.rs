@@ -4,17 +4,45 @@ pub mod tokens;
 
 use std::error;
 use std::fs::File;
-use std::io::Read;
+use std::io::{Read, Write};
 use std::{collections::HashMap, env};
 
 use ast::{Node, Visitor};
 use runtime::{Context, Interpreter, ValueType};
 use tokens::*;
 
+fn parse_cmd_line_args() -> HashMap<String, bool> {
+    let mut flags = HashMap::new();
+    let args: Vec<String> = env::args().collect();
+    let mut i = 0;
+    while i < args.len() {
+        let arg = args[i].clone();
+        flags.insert(arg, true);
+        i += 1;
+    }
+    return flags;
+}
+
 fn main() -> () {
-    test_fields_vars_literal();
-    test_rel_expr(); //
-    test_arithmetic();
+    let flags = parse_cmd_line_args();
+    
+    //test_fields_vars_literal();
+    //test_rel_expr();
+    
+    let (tokens, root, ctx) = execute_file(String::from("test_if_else.scorch"));
+    if flags.contains_key("dump") {
+		println!("Tokens:");
+        dbg!(tokens);
+		println!("AST Root:");
+        dbg!(root);
+		println!("Global Context:");
+        dbg!(ctx);
+    }
+}
+
+fn test_if_else_statements() {
+    let ctx = execute_return_global_ctx(String::from("test_if_else.scorch"));
+    dbg!(ctx);
 }
 
 fn test_fields_vars_literal() {
@@ -102,16 +130,31 @@ fn execute_return_global_ctx(filename: String) -> Box<Context> {
     file.read_to_string(&mut contents)
         .expect("Failed to read file");
     tokenizer.tokenize(&contents.as_str());
-
+    
     let tokens = tokenizer.tokens;
-    let ast_root = ast::parse_program(&tokens);
+	let ast_root = ast::parse_program(&tokens);
+    let mut interpreter = Interpreter {
+        context: runtime::Context::new(),
+    };
+    
+    ast_root.accept(&mut interpreter);
 
+    let ctx = interpreter.context;
+    return Box::new(ctx);
+}
+fn execute_file(filename: String) -> (Vec<Token>, Node, Context) {
+    let mut tokenizer = tokens::create_tokenizer();
+    let mut file = File::open(filename).expect("Failed to open file");
+    let mut contents = String::new();
+
+    file.read_to_string(&mut contents)
+        .expect("Failed to read file");
+    tokenizer.tokenize(&contents.as_str());
+    let tokens = tokenizer.tokens;
+	let ast_root = ast::parse_program(&tokens);
     let mut interpreter = Interpreter {
         context: runtime::Context::new(),
     };
     ast_root.accept(&mut interpreter);
-
-    let ctx = interpreter.context;
-
-    return Box::new(ctx);
+    return (tokens, ast_root, interpreter.context);
 }

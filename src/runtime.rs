@@ -209,19 +209,19 @@ impl Visitor<ValueType> for Interpreter {
             panic!("Expected Bool node");
         }
     }
-    fn visit_where_stmnt(&mut self, node: &Node) -> ValueType {
-        if let Node::WhereStmnt {
+    fn visit_if_stmnt(&mut self, node: &Node) -> ValueType {
+        if let Node::IfStmnt {
             condition,
             block: true_block,
-            or_stmnt,
+            else_stmnt: else_block,
         } = node
         {
-            if let ValueType::Bool(value) = condition.accept(self) {
-                if value {
+            if let ValueType::Bool(condition_result) = condition.accept(self) {
+                if condition_result {
                     true_block.accept(self);
                 } else {
-                    if let Some(or_stmnt) = or_stmnt {
-                        or_stmnt.accept(self);
+                    if let Some(else_stmnt) = else_block {
+                        else_stmnt.accept(self);
                     }
                 }
             } else {
@@ -232,28 +232,36 @@ impl Visitor<ValueType> for Interpreter {
         }
         return ValueType::None(());
     }
-    fn visit_or_stmnt(&mut self, node: &Node) -> ValueType {
-        if let Node::OrStmnt {
-            condition,
-            block: true_block,
-            or_stmnt,
-        } = node
-        {
-            if let ValueType::Bool(value) = condition.as_ref().unwrap().accept(self) {
-                if value {
-                    true_block.accept(self);
-                } else {
-                    if let Some(or_stmnt) = or_stmnt {
-                        or_stmnt.accept(self);
+    fn visit_else_stmnt(&mut self, node: &Node) -> ValueType {
+        match node {
+            Node::ElseStmnt {
+                condition,
+                block: true_block,
+                else_stmnt,
+            } => {
+                let condition_result = match condition.as_ref() {
+                    Some(expression) => {
+                        if let ValueType::Bool(val) = expression.accept(self) {
+                            val
+                        } else {
+                            panic!("Expected boolean condition");
+                        }
                     }
+                    None => true,
+                };
+
+                if condition_result {
+                    true_block.accept(self);
+                } else if let Some(else_statement) = else_stmnt {
+                    else_statement.accept(self);
+                } else {
+                    
                 }
-            } else {
-                panic!("Expected boolean condition");
             }
-        } else {
-            panic!("Expected OrStmnt node");
+            _ => panic!("Expected OrStmnt node"),
         }
-        return ValueType::None(());
+
+        ValueType::None(())
     }
 
     fn visit_relational_expression(&mut self, node: &Node) -> ValueType {

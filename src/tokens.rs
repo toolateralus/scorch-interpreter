@@ -5,12 +5,8 @@ pub fn create_tokenizer() -> Tokenizer {
     let mut operators: HashMap<String, TokenKind> = HashMap::new();
     let mut keywords: HashMap<String, TokenKind> = HashMap::new();
 
-    keywords.insert(String::from("for"), TokenKind::For);
-    keywords.insert(String::from("loop"), TokenKind::Loop);
-
-    keywords.insert(String::from("break"), TokenKind::Break);
-    keywords.insert(String::from("typedef"), TokenKind::Typedef);
-
+    keywords.insert(String::from("if"), TokenKind::If);
+    keywords.insert(String::from("else"), TokenKind::Else);
     operators.insert(String::from("("), TokenKind::OpenParenthesis);
     operators.insert(String::from(")"), TokenKind::CloseParenthesis);
     operators.insert(String::from("{"), TokenKind::OpenBrace);
@@ -19,27 +15,20 @@ pub fn create_tokenizer() -> Tokenizer {
     operators.insert(String::from("]"), TokenKind::CloseBracket);
     operators.insert(String::from(","), TokenKind::Comma);
     operators.insert(String::from(";"), TokenKind::Semicolon);
-
     operators.insert(String::from("::"), TokenKind::DubColon);
     operators.insert(String::from(":"), TokenKind::Colon);
     operators.insert(String::from(":="), TokenKind::ColonEquals);
     operators.insert(String::from("."), TokenKind::Period);
-
     operators.insert(String::from("="), TokenKind::Assignment);
-
     operators.insert(String::from("=="), TokenKind::Equals);
     operators.insert(String::from("!="), TokenKind::NotEquals);
-
     operators.insert(String::from("<="), TokenKind::LessThanEquals);
     operators.insert(String::from(">="), TokenKind::GreaterThanEquals);
     operators.insert(String::from("<"), TokenKind::LeftAngle);
     operators.insert(String::from(">"), TokenKind::RightAngle);
-
     operators.insert(String::from("&&"), TokenKind::LogicalAnd);
     operators.insert(String::from("||"), TokenKind::LogicalOr);
-
     operators.insert(String::from("=>"), TokenKind::Lambda);
-
     operators.insert(String::from("+"), TokenKind::Add);
     operators.insert(String::from("-"), TokenKind::Subtract);
     operators.insert(String::from("*"), TokenKind::Multiply);
@@ -105,12 +94,11 @@ pub enum TokenKind {
     Semicolon,
     Colon,
     Period,
-
-    For,
-    Loop,
-    Break,
-    Typedef,
-
+    
+    If,
+    Else,
+    Return,
+    
     // special operators
     Lambda, // =>, Extract out.
     DubColon,

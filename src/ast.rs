@@ -1,5 +1,5 @@
-use crate::tokens::*;
 use core::panic;
+use crate::tokens::*;
 pub trait Visitor<T> {
     fn visit_number(&mut self, node: &Node) -> T;
     fn visit_term(&mut self, node: &Node) -> T;
@@ -19,10 +19,10 @@ pub trait Visitor<T> {
     fn visit_identifier(&mut self, node: &Node) -> T;
     fn visit_bool(&mut self, node: &Node) -> T;
 
-    fn visit_where_stmnt(&mut self, node: &Node) -> T;
-    fn visit_or_stmnt(&mut self, node: &Node) -> T;
+    fn visit_if_stmnt(&mut self, node: &Node) -> T;
+    fn visit_else_stmnt(&mut self, node: &Node) -> T;
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Node {
     // todo: add a program node
     // the highest level AST node.
@@ -73,15 +73,15 @@ pub enum Node {
     },
 
     // not implemented
-    WhereStmnt {
+    IfStmnt {
         condition: Box<Node>,
         block: Box<Node>,
-        or_stmnt: Option<Box<Node>>,
+        else_stmnt: Option<Box<Node>>,
     },
-    OrStmnt {
+    ElseStmnt {
         condition: Option<Box<Node>>,
         block: Box<Node>,
-        or_stmnt: Option<Box<Node>>,
+        else_stmnt: Option<Box<Node>>,
     },
 }
 impl Node {
@@ -105,19 +105,17 @@ impl Node {
             Node::NegOp(_) => visitor.visit_neg_op(self),
             Node::NotOp(_) => visitor.visit_not_op(self),
             Node::Bool(_) => visitor.visit_bool(self),
-            Node::WhereStmnt {
+            Node::IfStmnt {
                 condition: _,
                 block: _true_block,
-                or_stmnt: _,
-            } => visitor.visit_where_stmnt(self),
-            Node::OrStmnt {
+                else_stmnt: _,
+            } => visitor.visit_if_stmnt(self),
+            Node::ElseStmnt {
                 condition: _,
                 block: _,
-                or_stmnt: _,
-            } => visitor.visit_or_stmnt(self),
-            Node::RelationalExpression { lhs, op, rhs } => {
-                visitor.visit_relational_expression(self)
-            }
+                else_stmnt: _,
+            } => visitor.visit_else_stmnt(self),
+            Node::RelationalExpression { lhs, op, rhs } => visitor.visit_relational_expression(self),
             Node::LogicalExpression { lhs, op, rhs } => visitor.visit_logical_expression(self),
             Node::BinaryOperation { lhs, op, rhs } => visitor.visit_binary_op(self),
         }
@@ -187,6 +185,14 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
 
     match token.family {
         TokenFamily::Keyword => match token.kind {
+            TokenKind::If => {
+                let statement = parse_if_else(tokens, index);
+                Ok(statement)
+            }
+            TokenKind::Else => {
+                dbg!(token);
+                panic!("else statements must follow an if.");
+            }
             _ => {
                 dbg!(token);
                 panic!("keywords are not yet implemented.");
@@ -274,6 +280,73 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
         }
     }
 }
+fn parse_if_else(tokens: &Vec<Token>, index: &mut usize) -> Node {
+    *index += 1; // discard 'if'
+    let if_condition = parse_expression(tokens, index);
+    let if_block = parse_block(tokens, index);
+    
+    let else_or_end = consume_newlines(index, tokens);
+    
+    // if, no else.
+    if else_or_end.kind == TokenKind::Else {
+        let else_node = parse_else(tokens, index);
+        return Node::IfStmnt { 
+            condition: Box::new(if_condition),
+            block: Box::new(if_block),
+            else_stmnt: Option::Some(Box::new(else_node)) 
+        };
+    } else {
+        // an 'if' with no 'else.
+        return Node::IfStmnt { condition : Box::new(if_condition), block : Box::new(if_block), else_stmnt: Option::None };
+    }
+}
+
+fn parse_else(tokens: &Vec<Token>, index: &mut usize) -> Node {
+    *index += 1; // discard 'else'
+    
+    let _ = consume_newlines(index, tokens);
+    
+    // if else with no comparison -> if ... {} else {}
+    if get_current(tokens, index).kind == TokenKind::OpenBrace {
+        let else_block = parse_block(tokens, index);
+        
+        // Check for another else after this block
+        if get_current(tokens, index).kind == TokenKind::Else {
+            let nested_else = parse_else(tokens, index);
+            return Node::ElseStmnt { 
+                condition : Option::None, 
+                block : Box::new(else_block),
+                else_stmnt: Option::Some(Box::new(nested_else))
+            };
+        } else {
+            return Node::ElseStmnt { 
+                condition : Option::None, 
+                block : Box::new(else_block),
+                else_stmnt: Option::None
+            };
+        }
+    } 
+    // if else with comparison -> if ... {} else ... {}
+    else {
+        let else_condition = parse_expression(tokens, index);
+        let else_block = parse_block(tokens, index);
+        
+        if get_current(tokens, index).kind == TokenKind::Else {
+            let nested_else = parse_else(tokens, index);
+            return Node::ElseStmnt { 
+                condition : Option::Some(Box::new(else_condition)), 
+                block : Box::new(else_block),
+                else_stmnt: Option::Some(Box::new(nested_else))
+            };
+        } else {
+            return Node::ElseStmnt { 
+                condition : Option::Some(Box::new(else_condition)), 
+                block : Box::new(else_block),
+                else_stmnt: Option::None
+            };
+        }
+    }
+}
 fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Node {
     let mut left = parse_logical_expr(tokens, index);
 
@@ -292,6 +365,11 @@ fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Node {
                 *index += 1;
                 break;
             }
+            TokenKind::OpenBrace => 
+            {
+                *index += 1;
+                break;
+            }
             TokenKind::Newline => {
                 *index += 1;
                 break;
@@ -304,7 +382,6 @@ fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Node {
                 *index += 1;
                 break;
             }
-
             _ => {
                 println!("left");
                 dbg!(left);
@@ -432,7 +509,10 @@ fn parse_factor(tokens: &Vec<Token>, index: &mut usize) -> Node {
                 let boolean = Node::Bool(token.value.parse::<bool>().unwrap());
                 boolean
             }
-            _ => panic!("Expected number or identifier token"),
+            _ => {
+                dbg!(token);   
+                panic!("Expected number or identifier token");
+            }
         };
         node
     } else {
