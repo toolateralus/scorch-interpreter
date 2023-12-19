@@ -2,12 +2,12 @@ pub mod ast;
 pub mod runtime;
 pub mod tokens;
 
-use std::error;
+
 use std::fs::File;
-use std::io::{Read, Write};
+use std::io::{Read};
 use std::{collections::HashMap, env};
 
-use ast::{Node, Visitor};
+use ast::{Node};
 use runtime::{Context, Interpreter, ValueType};
 use tokens::*;
 
