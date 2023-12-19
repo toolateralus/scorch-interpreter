@@ -243,17 +243,25 @@ impl Visitor<ValueType> for Interpreter {
             else_block: or_stmnt,
         } = node
         {
-            if let ValueType::Bool(value) = condition.as_ref().unwrap().accept(self) {
-                if value {
-                    true_block.accept(self);
-                } else {
-                    if let Some(or_stmnt) = or_stmnt {
-                        or_stmnt.accept(self);
-                    }
-                }
-            } else {
-                panic!("Expected boolean condition");
-            }
+			let value : bool;
+			match condition.as_ref() {
+				Some(expression) => {
+        			let ValueType::Bool(val) = expression.accept(self) else {
+						panic!("Expected boolean condition");
+					};
+					value = val;
+    			}
+				None => {
+					value = false;
+				}
+			}
+			if value {
+				true_block.accept(self);
+			} else if let Some(or_stmnt) = or_stmnt {
+					or_stmnt.accept(self);
+			} else {
+				panic!("Cannot unpack or_stmnt:\n{:?}", or_stmnt);
+			}
         } else {
             panic!("Expected OrStmnt node");
         }
