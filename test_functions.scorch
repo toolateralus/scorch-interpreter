@@ -1,4 +1,9 @@
+implicit_parameterless_fn :=  {
+    xaryu := 100;
+    this_was := 'from the function_impl_paramless'
+} 
+
 implicit := (a: string, b: num) {
     xaryu := 100;
-    this_was := 'from the function'
+    this_was := 'from the function params'
 }
