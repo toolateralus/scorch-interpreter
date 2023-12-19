@@ -23,11 +23,13 @@ fn parse_cmd_line_args() -> HashMap<String, bool> {
 }
 
 fn main() -> () {
-    
     let flags = parse_cmd_line_args();
     
     //test_fields_vars_literal();
     //test_rel_expr();
+    test_if_else_statements();
+    
+    return;
     let (tokens, root, ctx) = execute_file(String::from("test_fields_vars_literal.scorch"));
     if flags.contains_key("dump") {
 		println!("Tokens:");

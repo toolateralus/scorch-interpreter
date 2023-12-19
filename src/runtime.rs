@@ -237,35 +237,35 @@ impl Visitor<ValueType> for Interpreter {
         return ValueType::None(());
     }
     fn visit_else_stmnt(&mut self, node: &Node) -> ValueType {
-        if let Node::ElseStmnt {
-            condition,
-            block: true_block,
-            else_stmnt,
-        } = node
-        {
-			let condition_result : bool;
-			match condition.as_ref() {
-				Some(expression) => {
-        			let ValueType::Bool(val) = expression.accept(self) else {
-						panic!("Expected boolean condition");
-					};
-					condition_result = val;
-    			}
-				None => {
-					condition_result = false;
-				}
-			}
-			if condition_result {
-				true_block.accept(self);
-			} else if let Some(else_statement) = else_stmnt {
-                else_statement.accept(self);
-			} else {
-				panic!("Cannot unpack or_stmnt:\n{:?}", else_stmnt);
-			}
-        } else {
-            panic!("Expected OrStmnt node");
+        match node {
+            Node::ElseStmnt {
+                condition,
+                block: true_block,
+                else_stmnt,
+            } => {
+                let condition_result = match condition.as_ref() {
+                    Some(expression) => {
+                        if let ValueType::Bool(val) = expression.accept(self) {
+                            val
+                        } else {
+                            panic!("Expected boolean condition");
+                        }
+                    }
+                    None => false,
+                };
+
+                if condition_result {
+                    true_block.accept(self);
+                } else if let Some(else_statement) = else_stmnt {
+                    else_statement.accept(self);
+                } else {
+                    
+                }
+            }
+            _ => panic!("Expected OrStmnt node"),
         }
-        return ValueType::None(());
+
+        ValueType::None(())
     }
 
     fn visit_relational_expression(&mut self, node: &Node) -> ValueType {

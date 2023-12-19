@@ -1,4 +1,5 @@
 use core::panic;
+use std::f32::consts::E;
 use crate::tokens::*;
 pub trait Visitor<T> {
     fn visit_number(&mut self, node: &Node) -> T;
@@ -296,53 +297,49 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
 }
 
 fn parse_if_else(tokens: &Vec<Token>, index: &mut usize) -> Node {
-    *index += 1;
+    *index += 1; // discard 'if'
     let if_condition = parse_expression(tokens, index);
     let if_block = parse_block(tokens, index);
     
+    let else_or_end = get_current(tokens, index);
+    
     // if, no else.
-    
-    if let Some(token) = tokens.get(*index + 1) {
-        if  token.kind != TokenKind::Else {
-            return Node::IfStmnt { condition : Box::new(if_condition), block : Box::new(if_block), else_stmnt: Option::None };
-        }
+    if else_or_end.kind == TokenKind::Else {
+        let else_node = parse_else(tokens, index);
+        return Node::IfStmnt { 
+            condition: Box::new(if_condition),
+            block: Box::new(if_block),
+            else_stmnt: Option::Some(Box::new(else_node)) 
+        };
+    } else {
+        // an 'if' with no 'else.
+        return Node::IfStmnt { condition : Box::new(if_condition), block : Box::new(if_block), else_stmnt: Option::None };
     }
+}
+
+fn parse_else(tokens: &Vec<Token>, index: &mut usize) -> Node {
+    *index += 1; // discard 'else'
     
-    *index += 2;
-    // if else with comparison
-    if get_current(tokens, index).kind != TokenKind::OpenBrace {
+    // if else with comparison -> if ... {} else ... {}
+    if get_current(tokens, index).kind == TokenKind::OpenBrace {
+        let else_block = parse_block(tokens, index);
+        return Node::ElseStmnt { 
+            condition : Option::None, 
+            block : Box::new(else_block),
+            else_stmnt: Option::None
+        };
+    } 
+    // if else with no comparison -> if ... {} else {}
+    else {
         let else_condition = parse_expression(tokens, index);
         let else_block = parse_block(tokens, index);
         
-        let else_stmnt = Node::ElseStmnt { 
-            condition : Option::Some(Box::new(else_condition.clone())), 
-            block : Box::new(if_block.clone()),
-            else_stmnt: Option::Some(Box::new(else_block)) 
+        return Node::ElseStmnt { 
+            condition : Option::Some(Box::new(else_condition)), 
+            block : Box::new(else_block),
+            else_stmnt: Option::None
         };
-        
-        let if_stmnt = Node::IfStmnt { 
-            condition : Box::new(if_condition.clone()),
-            block : Box::new(if_block.clone()),
-            else_stmnt: Option::Some(Box::new(else_stmnt)) 
-        };
-        return if_stmnt;
-        // if else with no comparison
-    } else {
-        
-        let else_block = parse_block(tokens, index);
-        
-        let else_stmnt = Node::ElseStmnt { 
-            condition : Option::None, 
-            block : Box::new(else_block.clone()),
-            else_stmnt: Option::None, };
-            
-        let if_stmnt = Node::IfStmnt {
-            condition : Box::new(if_condition),
-            block : Box::new(if_block.clone()),
-            else_stmnt: Option::Some(Box::new(else_stmnt)) };
-        return if_stmnt;
     }
-    
 }
 fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Node {
     let mut left = parse_logical_expr(tokens, index);

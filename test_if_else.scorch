@@ -1,5 +1,5 @@
-if true {
-    xaryu : false
-} else {
-    xaryu : true
+if false {
+    xaryu := false
+} else true {
+    xaryu := true
 }
