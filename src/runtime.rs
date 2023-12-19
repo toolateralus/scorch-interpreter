@@ -251,7 +251,7 @@ impl Visitor<ValueType> for Interpreter {
                             panic!("Expected boolean condition");
                         }
                     }
-                    None => false,
+                    None => true,
                 };
 
                 if condition_result {

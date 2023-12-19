@@ -295,13 +295,12 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
         }
     }
 }
-
 fn parse_if_else(tokens: &Vec<Token>, index: &mut usize) -> Node {
     *index += 1; // discard 'if'
     let if_condition = parse_expression(tokens, index);
     let if_block = parse_block(tokens, index);
     
-    let else_or_end = get_current(tokens, index);
+    let else_or_end = consume_newlines(index, tokens);
     
     // if, no else.
     if else_or_end.kind == TokenKind::Else {
@@ -320,25 +319,47 @@ fn parse_if_else(tokens: &Vec<Token>, index: &mut usize) -> Node {
 fn parse_else(tokens: &Vec<Token>, index: &mut usize) -> Node {
     *index += 1; // discard 'else'
     
-    // if else with comparison -> if ... {} else ... {}
+    let _ = consume_newlines(index, tokens);
+    
+    // if else with no comparison -> if ... {} else {}
     if get_current(tokens, index).kind == TokenKind::OpenBrace {
         let else_block = parse_block(tokens, index);
-        return Node::ElseStmnt { 
-            condition : Option::None, 
-            block : Box::new(else_block),
-            else_stmnt: Option::None
-        };
+        
+        // Check for another else after this block
+        if get_current(tokens, index).kind == TokenKind::Else {
+            let nested_else = parse_else(tokens, index);
+            return Node::ElseStmnt { 
+                condition : Option::None, 
+                block : Box::new(else_block),
+                else_stmnt: Option::Some(Box::new(nested_else))
+            };
+        } else {
+            return Node::ElseStmnt { 
+                condition : Option::None, 
+                block : Box::new(else_block),
+                else_stmnt: Option::None
+            };
+        }
     } 
-    // if else with no comparison -> if ... {} else {}
+    // if else with comparison -> if ... {} else ... {}
     else {
         let else_condition = parse_expression(tokens, index);
         let else_block = parse_block(tokens, index);
         
-        return Node::ElseStmnt { 
-            condition : Option::Some(Box::new(else_condition)), 
-            block : Box::new(else_block),
-            else_stmnt: Option::None
-        };
+        if get_current(tokens, index).kind == TokenKind::Else {
+            let nested_else = parse_else(tokens, index);
+            return Node::ElseStmnt { 
+                condition : Option::Some(Box::new(else_condition)), 
+                block : Box::new(else_block),
+                else_stmnt: Option::Some(Box::new(nested_else))
+            };
+        } else {
+            return Node::ElseStmnt { 
+                condition : Option::Some(Box::new(else_condition)), 
+                block : Box::new(else_block),
+                else_stmnt: Option::None
+            };
+        }
     }
 }
 fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Node {

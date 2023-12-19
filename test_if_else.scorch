@@ -1,5 +1,0 @@
-if false {
-    xaryu := false
-} else true {
-    xaryu := true
-}
