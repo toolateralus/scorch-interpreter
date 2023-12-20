@@ -1,11 +1,11 @@
 // todo!()
 pub fn if_else_statements() {
-    let ctx = super::execute_return_global_ctx(String::from("test_if_else.scorch"));
+    let ctx = super::execute(String::from("scorch_src/unit_tests/test_if_else.scorch"));
     dbg!(ctx);
 }
 // todo!()
 pub fn fields_vars_literal() {
-    let ctx = super::execute_return_global_ctx(String::from("test_fields_vars_literal.scorch"));
+    let ctx = super::execute(String::from("scorch_src/unit_tests/test_fields_vars_literal.scorch"));
     dbg!(ctx);
 }
 
@@ -21,16 +21,16 @@ fn test_fields_vars_literal() {
 
 #[test]
 fn test_functions() {
-    let ctx = super::execute_return_global_ctx(String::from("test_functions.scorch"));
+    let ctx = super::execute(String::from("scorch_src/unit_tests/test_functions.scorch"));
     let status = ctx.variables["status"].clone();
-    if let super::types::ValueType::String(str_status) = *status {
+    if let super::runtime::types::ValueType::String(str_status) = *status {
         assert!(str_status == "success", "test failed: {}", str_status);
     }
 }
 
 #[test]
 fn test_rel_expr() {
-    let ctx = super::execute_return_global_ctx(String::from("test_rel_expr.scorch"));
+    let ctx = super::execute(String::from("scorch_src/unit_tests/test_rel_expr.scorch"));
     let variables = [
         "rel_t1", "rel_t2", "rel_t3", "rel_t4", "rel_t5", "rel_t6", "rel_t7", "rel_t8", "rel_t9",
         "rel_t10", "rel_t11", "rel_t12",
@@ -54,7 +54,7 @@ fn test_rel_expr() {
         let expected_result = expected_results[i];
         let value = *ctx.variables[*&variable].clone();
         
-        if let super::types::ValueType::Bool(v) = value {
+        if let super::runtime::types::ValueType::Bool(v) = value {
             assert_eq!(v, expected_result, "test failed: {}", variable);
         }
     }

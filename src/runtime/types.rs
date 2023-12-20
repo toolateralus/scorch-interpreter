@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{ast::Node, runtime::Interpreter};
+use crate::{ast::Node, runtime::interpreter::Interpreter};
 
 #[derive(Debug, Clone)]
 pub enum ValueType {

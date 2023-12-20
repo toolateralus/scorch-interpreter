@@ -1,34 +1,3 @@
-//# this file just describes the parse-able syntax of the scorch lang at this time.
-
-explicitly_typed_variable : type = value
-dynamically_typed_variable := value
-
-x := 100.0
-y : num = 2500.16
-
-
-
-//# to demonstrate both : 
-//# such as 
-name : string = 'joe schmoe'
-birthplace : string = "america"
-age : int = 'mid 20s'
-height : float = '6 feet, 3.758168 inches'
-
-//# is the same as
-name := 'joe schmoe'
-birthplace := "america"
-age := 'mid 20s'
-height := '6 feet, 3.758168 inches'
-
-//# strings may start or end with " and ' interchangably.
-//# right now, as much of a bug as it is, you may start a string with ' and end with ".
-
-//# concatenating strings:
-
-first_name := 'Cyitlec' //# ch yee t' leck
-last_name := 'Kivals' //  # kih vahlS
-full_name := first_name + ' ' + last_name
 
 
 # todo
@@ -53,10 +22,3 @@ full_name := first_name + ' ' + last_name
     we make a base object type that everything inherits from that we can implement operators in 
     and just make it 'in language'?
 }
-
-- equals : (bool) = (a : String, b : String) {
-    return lhs == rhs
-} 
-- equals := (a : String, b : String) {
-    return lhs == rhs
-} 
