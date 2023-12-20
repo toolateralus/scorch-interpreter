@@ -19,17 +19,29 @@ impl Interpreter {
         }
     }
 }
+
 fn print_ln (args: Vec<Value>) -> Value {
     for arg in args {
         match arg {
             Value::Float(val) => print!("{}\n", val),
             Value::Bool(val) => print!("{}\n", val),
             Value::String(val) => print!("{}\n", val),
-            Value::None(_) => print!("undefined"),
+            Value::None(_) => print!("none"),
             Value::Function(_) => todo!(),
-            _ => panic!("invalid argument type")
+            _ => panic!("print : invalid argument type")
             
         }
+    }
+    Value::None(())
+}
+fn wait(args: Vec<Value>) -> Value {
+    if args.len() != 1 {
+        panic!("sleep expected 1 argument :: ms sleep duration");
+    }
+    if let Value::Float(val) = args[0] {
+        std::thread::sleep(std::time::Duration::from_millis(val as u64));
+    } else {
+        panic!("sleep expected a <num>");
     }
     Value::None(())
 }
@@ -38,6 +50,7 @@ fn print_ln (args: Vec<Value>) -> Value {
 fn get_builtin_functions() -> HashMap<String, BuiltInFunction> {
     HashMap::from([
         (String::from("println"), BuiltInFunction::new(Box::new(print_ln))),
+        (String::from("wait"), BuiltInFunction::new(Box::new(wait))),
     ])
 }
 
@@ -134,7 +147,7 @@ impl Visitor<Value> for Interpreter {
             let value: Value;
 
             match target_type.as_str() {
-                "dynamic" | "num" | "string" => {
+                "dynamic" | "float" | "string" => {
                     // todo: add an actual type system.
                     value = expression.accept(self);
                 }
@@ -198,8 +211,11 @@ impl Visitor<Value> for Interpreter {
             panic!("Expected Identifier");
         };
         match self.context.find_function(id) {
+            // create function pointer basically
             Some(func) => return Value::Function(func),
-            None => {}   
+            None => {
+                // to be consumed elsewhere.
+            }   
         }
         match self.context.find_variable(id) {
             Some(value) => (*value).clone(), // todo: fix cloning all values.
@@ -392,13 +408,16 @@ impl Visitor<Value> for Interpreter {
             {
                 args = Function::extract_args(self, arguments, &old);
               
+                // builtin, written in Rust
                 if self.builtin.contains_key(id) {
                     let builtin = self.builtin.get_mut(id).unwrap();
                     return builtin.call(args.clone());
                 }
+                // native function, written in Scorch.
                 else if let Some(fn_ptr) = self.context.find_function(id){
                    function = fn_ptr
                 }
+                // function pointer
                 else if let Some(fn_ptr) = self.context.find_variable(id){
                     if let Value::Function(func) = &*fn_ptr.clone() {
                         function = func.clone()
@@ -422,7 +441,8 @@ impl Visitor<Value> for Interpreter {
             if args.len() != function.params.len() {
                 panic!("Number of arguments does not match the number of parameters");
             }
-
+            self.context = old.clone();
+            
             for (arg, param) in args.iter().zip(function.params.iter()) {
                 let arg_type_name = get_type_name(arg);
                 
@@ -430,7 +450,6 @@ impl Visitor<Value> for Interpreter {
                 if arg_type_name.to_string() != param.typename {
                     panic!("Argument type does not match parameter type.\n provided argument: {:?} expected parameter : {:?}", arg, param)
                 } else {
-                    self.context = old.clone();
                     // copying param values into a context
                     self.context
                         .insert_variable(&param.name, Rc::new(arg.clone()));
@@ -506,7 +525,7 @@ impl Visitor<Value> for Interpreter {
 
 fn get_type_name<'a>(arg: &'a Value) -> &'a str {
     let arg_type_name = match arg {
-        Value::Float(_) => "num",
+        Value::Float(_) => "float",
         Value::Bool(_) => "bool",
         Value::String(_) => "string",
         Value::None(_) => "undefined",

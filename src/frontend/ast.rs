@@ -490,20 +490,13 @@ fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Node {
                     panic!("Expected identifier token");
                 }
             }
-            // these 4 token kinds are expression delimiters, but
+            
+            // these 5 token kinds are expression delimiters, but
             // the tokens are expected to be consumed by the caller of this function.
-            TokenKind::CloseParenthesis => {
-                break;
-            }
-            TokenKind::OpenBrace => {
-                break;
-            }
-            TokenKind::Newline => {
-                break;
-            }
-            TokenKind::Comma => {
-                break;
-            }
+            TokenKind::CloseParenthesis |
+            TokenKind::OpenBrace |
+            TokenKind::Newline |
+            TokenKind::Comma |
             TokenKind::Eof => {
                 break;
             }

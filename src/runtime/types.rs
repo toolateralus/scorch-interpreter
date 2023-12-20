@@ -1,20 +1,6 @@
-use std::{cell::RefCell, collections::HashMap, rc::Rc, borrow::BorrowMut};
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::{frontend::ast::Node, runtime::interpreter::Interpreter};
-
-pub struct ScorchNumber {
-    pub value: f64,
-}
-pub struct ScorchBool {
-    pub value: bool,
-}
-pub struct ScorchString {
-    pub value: String,
-}
-pub struct ScorchNone {
-    pub value: (),
-}
-
 
 #[derive(Debug, Clone)]
 pub enum Value {

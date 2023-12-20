@@ -1,4 +1,4 @@
-- all numbers are currently f64/doubles. type name 'num'
+- all numbers are currently f64/doubles. type name 'float'
 
 - newlines are expression terminators, like semi colon in C.
 

@@ -1,17 +1,16 @@
-gettin_funky := (fn : function) {
-    fn('secret message')
+z := 0
+main := {
+	repeat i < 10 {
+		i = i + 1
+		println(i)
+	} 
+	
+	wait(100)
+	
+	if z < 10 {
+		z = z + 1
+		main()
+	}
 }
 
-print := (v : string) {
-    println(v)
-}
-
-
-gettin_funky(print)
-
-
-
-
-
-
-
+main()

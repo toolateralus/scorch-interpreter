@@ -3,13 +3,13 @@ explicitly_typed_variable : type = value
 dynamically_typed_variable := value
 
 x := 100.0
-y : num = 2500.16
+y : float = 2500.16
 
 //# to demonstrate both : 
 //# such as 
 name : string = 'joe schmoe'
 birthplace : string = "america"
-age : int = 'mid 20s'
+age : string = 'mid 20s'
 height : float = '6 feet, 3.758168 inches'
 
 //# is the same as
