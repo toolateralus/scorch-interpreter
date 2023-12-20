@@ -1,5 +1,5 @@
 use crate::{ast::{Node, Visitor}, tokens::TokenKind};
-use std::{collections::HashMap, f64::NAN};
+use std::{collections::HashMap, f64::NAN, borrow::BorrowMut};
 #[derive(Debug, Clone)]
 pub enum ValueType {
     Float(f64),
@@ -11,13 +11,30 @@ pub enum ValueType {
 pub struct Context {
     pub parent: Option<Box<Context>>,
     pub children: Vec<Box<Context>>,
+    pub functions : HashMap<String, Box<Function>>,
     pub variables: HashMap<String, Box<ValueType>>,
 }
+
+#[derive(Debug, Clone)]
+pub struct Parameter {
+    pub name: String,
+    pub value: Box<ValueType>,
+}
+
+#[derive(Debug, Clone)]
+pub struct Function {
+    pub name: String,
+    pub params: Vec<Parameter>,
+    pub body: Box<Node>,
+    pub return_type: String,
+}
+
 impl Context {
     pub fn new() -> Context {
         Context {
             parent: Option::None,
             children: Vec::new(),
+            functions: HashMap::new(),
             variables: HashMap::new(),
         }
     }
@@ -358,8 +375,30 @@ impl Visitor<ValueType> for Interpreter {
         }
     }
     fn visit_function_decl(&mut self, node: &Node) -> ValueType {
-        todo!()
+        if let Node::FnDeclStmnt {
+            id,
+            params,
+            body,
+            return_type,
+        } = node
+        {
+            
+            let body_cloned = body.clone();
+            let func = Function {
+                name: id.clone(),
+                params: self.get_params_list(params),
+                body: body_cloned,
+                return_type: return_type.clone(),
+                
+            };
+            let function = Box::new(func);
+            self.context.functions.insert(id.clone(), function);
+        } else {
+            panic!("Expected FunctionDecl node");
+        };
+        ValueType::None(())
     }
+    
     fn visit_param_decl(&mut self, node: &Node) -> ValueType {
         todo!()
     }
@@ -377,6 +416,28 @@ impl Visitor<ValueType> for Interpreter {
 
 // binary operation definitions
 impl Interpreter {
+    fn get_params_list(&mut self, param_nodes: &Vec<Node>) -> Vec<Parameter> {
+        let mut params = Vec::new();
+        for param in param_nodes {
+            if let Node::ParamDeclNode { varname, typename } = param {
+                let param_name = match varname.as_ref() {
+                    Node::Identifier(id) => id.clone(),
+                    _ => {
+                        dbg!(varname);
+                        panic!("Expected Identifier node");
+                    }
+                };
+                
+                let parameter = Parameter {
+                    name: param_name,
+                    value: Box::new(ValueType::None(())),
+                };
+                
+                params.push(parameter);
+            }
+        }
+        params
+    }
     fn bin_op_float(&mut self, node: &Node, lhs: &f64, rhs: &f64) -> ValueType {
         let mut result: f64 = NAN;
         match node {
