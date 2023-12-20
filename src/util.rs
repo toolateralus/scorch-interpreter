@@ -37,9 +37,7 @@ pub fn execute(filename: String) -> Box<Context> {
     
     let tokens = tokenizer.tokens;
     let ast_root = ast::parse_program(&tokens);
-    let mut interpreter = Interpreter {
-        context: types::Context::new(),
-    };
+    let mut interpreter = Interpreter::new();
 
     ast_root.accept(&mut interpreter);
     
@@ -60,9 +58,7 @@ pub fn execute_then_dump(filename: String) {
     let ast_root = ast::parse_program(&tokens);
     println!("AST Root:");
     dbg!(&ast_root);
-    let mut interpreter = Interpreter {
-        context: types::Context::new(),
-    };
+    let mut interpreter = Interpreter::new();
     ast_root.accept(&mut interpreter);
     println!("Global Context:");
     dbg!(interpreter.context);

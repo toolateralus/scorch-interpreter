@@ -1,12 +1,36 @@
+use std::collections::HashMap;
+
 use super::types::*;
 use crate::{
     ast::{Node, Visitor},
     tokens::TokenKind,
 };
 
-#[derive(Debug)]
+
 pub struct Interpreter {
     pub context: Context,
+    pub builtin: HashMap<String, BuiltInFunction>,
+}
+impl Interpreter {
+    pub fn new() -> Interpreter {
+        let print_fn = BuiltInFunction::new("println".to_string(), Box::new(|args: Vec<ValueType>| -> ValueType {
+            for arg in args {
+                match arg {
+                    ValueType::Float(val) => print!("{}", val),
+                    ValueType::Bool(val) => print!("{}", val),
+                    ValueType::String(val) => print!("{}", val),
+                    ValueType::None(_) => print!("undefined"),
+                }
+            } 
+            ValueType::None(())
+        }));
+        Interpreter {
+            context: Context::new(),
+            builtin: HashMap::from(
+                [(String::from("println"), print_fn)]
+            ),
+        }
+    }
 }
 
 impl Visitor<ValueType> for Interpreter {
@@ -341,6 +365,7 @@ impl Visitor<ValueType> for Interpreter {
     fn visit_function_call(&mut self, node: &Node) -> ValueType {
         let return_value = ValueType::None(());
         if let Node::FunctionCall { id, arguments } = node {
+            
             if self.context.variables.contains_key(id) {
                 let old = self.context.clone();
                 let function = old.functions.get(id).unwrap();
