@@ -10,12 +10,15 @@ pub mod util;
 // unit test module, see /test.rs
 #[cfg(test)]
 pub mod test;
+use ::std::collections::HashMap;
+use ::std::env;
 
 use runtime::interpreter::*;
 use runtime::types::Context;
 
 use frontend::tokens::*;
-use std::{collections::HashMap, env};
+
+
 use util::*;
 
 fn main() -> () {

@@ -1,6 +1,9 @@
+use std::fs::File;
+use std::io::{self, Write, Read};
+
 use crate::frontend::*;
 use crate::*;
-use std::{collections::HashMap, fs::File, io::Read};
+
 
 pub struct Flags {
     pub proj_root: String,
@@ -30,7 +33,6 @@ pub fn get_project_root() -> String {
     let project_root = parent_dir.to_path_buf();
     project_root.to_str().unwrap().to_string()
 }
-use std::io::{self, Write};
 
 pub fn run_cli() {
     let mut tokenizer = tokens::create_tokenizer();

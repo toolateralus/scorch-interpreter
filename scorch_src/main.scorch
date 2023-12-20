@@ -1,3 +1,9 @@
-repeat i < 250 {
-    println(i)
+i := 0
+
+repeat {
+    i = 1 + i
+    if i > 250 {
+        break
+    }
+    
 }

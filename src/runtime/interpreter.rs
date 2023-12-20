@@ -19,22 +19,23 @@ impl Interpreter {
         }
     }
 }
+fn print_ln (args: Vec<ValueType>) -> ValueType {
+    for arg in args {
+        match arg {
+            ValueType::Float(val) => print!("{}\n", val),
+            ValueType::Bool(val) => print!("{}\n", val),
+            ValueType::String(val) => print!("{}\n", val),
+            ValueType::None(_) => print!("undefined"),
+        }
+    }
+    ValueType::None(())
+}
 
 // todo: move this somewhere more appropriate, and organize the definitions of these
 fn get_builtin_functions() -> HashMap<String, BuiltInFunction> {
-    let println_func = BuiltInFunction::new(Box::new(|args: Vec<ValueType>| -> ValueType {
-        for arg in args {
-            match arg {
-                ValueType::Float(val) => print!("{}\n", val),
-                ValueType::Bool(val) => print!("{}\n", val),
-                ValueType::String(val) => print!("{}\n", val),
-                ValueType::None(_) => print!("undefined"),
-            }
-        }
-        ValueType::None(())
-    }));
-
-    HashMap::from([(String::from("println"), println_func)])
+    HashMap::from([
+        (String::from("println"), BuiltInFunction::new(Box::new(print_ln))),
+    ])
 }
 
 impl Visitor<ValueType> for Interpreter {

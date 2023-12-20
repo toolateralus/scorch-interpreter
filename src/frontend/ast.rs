@@ -288,7 +288,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
             }
             _ => {
                 dbg!(token);
-                panic!("keywords are not yet implemented.");
+                panic!("keyword is likely not yet implemented.");
             }
         },
         TokenFamily::Identifier => {
