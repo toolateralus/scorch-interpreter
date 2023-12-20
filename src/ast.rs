@@ -313,7 +313,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
                 // declaring a variable with implicit type.
                 TokenKind::ColonEquals => {
                     *index += 2; // skip id, := tokens
-
+                    
                     // function defintion : implicit, parameterless
                     // example : foo := {...}
                     if get_current(tokens, index).kind == TokenKind::OpenBrace {

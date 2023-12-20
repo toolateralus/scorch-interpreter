@@ -137,16 +137,17 @@ impl Visitor<ValueType> for Interpreter {
                     panic!("Unsupported type");
                 }
             }
-
-            let str_id: String = id.clone();
-
-            // redefinition
-            if self.context.variables.contains_key(&str_id) {
-                dbg!(node);
-                panic!("redefinition of variable");
-            } else {
-                self.context.variables.insert(str_id, Rc::new(value));
+            
+            match self.context.find_variable(&id) {
+                Some(_) => {
+                    dbg!(node);
+                    panic!("redefinition of variable");
+                }
+                None => {
+                    self.context.insert_variable(&id, Rc::new(value));
+                }
             }
+      
         } else {
             panic!("Expected Declaration node");
         }
@@ -192,8 +193,8 @@ impl Visitor<ValueType> for Interpreter {
             dbg!(node);
             panic!("Expected Identifier");
         };
-        match self.context.variables.get(id) {
-            Some(value) => (**value).clone(), // todo: fix cloning all values.
+        match self.context.find_variable(id) {
+            Some(value) => (*value).clone(), // todo: fix cloning all values.
             None => {
                 dbg!(node);
                 panic!("Variable not found");
@@ -374,19 +375,25 @@ impl Visitor<ValueType> for Interpreter {
         todo!()
     }
     fn visit_function_call(&mut self, node: &Node) -> ValueType {
+        let old = self.context.clone();
         if let Node::FunctionCall { id, arguments } = node {
             let args;
             let function;
             {
-                args = Function::extract_args(self, arguments, &self.context.clone());
+                args = Function::extract_args(self, arguments, &old);
                 if self.builtin.contains_key(id) {
                     let builtin = self.builtin.get_mut(id).unwrap();
                     return builtin.call(args.clone());
                 }
-                if !self.context.functions.contains_key(id) {
-                    panic!("Function {} did not exist.", id);
+                
+                match self.context.find_function(&id.as_str()) {
+                    Some(func) => {
+                        function = func;
+                    } 
+                    None => {
+                        panic!("Function {} did not exist.", id);
+                    }
                 }
-                function = self.context.functions.get(id).unwrap().clone();
             }
 
             // parameterless invocation.
@@ -398,7 +405,7 @@ impl Visitor<ValueType> for Interpreter {
             if args.len() != function.params.len() {
                 panic!("Number of arguments does not match the number of parameters");
             }
-
+            
             for (arg, param) in args.iter().zip(function.params.iter()) {
                 // todo: get typename, make function
                 let arg_type_name = match *arg {
@@ -407,19 +414,23 @@ impl Visitor<ValueType> for Interpreter {
                     ValueType::String(_) => "string",
                     ValueType::None(_) => "undefined",
                 };
-
+                
                 // typecheck args. very basic.
                 if arg_type_name.to_string() != param.typename {
                     panic!("Argument type does not match parameter type.\n provided argument: {:?} expected parameter : {:?}", arg, param)
                 } else {
+                    self.context = old.clone();
                     // copying param values into a context
                     self.context
-                        .variables
-                        .insert(param.name.clone(), Rc::new(arg.clone()));
+                        .insert_variable(&param.name, Rc::new(arg.clone()));
                 }
             }
-
+            
             let return_value = function.body.accept(self);
+            
+            // todo: don't discard changes made by functions
+            // right now - side effects are undone on context leave.
+            self.context = old; 
             return return_value;
         }
         ValueType::None(())
@@ -440,7 +451,7 @@ impl Visitor<ValueType> for Interpreter {
                 return_type: return_type.clone(),
             };
             let function = Rc::new(func);
-            self.context.functions.insert(id.clone(), function);
+            self.context.insert_function(&id, function);
         } else {
             panic!("Expected FunctionDecl node");
         };

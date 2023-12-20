@@ -13,8 +13,10 @@ pub enum ValueType {
 pub struct Context {
     pub parent: Option<Rc<RefCell<Context>>>,
     pub children: Vec<Rc<RefCell<Context>>>,
+    // todo: add return values
     pub functions: HashMap<String, Rc<Function>>,
-    pub variables: HashMap<String, Rc<ValueType>>,
+    // todo: implement a Variable struct that can store more data about the var/const etc.
+    pub variables: HashMap<String, Rc<ValueType>>, 
 }
 
 impl Context {
@@ -26,6 +28,29 @@ impl Context {
                 None => None,
             },
         }
+    }
+    pub fn find_function(&self, name: &str) -> Option<Rc<Function>> {
+        match self.functions.get(name) {
+            Some(var) => Some(var.clone()),
+            None => match &self.parent {
+                Some(parent) => parent.borrow().find_function(name),
+                None => None,
+            },
+        }
+    }
+    pub fn insert_variable(&mut self, name: &str, value: Rc<ValueType>) -> () {
+        if self.variables.contains_key(name) {
+            panic!("Redefinition : Variable {} already exists", name);
+        }
+        let name_str = name.to_string();
+        self.variables.insert(name_str, value);
+    }
+    pub fn insert_function(&mut self, name: &str, value: Rc<Function>) -> () {
+        if self.variables.contains_key(name) {
+            panic!("Redefinition : Function {} already exists", name);
+        }
+        let name_str = name.to_string();
+        self.functions.insert(name_str, value);
     }
 }
 #[derive(Debug, Clone)]

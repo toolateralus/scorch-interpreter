@@ -1,0 +1,5 @@
+main := (arg : string) {
+    msg := 'running from ' + arg
+    println(msg)
+}
+main('scorch-lang/scorch_src/main.scorch/main()')
