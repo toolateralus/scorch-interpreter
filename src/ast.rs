@@ -331,9 +331,11 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
                     // function definition : implicit, with parameters
                     // example : foo := (a, b) {...}
                     if get_current(tokens, index).kind == TokenKind::OpenParenthesis {
+                        // skip ahead the possible identifier & get to a colon,
+                        // if this is a function definition
                         *index += 2;
                         if get_current(tokens, index).kind == TokenKind::Colon {
-                            *index -= 1;
+                            *index -= 2; // go back to the a :
                             
                             let params = parse_parameters(tokens, index);
                             let body = parse_block(tokens, index);
@@ -613,7 +615,7 @@ fn parse_parameters(tokens: &Vec<Token>, index: &mut usize) -> Vec<Node> {
             *index += 1;
             break;
         }
-
+        
         // parsing varname
         // ^varname: Typename
         if token.family != TokenFamily::Identifier {
@@ -621,7 +623,7 @@ fn parse_parameters(tokens: &Vec<Token>, index: &mut usize) -> Vec<Node> {
         }
 
         let varname = parse_factor(tokens, index);
-
+        
         token = get_current(tokens, index);
         //parsing colon
         // varname^: Typename
