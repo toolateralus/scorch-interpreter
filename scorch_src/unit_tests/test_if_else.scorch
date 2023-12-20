@@ -13,11 +13,9 @@ if false {
 
 if true {
     status = pass_status
-}
-else false {
+} else false {
     status = fail_status
-}
-else {
+} else {
     status = fail_status
 }
 
