@@ -253,30 +253,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
         TokenFamily::Keyword => match token.kind {
             TokenKind::Repeat => {
                 
-                // style::
-                // repeat i < 200 {...}
-                if next.family == TokenFamily::Identifier {
-                    let id = next.value.clone();
-                    *index += 1; // skip repeat, leaev identifier in expression.
-                    let condition = parse_expression(tokens, index);
-                    let block = parse_block(tokens, index);
-                    let node = Node::RepeatStmnt {
-                        iterator_id: Option::Some(id),
-                        condition: Option::Some(Box::new(condition)),
-                        block: Box::new(block) 
-                    };
-                    return Ok(node);
-                }
-                
-                // style::
-                // repeat {... }
-                let block = parse_block(tokens, index);
-                
-                Ok(Node::RepeatStmnt { 
-                    iterator_id:Option::None,
-                    condition:Option::None,
-                    block: Box::new(block) 
-                })
+                parse_repeat_stmnt(next, index, tokens)
             }
             TokenKind::If => {
                 let statement = parse_if_else(tokens, index);
@@ -309,41 +286,9 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
                 // declaring a variable with implicit type.
                 TokenKind::ColonEquals => {
                     *index += 2; // skip id, := tokens
-
-                    // function defintion : implicit, parameterless
-                    // example : foo := {...}
-                    if get_current(tokens, index).kind == TokenKind::OpenBrace {
-                        let body = parse_block(tokens, index);
-                        //dbg!(&body);
-                        let node = Node::FnDeclStmnt {
-                            id,
-                            body: Box::new(body),
-                            params: Vec::new(),
-                            return_type: String::from("dynamic"),
-                        };
-                        return Ok(node);
-                    }
                     
-                    // function definition : implicit, with parameters
-                    // example : foo := (a, b) {...}
-                    if get_current(tokens, index).kind == TokenKind::OpenParenthesis {
-                        // skip ahead the possible identifier & get to a colon,
-                        // if this is a function definition
-                        *index += 2;
-                        if get_current(tokens, index).kind == TokenKind::Colon {
-                            *index -= 2; // go back to the a :
-
-                            let params = parse_parameters(tokens, index);
-                            let body = parse_block(tokens, index);
-                            let node = Node::FnDeclStmnt {
-                                id,
-                                body: Box::new(body),
-                                params,
-                                return_type: String::from("dynamic"),
-                            };
-                            return Ok(node);
-                        }
-                        *index -= 1;
+                    if let Some(value) = parse_function_decl_stmnt(tokens, index, &id) {
+                        return value;
                     }
                     // implicit variable declaration
                     let value = parse_expression(tokens, index);
@@ -357,35 +302,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
                 }
                 // declaraing a variable with explicit type.
                 TokenKind::Colon => {
-                    *index += 2;
-                    // varname :^ type = default;
-                    // todo: check for valid type / builtins
-                    let target_type_tkn = get_current(tokens, index);
-                    let target_type = target_type_tkn.value.clone();
-                    *index += 1;
-
-                    // varname : type^ = default;
-
-                    if let Some(token) = tokens.get(*index) {
-                        assert_eq!(
-                            token.kind,
-                            TokenKind::Assignment,
-                            "Expected identifier token"
-                        );
-                    } else {
-                        dbg!(token);
-                        panic!("expected type identifier in declaration statement");
-                    }
-                    *index += 1;
-
-                    // varname : type = ^default;
-                    let expression = parse_expression(tokens, index);
-                    consume_normal_expr_delimiter(tokens, index);
-                    Ok(Node::DeclStmt {
-                        target_type,
-                        id,
-                        expression: Box::new(expression),
-                    })
+                    parse_explicit_decl(index, tokens, token, id)
                 }
                 // assigning a value to an already declared variable.
                 TokenKind::Assignment => {
@@ -419,6 +336,104 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
             panic!("Expected keyword, identifier or operator token");
         }
     }
+}
+
+fn parse_function_decl_stmnt(tokens: &Vec<Token>, index: &mut usize, id: &String) -> Option<Result<Node, ()>> {
+    if get_current(tokens, index).kind == TokenKind::OpenBrace {
+        let body = parse_block(tokens, index);
+        //dbg!(&body);
+        let node = Node::FnDeclStmnt {
+            id: id.clone(),
+            body: Box::new(body),
+            params: Vec::new(),
+            return_type: String::from("dynamic"),
+        };
+        return Some(Ok(node));
+    }
+    // function defintion : implicit, parameterless
+    // example : foo := {...}
+                    
+    // function definition : implicit, with parameters
+    // example : foo := (a, b) {...}
+    if get_current(tokens, index).kind == TokenKind::OpenParenthesis {
+        // skip ahead the possible identifier & get to a colon,
+        // if this is a function definition
+        *index += 2;
+        if get_current(tokens, index).kind == TokenKind::Colon {
+            *index -= 2; // go back to the a :
+
+            let params = parse_parameters(tokens, index);
+            let body = parse_block(tokens, index);
+            let node = Node::FnDeclStmnt {
+                id: id.clone(),
+                body: Box::new(body),
+                params,
+                return_type: String::from("dynamic"),
+            };
+            return Some(Ok(node));
+        }
+        *index -= 1;
+    }
+    None
+}
+
+fn parse_explicit_decl(index: &mut usize, tokens: &Vec<Token>, token: &Token, id: String) -> Result<Node, ()> {
+    *index += 2;
+    // varname :^ type = default;
+    // todo: check for valid type / builtins
+    let target_type_tkn = get_current(tokens, index);
+    let target_type = target_type_tkn.value.clone();
+    *index += 1;
+
+    // varname : type^ = default;
+
+    if let Some(token) = tokens.get(*index) {
+        assert_eq!(
+            token.kind,
+            TokenKind::Assignment,
+            "Expected identifier token"
+        );
+    } else {
+        dbg!(token);
+        panic!("expected type identifier in declaration statement");
+    }
+    *index += 1;
+
+    // varname : type = ^default;
+    let expression = parse_expression(tokens, index);
+    consume_normal_expr_delimiter(tokens, index);
+    Ok(Node::DeclStmt {
+        target_type,
+        id,
+        expression: Box::new(expression),
+    })
+}
+
+fn parse_repeat_stmnt(next: &Token, index: &mut usize, tokens: &Vec<Token>) -> Result<Node, ()> {
+    // style::
+    // repeat i < 200 {...}
+    if next.family == TokenFamily::Identifier {
+        let id = next.value.clone();
+        *index += 1; // skip repeat, leaev identifier in expression.
+        let condition = parse_expression(tokens, index);
+        let block = parse_block(tokens, index);
+        let node = Node::RepeatStmnt {
+            iterator_id: Option::Some(id),
+            condition: Option::Some(Box::new(condition)),
+            block: Box::new(block) 
+        };
+        return Ok(node);
+    }
+                
+    // style::
+    // repeat {... }
+    let block = parse_block(tokens, index);
+                
+    Ok(Node::RepeatStmnt { 
+        iterator_id:Option::None,
+        condition:Option::None,
+        block: Box::new(block) 
+    })
 }
 
 fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Node {
