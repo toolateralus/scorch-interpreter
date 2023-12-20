@@ -1,0 +1,17 @@
+gettin_funky := (fn : function) {
+    fn('secret message')
+}
+
+print := (v : string) {
+    println(v)
+}
+
+
+gettin_funky(print)
+
+
+
+
+
+
+

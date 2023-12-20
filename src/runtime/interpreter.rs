@@ -1,4 +1,4 @@
-use std::{collections::HashMap, rc::Rc};
+use std::{collections::HashMap, rc::Rc, thread::panicking};
 
 use super::types::*;
 use crate::frontend::{
@@ -197,6 +197,10 @@ impl Visitor<Value> for Interpreter {
             dbg!(node);
             panic!("Expected Identifier");
         };
+        match self.context.find_function(id) {
+            Some(func) => return Value::Function(func),
+            None => {}   
+        }
         match self.context.find_variable(id) {
             Some(value) => (*value).clone(), // todo: fix cloning all values.
             None => {
@@ -204,6 +208,7 @@ impl Visitor<Value> for Interpreter {
                 panic!("Variable not found");
             }
         }
+        
     }
     fn visit_bool(&mut self, node: &Node) -> Value {
         if let Node::Bool(value) = node {
@@ -386,18 +391,25 @@ impl Visitor<Value> for Interpreter {
             let function;
             {
                 args = Function::extract_args(self, arguments, &old);
+              
                 if self.builtin.contains_key(id) {
                     let builtin = self.builtin.get_mut(id).unwrap();
                     return builtin.call(args.clone());
                 }
-                
-                match self.context.find_function(&id.as_str()) {
-                    Some(func) => {
-                        function = func;
+                else if let Some(fn_ptr) = self.context.find_function(id){
+                   function = fn_ptr
+                }
+                else if let Some(fn_ptr) = self.context.find_variable(id){
+                    if let Value::Function(func) = &*fn_ptr.clone() {
+                        function = func.clone()
                     }
-                    None => {
-                        panic!("Function {} did not exist.", id);
+                    else {
+                        panic!("Expected function");
                     }
+                }
+                else {
+                    dbg!(node);
+                    panic!("Function not found");
                 }
             }
 

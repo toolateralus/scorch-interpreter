@@ -291,9 +291,6 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
             let id = token.value.clone();
 
             match next.kind {
-                TokenKind::OpenParenthesis => {
-                    parse_fn_call(index, tokens, token)
-                }
                 // varname := default;
                 // declaring a variable with implicit type.
                 TokenKind::ColonEquals => {
@@ -314,6 +311,11 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
                         expression: Box::new(expression),
                     })
                 }
+                // function call
+                TokenKind::OpenParenthesis => {
+                    Ok(parse_expression(tokens, index))
+                }
+                
                 _ => {
                     dbg!(token);
                     println!("Expected ':' or '=' token after Identifier,\n instead got : \n current : {:?}\n next : {:?}", token, next);
@@ -336,11 +338,11 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
         }
     }
 }
-fn parse_fn_call(index: &mut usize, tokens: &Vec<Token>, token: &Token) -> Result<Node, ()> {
-    *index += 1;
+fn parse_fn_call(index: &mut usize, tokens: &Vec<Token>, token: &String) -> Result<Node, ()> {
+    
     let arguments = parse_arguments(tokens, index);
     let node = Node::FunctionCall {
-        id: token.value.clone(),
+        id: token.clone(),
         arguments: Option::Some(arguments),
     };
     Ok(node)
@@ -459,8 +461,8 @@ fn parse_repeat_stmnt(next: &Token, index: &mut usize, tokens: &Vec<Token>) -> R
 }
 fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Node {
     let mut left = parse_logical_expr(tokens, index);
-
-    while let Some(token) = tokens.get(*index) {
+    loop  {
+        let token = get_current(tokens, index);
         match token.kind {
             TokenKind::LogicalAnd | TokenKind::LogicalOr => {
                 *index += 1;
@@ -470,6 +472,23 @@ fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Node {
                     op: token.kind,
                     rhs: Box::new(right),
                 };
+            }
+            TokenKind::OpenParenthesis => {
+                if let Node::Identifier(id) = left {
+                    match parse_fn_call(index, tokens, &id) {
+                        Ok(node) => {
+                            left = node;
+                            continue;
+                        }
+                        Err(_) => {
+                            dbg!(token);
+                            panic!("Expected function call node");
+                        }
+                    }
+                    
+                } else {
+                    panic!("Expected identifier token");
+                }
             }
             // these 4 token kinds are expression delimiters, but
             // the tokens are expected to be consumed by the caller of this function.
@@ -601,11 +620,11 @@ fn parse_factor(tokens: &Vec<Token>, index: &mut usize) -> Node {
             }
             TokenKind::Subtract => {
                 let node = parse_factor(tokens, index);
-
+                
                 if let Node::NegOp(_node) = node {
                     panic!("Double not operations are not allowed");
                 }
-
+                
                 Node::NegOp(Box::new(node))
             }
             TokenKind::Not => {
@@ -694,10 +713,12 @@ fn parse_parameters(tokens: &Vec<Token>, index: &mut usize) -> Vec<Node> {
 }
 fn parse_arguments(tokens: &Vec<Token>, index: &mut usize) -> Vec<Node> {
     *index += 1; // discard open_paren
-
+    
     let mut args = Vec::new();
-
-    while let Some(token) = tokens.get(*index) {
+    
+    loop {
+        
+        let token = get_current(tokens, index);
         // paramless.
         if token.kind == TokenKind::CloseParenthesis {
             *index += 1;
