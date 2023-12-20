@@ -80,7 +80,7 @@ pub enum Node {
         id: Box<Node>,
         expression: Box<Node>,
     },
-
+    
     FunctionCall {
         id: String,
         arguments: Option<Vec<Node>>,
@@ -446,11 +446,14 @@ fn parse_repeat_stmnt(next: &Token, index: &mut usize, tokens: &Vec<Token>) -> R
         };
         return Ok(node);
     }
-
+    
+    *index += 1; // skip repeat
     // style::
     // repeat {... }
     let block = parse_block(tokens, index);
-
+    
+    //*index += 1;
+    
     Ok(Node::RepeatStmnt {
         iterator_id: Option::None,
         condition: Option::None,
