@@ -3,6 +3,7 @@ use crate::{
     ast::{Node, Visitor},
     tokens::TokenKind,
 };
+
 #[derive(Debug)]
 pub struct Interpreter {
     pub context: Context,
@@ -292,6 +293,7 @@ impl Visitor<ValueType> for Interpreter {
             panic!("Expected Expression node");
         }
     }
+    
     fn visit_binary_op(&mut self, node: &Node) -> ValueType {
         match node {
             Node::AddOp(lhs, rhs)

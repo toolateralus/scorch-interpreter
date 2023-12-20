@@ -50,6 +50,9 @@ impl Invokable for Function {
         args
     }
 }
+pub trait ContextHelpers {
+    fn add_range(&self, _args: &HashMap<String, ValueType>) -> ();
+}
 impl Context {
     pub fn new() -> Context {
         Context {
@@ -59,7 +62,9 @@ impl Context {
             variables: HashMap::new(),
         }
     }
+}
 
+impl ContextHelpers for Context {
     fn add_range(&self, _args: &HashMap<String, ValueType>) -> () {
         todo!()
     }
