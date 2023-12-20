@@ -81,29 +81,29 @@ pub enum TokenKind {
     LogicalAnd,
     LogicalOr,
     Not,
-	
+
     // punctuation
     Newline,
-    
+
     OpenParenthesis,
     CloseParenthesis,
-    
+
     OpenBrace,
     CloseBrace,
-    
+
     OpenBracket,
     CloseBracket,
-    
+
     Comma,
     Colon,
-        
+
     If,
     Else,
     Return,
-	Eof,
-    
+    Eof,
+
     // special operators
-    Lambda,        // =>, Extract out.
+    Lambda, // =>, Extract out.
     DubColon,
     ColonEquals,
     Assignment,
@@ -114,8 +114,8 @@ pub struct Token {
     pub family: TokenFamily,
     pub kind: TokenKind,
     pub value: String,
-	pub line: usize,
-	pub column: usize,
+    pub line: usize,
+    pub column: usize,
 }
 pub trait TokenProcessor {
     fn tokenize(&mut self, input: &str) -> ();
@@ -125,8 +125,8 @@ pub struct Tokenizer {
     pub tokens: Vec<Token>,
     source: String,
     index: usize,
-	line: usize,
-	column: usize,
+    line: usize,
+    column: usize,
     length: usize,
     keywords: HashMap<String, TokenKind>,
     operators: HashMap<String, TokenKind>,
@@ -134,7 +134,7 @@ pub struct Tokenizer {
 impl TokenProcessor for Tokenizer {
     fn consume(&mut self, current: &mut char) -> bool {
         self.index += 1;
-		self.column += 1;
+        self.column += 1;
         if self.index < self.length {
             *current = self.source.chars().nth(self.index).unwrap();
             return true;
@@ -144,7 +144,7 @@ impl TokenProcessor for Tokenizer {
     fn tokenize(&mut self, original_input: &str) {
         let comment_regex = Regex::new(r"(//.*\n)|(/\*.*?\*/)").unwrap();
         let input = comment_regex.replace_all(original_input, "");
-        
+
         self.length = input.len();
         self.source = String::from(input);
         while self.index < self.length {
@@ -153,17 +153,17 @@ impl TokenProcessor for Tokenizer {
             if current == '\'' || current == '\"' {
                 let mut string = String::new();
                 loop {
-					if current == '\n' || current == '\r' {
-						self.line += 1;
-						self.column = 1;
-						size_at_last_newline = string.len();
-					}
+                    if current == '\n' || current == '\r' {
+                        self.line += 1;
+                        self.column = 1;
+                        size_at_last_newline = string.len();
+                    }
                     if !self.consume(&mut current) {
                         panic!("Expected end of string.");
                     }
                     if current == '\'' || current == '\"' {
                         self.index += 1;
-						self.column += 1;
+                        self.column += 1;
                         break;
                     }
                     string.push(current);
@@ -173,8 +173,8 @@ impl TokenProcessor for Tokenizer {
                     family: TokenFamily::Value,
                     kind: TokenKind::String,
                     value: string,
-					line: self.line,
-					column: self.column + size_at_last_newline - len,
+                    line: self.line,
+                    column: self.column + size_at_last_newline - len,
                 };
                 self.tokens.push(token);
                 continue;
@@ -184,18 +184,18 @@ impl TokenProcessor for Tokenizer {
                     family: TokenFamily::Operator,
                     kind: TokenKind::Newline,
                     value: String::from("\n"),
-					line: self.line,
-					column: self.column - 1,
+                    line: self.line,
+                    column: self.column - 1,
                 };
                 self.tokens.push(token);
                 self.index += 1;
-				self.line += 1;
-				self.column = 1;
+                self.line += 1;
+                self.column = 1;
                 continue;
             }
             if current.is_whitespace() {
                 self.index += 1;
-				self.column += 1;
+                self.column += 1;
                 continue;
             }
             if current.is_numeric() {
@@ -213,8 +213,8 @@ impl TokenProcessor for Tokenizer {
                     family: TokenFamily::Value,
                     kind: TokenKind::Number,
                     value: digit,
-					line: self.line,
-					column: self.column - len,
+                    line: self.line,
+                    column: self.column - len,
                 };
                 self.tokens.push(token);
                 continue;
@@ -245,8 +245,8 @@ impl TokenProcessor for Tokenizer {
                         family: TokenFamily::Operator,
                         kind: *kind.unwrap(),
                         value: match_,
-						line: self.line,
-						column: self.column - len,
+                        line: self.line,
+                        column: self.column - len,
                     };
                     self.tokens.push(token);
                 }
@@ -255,21 +255,20 @@ impl TokenProcessor for Tokenizer {
                 let mut identifier: String = String::new();
                 loop {
                     identifier.push(current);
-                    if !self.consume(&mut current)
-                        || (!current.is_alphanumeric() && current != '_')
+                    if !self.consume(&mut current) || (!current.is_alphanumeric() && current != '_')
                     {
                         break;
                     }
                 }
 
-				let len = identifier.len();
+                let len = identifier.len();
                 if identifier == "true" || identifier == "false" {
                     let token = Token {
                         family: TokenFamily::Value,
                         kind: TokenKind::Bool,
                         value: identifier,
-						line: self.line,
-						column: self.column - len,
+                        line: self.line,
+                        column: self.column - len,
                     };
                     self.tokens.push(token);
                     continue;
@@ -281,8 +280,8 @@ impl TokenProcessor for Tokenizer {
                         family: TokenFamily::Keyword,
                         kind: *kind.unwrap(),
                         value: identifier,
-						line: self.line,
-						column: self.column - len,
+                        line: self.line,
+                        column: self.column - len,
                     };
                     self.tokens.push(token);
                     continue;
@@ -294,19 +293,19 @@ impl TokenProcessor for Tokenizer {
                     family: TokenFamily::Identifier,
                     kind: TokenKind::Identifier,
                     value: identifier,
-					line: self.line,
-					column: self.column - len,
+                    line: self.line,
+                    column: self.column - len,
                 };
                 self.tokens.push(token);
             }
         }
-		let token = Token {
-			family: TokenFamily::Undefined,
-			kind: TokenKind::Eof,
-			value: String::from(""),
-			line: self.line,
-			column: self.column,
-		};
-		self.tokens.push(token)
+        let token = Token {
+            family: TokenFamily::Undefined,
+            kind: TokenKind::Eof,
+            value: String::from(""),
+            line: self.line,
+            column: self.column,
+        };
+        self.tokens.push(token)
     }
 }

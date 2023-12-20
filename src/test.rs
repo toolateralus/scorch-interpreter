@@ -32,8 +32,8 @@ fn test_functions() {
 fn test_rel_expr() {
     let ctx = super::execute_return_global_ctx(String::from("test_rel_expr.scorch"));
     let variables = [
-        "rel_t1", "rel_t2", "rel_t3", "rel_t4", "rel_t5", "rel_t6", "rel_t7", "rel_t8",
-        "rel_t9", "rel_t10", "rel_t11", "rel_t12",
+        "rel_t1", "rel_t2", "rel_t3", "rel_t4", "rel_t5", "rel_t6", "rel_t7", "rel_t8", "rel_t9",
+        "rel_t10", "rel_t11", "rel_t12",
     ];
     let expected_results = [
         true,  // rel_t1 := 5 < 10
@@ -53,7 +53,7 @@ fn test_rel_expr() {
         let variable = variables[i];
         let expected_result = expected_results[i];
         let value = *ctx.variables[*&variable].clone();
-       
+
         if let super::types::ValueType::Bool(v) = value {
             assert_eq!(v, expected_result, "test failed: {}", variable);
         }

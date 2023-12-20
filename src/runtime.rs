@@ -1,5 +1,8 @@
-use crate::{ast::{Node, Visitor}, tokens::TokenKind};
 use super::types::*;
+use crate::{
+    ast::{Node, Visitor},
+    tokens::TokenKind,
+};
 #[derive(Debug)]
 pub struct Interpreter {
     pub context: Context,
@@ -26,7 +29,7 @@ impl Visitor<ValueType> for Interpreter {
 
             match target_type.as_str() {
                 "dynamic" | "num" | "string" => {
-					// todo: add an actual type system.
+                    // todo: add an actual type system.
                     value = expression.accept(self);
                 }
                 _ => {
@@ -41,14 +44,13 @@ impl Visitor<ValueType> for Interpreter {
             if self.context.variables.contains_key(&str_id) {
                 dbg!(node);
                 panic!("redefinition of variable");
-            }
-            else {
+            } else {
                 self.context.variables.insert(str_id, Box::new(value));
             }
         } else {
             panic!("Expected Declaration node");
         }
-       ValueType::None(())
+        ValueType::None(())
     }
     fn visit_identifier(&mut self, node: &Node) -> ValueType {
         let Node::Identifier(id) = node else {
@@ -85,7 +87,7 @@ impl Visitor<ValueType> for Interpreter {
     fn visit_assignment(&mut self, node: &Node) -> ValueType {
         match node {
             Node::AssignStmnt { id, expression } => {
-                let val : ValueType;
+                let val: ValueType;
                 val = self.visit_expression(expression);
                 let str_id: String = match id.as_ref() {
                     Node::Identifier(id) => id.clone(),
@@ -237,7 +239,6 @@ impl Visitor<ValueType> for Interpreter {
                 } else if let Some(else_statement) = else_stmnt {
                     else_statement.accept(self);
                 } else {
-                    
                 }
             }
             _ => panic!("Expected OrStmnt node"),
@@ -246,49 +247,38 @@ impl Visitor<ValueType> for Interpreter {
         ValueType::None(())
     }
     fn visit_relational_expression(&mut self, node: &Node) -> ValueType {
-        if let Node::RelationalExpression {
-            lhs,
-            op,
-            rhs,
-        } = node
-        {
+        if let Node::RelationalExpression { lhs, op, rhs } = node {
             let lhs_value = lhs.accept(self);
             let rhs_value = rhs.accept(self);
             match (lhs_value, rhs_value) {
-                (ValueType::Bool(lhs_bool), ValueType::Bool(rhs_bool)) => {
-                    match op {
-                        TokenKind::Equals => return ValueType::Bool(lhs_bool == rhs_bool),
-                        TokenKind::NotEquals  => return ValueType::Bool(lhs_bool != rhs_bool),
-                        _ => {
-                            dbg!(node);
-                            panic!("invalid operator");
-                        }
+                (ValueType::Bool(lhs_bool), ValueType::Bool(rhs_bool)) => match op {
+                    TokenKind::Equals => return ValueType::Bool(lhs_bool == rhs_bool),
+                    TokenKind::NotEquals => return ValueType::Bool(lhs_bool != rhs_bool),
+                    _ => {
+                        dbg!(node);
+                        panic!("invalid operator");
                     }
-                }
-                (ValueType::Float(lhs_float), ValueType::Float(rhs_float)) => {
-                    match op {
-                        TokenKind::LeftAngle => return ValueType::Bool(lhs_float < rhs_float),
-                        TokenKind::LessThanEquals  => return ValueType::Bool(lhs_float <= rhs_float),
-                        TokenKind::RightAngle => return ValueType::Bool(lhs_float > rhs_float),
-                        TokenKind::GreaterThanEquals  => return ValueType::Bool(lhs_float >= rhs_float),
-                        TokenKind::Equals => return ValueType::Bool(lhs_float == rhs_float),
-                        TokenKind::NotEquals  => return ValueType::Bool(lhs_float != rhs_float),
-                        _ => {
-                            dbg!(node);
-                            panic!("invalid operator");
-                        }
+                },
+                (ValueType::Float(lhs_float), ValueType::Float(rhs_float)) => match op {
+                    TokenKind::LeftAngle => return ValueType::Bool(lhs_float < rhs_float),
+                    TokenKind::LessThanEquals => return ValueType::Bool(lhs_float <= rhs_float),
+                    TokenKind::RightAngle => return ValueType::Bool(lhs_float > rhs_float),
+                    TokenKind::GreaterThanEquals => return ValueType::Bool(lhs_float >= rhs_float),
+                    TokenKind::Equals => return ValueType::Bool(lhs_float == rhs_float),
+                    TokenKind::NotEquals => return ValueType::Bool(lhs_float != rhs_float),
+                    _ => {
+                        dbg!(node);
+                        panic!("invalid operator");
                     }
-                }
-                (ValueType::String(lhs_string), ValueType::String(rhs_string)) => {
-                    match op {
-                        TokenKind::Equals => return ValueType::Bool(lhs_string == rhs_string),
-                        TokenKind::NotEquals => return ValueType::Bool(lhs_string != rhs_string),
-                        _ => {
-                            dbg!(node);
-                            panic!("invalid operator");
-                        }
+                },
+                (ValueType::String(lhs_string), ValueType::String(rhs_string)) => match op {
+                    TokenKind::Equals => return ValueType::Bool(lhs_string == rhs_string),
+                    TokenKind::NotEquals => return ValueType::Bool(lhs_string != rhs_string),
+                    _ => {
+                        dbg!(node);
+                        panic!("invalid operator");
                     }
-                }
+                },
                 _ => {
                     dbg!(node);
                     panic!("mismatched type in relative expression");
@@ -299,25 +289,18 @@ impl Visitor<ValueType> for Interpreter {
         }
     }
     fn visit_logical_expression(&mut self, node: &Node) -> ValueType {
-        if let Node::LogicalExpression {
-            lhs,
-            op,
-            rhs,
-        } = node
-        {
+        if let Node::LogicalExpression { lhs, op, rhs } = node {
             let lhs_value = lhs.accept(self);
             let rhs_value = rhs.accept(self);
             match (lhs_value, rhs_value) {
-                (ValueType::Bool(lhs_bool), ValueType::Bool(rhs_bool)) => {
-                    match op {
-                        TokenKind::LogicalAnd => return ValueType::Bool(lhs_bool && rhs_bool),
-                        TokenKind::LogicalOr => return ValueType::Bool(lhs_bool || rhs_bool),
-                        _ => {
-                            dbg!(node);
-                            panic!("invalid operator");
-                        }
+                (ValueType::Bool(lhs_bool), ValueType::Bool(rhs_bool)) => match op {
+                    TokenKind::LogicalAnd => return ValueType::Bool(lhs_bool && rhs_bool),
+                    TokenKind::LogicalOr => return ValueType::Bool(lhs_bool || rhs_bool),
+                    _ => {
+                        dbg!(node);
+                        panic!("invalid operator");
                     }
-                }
+                },
                 _ => {
                     dbg!(node);
                     panic!("mismatched type in logical expression");
@@ -335,14 +318,12 @@ impl Visitor<ValueType> for Interpreter {
             return_type,
         } = node
         {
-            
             let body_cloned = body.clone();
             let func = Function {
                 name: id.clone(),
                 params: self.get_params_list(params),
                 body: body_cloned,
                 return_type: return_type.clone(),
-                
             };
             let function = Box::new(func);
             self.context.functions.insert(id.clone(), function);
@@ -351,22 +332,22 @@ impl Visitor<ValueType> for Interpreter {
         };
         ValueType::None(())
     }
-    
+
     fn visit_param_decl(&mut self, _node: &Node) -> ValueType {
         todo!()
     }
     fn visit_program(&mut self, node: &Node) -> ValueType {
         if let Node::Program(statements) = node {
-			for stmnt in statements {
-				stmnt.accept(self);
-		}
-		} else {
-			panic!("expected program node");
-		};
-		ValueType::None(())
+            for stmnt in statements {
+                stmnt.accept(self);
+            }
+        } else {
+            panic!("expected program node");
+        };
+        ValueType::None(())
         // this is unused since it uses a different return type. see impl Interpeter.
     }
-    
+
     fn visit_function_call(&mut self, node: &Node) -> ValueType {
         let return_value = ValueType::None(());
         if let Node::FunctionCall { id, arguments } = node {
@@ -375,16 +356,16 @@ impl Visitor<ValueType> for Interpreter {
                 let function = old.functions.get(id).unwrap();
                 let args = Function::create_args(self, arguments, &old);
                 let ctx = Context::new();
-                
+
                 if args.len() == 0 {
                     return function.body.accept(self);
                 }
-                
+
                 // Check if the number of arguments matches the number of parameters
                 if args.len() != function.params.len() {
                     panic!("Number of arguments does not match the number of parameters");
                 }
-                
+
                 // Check if the types and order of arguments match the parameters
                 for (arg, param) in args.iter().zip(function.params.iter()) {
                     let arg_type_name = match *arg {
@@ -394,13 +375,14 @@ impl Visitor<ValueType> for Interpreter {
                         ValueType::None(_) => "undefined",
                     };
                     if arg_type_name != param.name {
-                        panic!("Argument type does not match parameter type") 
-                    }
-                    else {
-                        self.context.variables.insert(param.name.clone(), Box::new(arg.clone()));
+                        panic!("Argument type does not match parameter type")
+                    } else {
+                        self.context
+                            .variables
+                            .insert(param.name.clone(), Box::new(arg.clone()));
                     }
                 }
-                
+
                 self.context = ctx;
                 function.body.accept(self);
             }
@@ -422,7 +404,7 @@ impl Interpreter {
                         panic!("Expected Identifier node");
                     }
                 };
-                
+
                 let type_name = match typename.as_ref() {
                     Node::Identifier(id) => id.clone(),
                     _ => {
@@ -430,12 +412,12 @@ impl Interpreter {
                         panic!("Expected Identifier node");
                     }
                 };
-                
+
                 let parameter = Parameter {
                     name: param_name,
-                    typename : type_name,
+                    typename: type_name,
                 };
-                
+
                 params.push(parameter);
             }
         }
