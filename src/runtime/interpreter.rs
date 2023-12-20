@@ -19,16 +19,19 @@ impl Interpreter {
         }
     }
 }
-fn print_ln (args: Vec<ValueType>) -> ValueType {
+fn print_ln (args: Vec<Value>) -> Value {
     for arg in args {
         match arg {
-            ValueType::Float(val) => print!("{}\n", val),
-            ValueType::Bool(val) => print!("{}\n", val),
-            ValueType::String(val) => print!("{}\n", val),
-            ValueType::None(_) => print!("undefined"),
+            Value::Float(val) => print!("{}\n", val),
+            Value::Bool(val) => print!("{}\n", val),
+            Value::String(val) => print!("{}\n", val),
+            Value::None(_) => print!("undefined"),
+            Value::Function(_) => todo!(),
+            _ => panic!("invalid argument type")
+            
         }
     }
-    ValueType::None(())
+    Value::None(())
 }
 
 // todo: move this somewhere more appropriate, and organize the definitions of these
@@ -38,9 +41,9 @@ fn get_builtin_functions() -> HashMap<String, BuiltInFunction> {
     ])
 }
 
-impl Visitor<ValueType> for Interpreter {
+impl Visitor<Value> for Interpreter {
     // top level nodes
-    fn visit_program(&mut self, node: &Node) -> ValueType {
+    fn visit_program(&mut self, node: &Node) -> Value {
         if let Node::Program(statements) = node {
             for stmnt in statements {
                 stmnt.accept(self);
@@ -48,29 +51,34 @@ impl Visitor<ValueType> for Interpreter {
         } else {
             panic!("expected program node");
         };
-        ValueType::None(())
+        Value::None(())
         // this is unused since it uses a different return type. see impl Interpeter.
     }
-    fn visit_block(&mut self, node: &Node) -> ValueType {
+    fn visit_block(&mut self, node: &Node) -> Value {
         if let Node::Block(statements) = node {
             for statement in statements {
-                statement.accept(self);
+                let value = statement.accept(self);
+                if let Value::Return(ret_val) = value {
+                    if let Some(return_value) = ret_val {
+                        return *return_value;
+                    }
+                }
             }
         } else {
             panic!("Expected Block node");
         }
-        return ValueType::None(());
+        return Value::None(());
     }
     
     // statements
-    fn visit_if_stmnt(&mut self, node: &Node) -> ValueType {
+    fn visit_if_stmnt(&mut self, node: &Node) -> Value {
         if let Node::IfStmnt {
             condition,
             block: true_block,
             else_stmnt: else_block,
         } = node
         {
-            if let ValueType::Bool(condition_result) = condition.accept(self) {
+            if let Value::Bool(condition_result) = condition.accept(self) {
                 if condition_result {
                     true_block.accept(self);
                 } else {
@@ -84,9 +92,9 @@ impl Visitor<ValueType> for Interpreter {
         } else {
             panic!("Expected WhereStmnt node");
         }
-        return ValueType::None(());
+        return Value::None(());
     }
-    fn visit_else_stmnt(&mut self, node: &Node) -> ValueType {
+    fn visit_else_stmnt(&mut self, node: &Node) -> Value {
         match node {
             Node::ElseStmnt {
                 condition,
@@ -95,7 +103,7 @@ impl Visitor<ValueType> for Interpreter {
             } => {
                 let condition_result = match condition.as_ref() {
                     Some(expression) => {
-                        if let ValueType::Bool(val) = expression.accept(self) {
+                        if let Value::Bool(val) = expression.accept(self) {
                             val
                         } else {
                             panic!("Expected boolean condition");
@@ -114,16 +122,16 @@ impl Visitor<ValueType> for Interpreter {
             _ => panic!("Expected OrStmnt node"),
         }
 
-        ValueType::None(())
+        Value::None(())
     }
-    fn visit_declaration(&mut self, node: &Node) -> ValueType {
+    fn visit_declaration(&mut self, node: &Node) -> Value {
         if let Node::DeclStmt {
             target_type,
             id,
             expression,
         } = node
         {
-            let value: ValueType;
+            let value: Value;
 
             match target_type.as_str() {
                 "dynamic" | "num" | "string" => {
@@ -148,12 +156,12 @@ impl Visitor<ValueType> for Interpreter {
         } else {
             panic!("Expected Declaration node");
         }
-        ValueType::None(())
+        Value::None(())
     }
-    fn visit_assignment(&mut self, node: &Node) -> ValueType {
+    fn visit_assignment(&mut self, node: &Node) -> Value {
         match node {
             Node::AssignStmnt { id, expression } => {
-                let val: ValueType;
+                let val: Value;
                 val = self.visit_expression(expression);
                 let str_id: String = match id.as_ref() {
                     Node::Identifier(id) => id.clone(),
@@ -171,7 +179,7 @@ impl Visitor<ValueType> for Interpreter {
                         panic!("Variable not found");
                     }
                 }
-                return ValueType::None(());
+                return Value::None(());
             }
             _ => {
                 dbg!(node);
@@ -179,12 +187,12 @@ impl Visitor<ValueType> for Interpreter {
             }
         }
     }
-
+    
     // literals & values
     // todo: move this into it's own visitor, previous to this one? it needs a
     // different return type otherwise reference counting nad pointers will be very very challenging, as far as i can see.
     // there's probably a way.
-    fn visit_identifier(&mut self, node: &Node) -> ValueType {
+    fn visit_identifier(&mut self, node: &Node) -> Value {
         let Node::Identifier(id) = node else {
             dbg!(node);
             panic!("Expected Identifier");
@@ -197,44 +205,44 @@ impl Visitor<ValueType> for Interpreter {
             }
         }
     }
-    fn visit_bool(&mut self, node: &Node) -> ValueType {
+    fn visit_bool(&mut self, node: &Node) -> Value {
         if let Node::Bool(value) = node {
-            return ValueType::Bool(*value);
+            return Value::Bool(*value);
         } else {
             panic!("Expected Bool node");
         }
     }
-    fn visit_number(&mut self, node: &Node) -> ValueType {
+    fn visit_number(&mut self, node: &Node) -> Value {
         let Node::Number(value) = node else {
             dbg!(node);
             panic!("Expected Number");
         };
-        ValueType::Float(*value)
+        Value::Float(*value)
     }
-    fn visit_string(&mut self, node: &Node) -> ValueType {
+    fn visit_string(&mut self, node: &Node) -> Value {
         if let Node::String(value) = node {
-            return ValueType::String(value.clone());
+            return Value::String(value.clone());
         } else {
             panic!("Expected String node");
         }
     }
-    fn visit_eof(&mut self, _node: &Node) -> ValueType {
-        ValueType::None(()) // do nothing.
+    fn visit_eof(&mut self, _node: &Node) -> Value {
+        Value::None(()) // do nothing.
     }
 
     // unary operations
-    fn visit_not_op(&mut self, node: &Node) -> ValueType {
+    fn visit_not_op(&mut self, node: &Node) -> Value {
         if let Node::NotOp(operand) = node {
             match operand.accept(self) {
-                ValueType::Bool(value) => ValueType::Bool(!value),
-                ValueType::Float(mut value) => {
+                Value::Bool(value) => Value::Bool(!value),
+                Value::Float(mut value) => {
                     value = 1.0 - value;
                     if value > 1.0 {
                         value = 1.0;
                     } else if value < 0.0 {
                         value = 0.0;
                     }
-                    ValueType::Float(value)
+                    Value::Float(value)
                 }
                 _ => panic!("Expected boolean or numerical operand for not operation"),
             }
@@ -242,10 +250,10 @@ impl Visitor<ValueType> for Interpreter {
             panic!("Expected NotOp node");
         }
     }
-    fn visit_neg_op(&mut self, node: &Node) -> ValueType {
+    fn visit_neg_op(&mut self, node: &Node) -> Value {
         if let Node::NegOp(operand) = node {
             match operand.accept(self) {
-                ValueType::Float(value) => ValueType::Float(-value),
+                Value::Float(value) => Value::Float(-value),
                 _ => panic!("Expected numeric operand for negation operation"),
             }
         } else {
@@ -254,34 +262,35 @@ impl Visitor<ValueType> for Interpreter {
     }
 
     // binary operations & expressions
-    fn visit_relational_expression(&mut self, node: &Node) -> ValueType {
+    fn visit_relational_expression(&mut self, node: &Node) -> Value {
         if let Node::RelationalExpression { lhs, op, rhs } = node {
             let lhs_value = lhs.accept(self);
             let rhs_value = rhs.accept(self);
+            
             match (lhs_value, rhs_value) {
-                (ValueType::Bool(lhs_bool), ValueType::Bool(rhs_bool)) => match op {
-                    TokenKind::Equals => return ValueType::Bool(lhs_bool == rhs_bool),
-                    TokenKind::NotEquals => return ValueType::Bool(lhs_bool != rhs_bool),
+                (Value::Bool(lhs_bool), Value::Bool(rhs_bool)) => match op {
+                    TokenKind::Equals => return Value::Bool(lhs_bool == rhs_bool),
+                    TokenKind::NotEquals => return Value::Bool(lhs_bool != rhs_bool),
                     _ => {
                         dbg!(node);
                         panic!("invalid operator");
                     }
                 },
-                (ValueType::Float(lhs_float), ValueType::Float(rhs_float)) => match op {
-                    TokenKind::LeftAngle => return ValueType::Bool(lhs_float < rhs_float),
-                    TokenKind::LessThanEquals => return ValueType::Bool(lhs_float <= rhs_float),
-                    TokenKind::RightAngle => return ValueType::Bool(lhs_float > rhs_float),
-                    TokenKind::GreaterThanEquals => return ValueType::Bool(lhs_float >= rhs_float),
-                    TokenKind::Equals => return ValueType::Bool(lhs_float == rhs_float),
-                    TokenKind::NotEquals => return ValueType::Bool(lhs_float != rhs_float),
+                (Value::Float(lhs_float), Value::Float(rhs_float)) => match op {
+                    TokenKind::LeftAngle => return Value::Bool(lhs_float < rhs_float),
+                    TokenKind::LessThanEquals => return Value::Bool(lhs_float <= rhs_float),
+                    TokenKind::RightAngle => return Value::Bool(lhs_float > rhs_float),
+                    TokenKind::GreaterThanEquals => return Value::Bool(lhs_float >= rhs_float),
+                    TokenKind::Equals => return Value::Bool(lhs_float == rhs_float),
+                    TokenKind::NotEquals => return Value::Bool(lhs_float != rhs_float),
                     _ => {
                         dbg!(node);
                         panic!("invalid operator");
                     }
                 },
-                (ValueType::String(lhs_string), ValueType::String(rhs_string)) => match op {
-                    TokenKind::Equals => return ValueType::Bool(lhs_string == rhs_string),
-                    TokenKind::NotEquals => return ValueType::Bool(lhs_string != rhs_string),
+                (Value::String(lhs_string), Value::String(rhs_string)) => match op {
+                    TokenKind::Equals => return Value::Bool(lhs_string == rhs_string),
+                    TokenKind::NotEquals => return Value::Bool(lhs_string != rhs_string),
                     _ => {
                         dbg!(node);
                         panic!("invalid operator");
@@ -296,14 +305,14 @@ impl Visitor<ValueType> for Interpreter {
             panic!("Expected RelativeExpression node");
         }
     }
-    fn visit_logical_expression(&mut self, node: &Node) -> ValueType {
+    fn visit_logical_expression(&mut self, node: &Node) -> Value {
         if let Node::LogicalExpression { lhs, op, rhs } = node {
             let lhs_value = lhs.accept(self);
             let rhs_value = rhs.accept(self);
             match (lhs_value, rhs_value) {
-                (ValueType::Bool(lhs_bool), ValueType::Bool(rhs_bool)) => match op {
-                    TokenKind::LogicalAnd => return ValueType::Bool(lhs_bool && rhs_bool),
-                    TokenKind::LogicalOr => return ValueType::Bool(lhs_bool || rhs_bool),
+                (Value::Bool(lhs_bool), Value::Bool(rhs_bool)) => match op {
+                    TokenKind::LogicalAnd => return Value::Bool(lhs_bool && rhs_bool),
+                    TokenKind::LogicalOr => return Value::Bool(lhs_bool || rhs_bool),
                     _ => {
                         dbg!(node);
                         panic!("invalid operator");
@@ -318,7 +327,7 @@ impl Visitor<ValueType> for Interpreter {
             panic!("Expected LogicalExpression node");
         }
     }
-    fn visit_expression(&mut self, node: &Node) -> ValueType {
+    fn visit_expression(&mut self, node: &Node) -> Value {
         if let Node::Expression(root) = node {
             return root.accept(self);
         } else {
@@ -326,7 +335,7 @@ impl Visitor<ValueType> for Interpreter {
         }
     }
 
-    fn visit_binary_op(&mut self, node: &Node) -> ValueType {
+    fn visit_binary_op(&mut self, node: &Node) -> Value {
         match node {
             Node::AddOp(lhs, rhs)
             | Node::SubOp(lhs, rhs)
@@ -335,10 +344,10 @@ impl Visitor<ValueType> for Interpreter {
                 let e_lhs = lhs.accept(self);
                 let e_rhs = rhs.accept(self);
                 match (e_lhs, e_rhs) {
-                    (ValueType::Float(lhs_float), ValueType::Float(rhs_float)) => {
+                    (Value::Float(lhs_float), Value::Float(rhs_float)) => {
                         return self.bin_op_float(node, &lhs_float, &rhs_float);
                     }
-                    (ValueType::String(lhs_string), ValueType::String(rhs_string)) => {
+                    (Value::String(lhs_string), Value::String(rhs_string)) => {
                         return self.bin_op_string(node, &lhs_string, &rhs_string);
                     }
                     _ => {
@@ -353,10 +362,10 @@ impl Visitor<ValueType> for Interpreter {
             }
         }
     }
-    fn visit_term(&mut self, _node: &Node) -> ValueType {
-        return ValueType::None(());
+    fn visit_term(&mut self, _node: &Node) -> Value {
+        return Value::None(());
     }
-    fn visit_factor(&mut self, node: &Node) -> ValueType {
+    fn visit_factor(&mut self, node: &Node) -> Value {
         match node {
             Node::Expression(root) => root.accept(self),
             _ => {
@@ -367,10 +376,10 @@ impl Visitor<ValueType> for Interpreter {
     }
 
     // functions
-    fn visit_param_decl(&mut self, _node: &Node) -> ValueType {
+    fn visit_param_decl(&mut self, _node: &Node) -> Value {
         todo!()
     }
-    fn visit_function_call(&mut self, node: &Node) -> ValueType {
+    fn visit_function_call(&mut self, node: &Node) -> Value {
         let old = self.context.clone();
         if let Node::FunctionCall { id, arguments } = node {
             let args;
@@ -381,7 +390,7 @@ impl Visitor<ValueType> for Interpreter {
                     let builtin = self.builtin.get_mut(id).unwrap();
                     return builtin.call(args.clone());
                 }
-
+                
                 match self.context.find_function(&id.as_str()) {
                     Some(func) => {
                         function = func;
@@ -403,14 +412,8 @@ impl Visitor<ValueType> for Interpreter {
             }
 
             for (arg, param) in args.iter().zip(function.params.iter()) {
-                // todo: get typename, make function
-                let arg_type_name = match *arg {
-                    ValueType::Float(_) => "num",
-                    ValueType::Bool(_) => "bool",
-                    ValueType::String(_) => "string",
-                    ValueType::None(_) => "undefined",
-                };
-
+                let arg_type_name = get_type_name(arg);
+                
                 // typecheck args. very basic.
                 if arg_type_name.to_string() != param.typename {
                     panic!("Argument type does not match parameter type.\n provided argument: {:?} expected parameter : {:?}", arg, param)
@@ -421,17 +424,21 @@ impl Visitor<ValueType> for Interpreter {
                         .insert_variable(&param.name, Rc::new(arg.clone()));
                 }
             }
-
-            let return_value = function.body.accept(self);
-
+            
+            let ret = function.body.accept(self);
+            
+            if let Value::Return(ret_val) = ret {
+                if let Some(return_value) = ret_val {
+                    return *return_value;    
+                }
+            };
             // todo: don't discard changes made by functions
             // right now - side effects are undone on context leave.
             self.context = old;
-            return return_value;
         }
-        ValueType::None(())
+        Value::None(())
     }
-    fn visit_function_decl(&mut self, node: &Node) -> ValueType {
+    fn visit_function_decl(&mut self, node: &Node) -> Value {
         if let Node::FnDeclStmnt {
             id,
             params,
@@ -451,10 +458,10 @@ impl Visitor<ValueType> for Interpreter {
         } else {
             panic!("Expected FunctionDecl node");
         };
-        ValueType::None(())
+        Value::None(())
     }
     
-    fn visit_repeat_stmnt(&mut self, node: &Node) -> ValueType {
+    fn visit_repeat_stmnt(&mut self, node: &Node) -> Value {
         let Node::RepeatStmnt{ iterator_id, condition, block } = node else {
             dbg!(node);
             panic!("Expected RepeatStmnt node");
@@ -473,14 +480,29 @@ impl Visitor<ValueType> for Interpreter {
         }
     }
     
-    fn visit_break_stmnt(&mut self, node: &Node) -> ValueType {
+    fn visit_break_stmnt(&mut self, node: &Node) -> Value {
         if let Node::BreakStmnt(opt_val) = node {
             let Some(value_node) = opt_val else {
-                return ValueType::None(());
+                return Value::None(());
             };
             return value_node.accept(self);
         } else {
             panic!("Expected BreakStmnt node");
         }
     }
+}
+
+fn get_type_name<'a>(arg: &'a Value) -> &'a str {
+    let arg_type_name = match arg {
+        Value::Float(_) => "num",
+        Value::Bool(_) => "bool",
+        Value::String(_) => "string",
+        Value::None(_) => "undefined",
+        Value::Function(func) => "function",
+        _ => {
+            dbg!(arg);
+            panic!("invalid argument type")
+        }
+    };
+    arg_type_name
 }

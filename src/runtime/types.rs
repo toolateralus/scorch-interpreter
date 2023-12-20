@@ -1,14 +1,55 @@
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, rc::Rc, borrow::BorrowMut};
 
 use crate::{frontend::ast::Node, runtime::interpreter::Interpreter};
 
+pub struct ScorchNumber {
+    pub value: f64,
+}
+pub struct ScorchBool {
+    pub value: bool,
+}
+pub struct ScorchString {
+    pub value: String,
+}
+pub struct ScorchNone {
+    pub value: (),
+}
+
+
 #[derive(Debug, Clone)]
-pub enum ValueType {
+pub enum Value {
     Float(f64),
     Bool(bool),
     String(String),
+    Return(Option<Box<Value>>),
+    Function(Rc<Function>),
     None(()),
 }
+
+impl Value {
+    pub fn as_bool(&self) -> Option<&bool> {
+        let value = match self {
+            Value::Bool(val) => Some(val),
+            _ => None
+        };
+        value
+    }
+    pub fn as_float(&self) -> Option<&f64> {
+        let value = match self {
+            Value::Float(val) => Some(val),
+            _ => None
+        };
+        value
+    }
+    pub fn as_string(&self) -> Option<&String> {
+        let value = match self {
+            Value::String(val) => Some(val),
+            _ => None
+        };
+        value
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Context {
     pub parent: Option<Rc<RefCell<Context>>>,
@@ -16,11 +57,11 @@ pub struct Context {
     // todo: add return values
     pub functions: HashMap<String, Rc<Function>>,
     // todo: implement a Variable struct that can store more data about the var/const etc.
-    pub variables: HashMap<String, Rc<ValueType>>,
+    pub variables: HashMap<String, Rc<Value>>,
 }
 
 impl Context {
-    pub fn find_variable(&self, name: &str) -> Option<Rc<ValueType>> {
+    pub fn find_variable(&self, name: &str) -> Option<Rc<Value>> {
         match self.variables.get(name) {
             Some(var) => Some(var.clone()),
             None => match &self.parent {
@@ -38,7 +79,7 @@ impl Context {
             },
         }
     }
-    pub fn insert_variable(&mut self, name: &str, value: Rc<ValueType>) -> () {
+    pub fn insert_variable(&mut self, name: &str, value: Rc<Value>) -> () {
         let name_str = name.to_string();
         self.variables.insert(name_str, value);
     }
@@ -63,13 +104,13 @@ pub struct Function {
     pub return_type: String,
 }
 pub struct BuiltInFunction {
-    func: Box<dyn FnMut(Vec<ValueType>) -> ValueType>,
+    func: Box<dyn FnMut(Vec<Value>) -> Value>,
 }
 impl BuiltInFunction {
-    pub fn new(func: Box<dyn FnMut(Vec<ValueType>) -> ValueType>) -> Self {
+    pub fn new(func: Box<dyn FnMut(Vec<Value>) -> Value>) -> Self {
         BuiltInFunction { func }
     }
-    pub fn call(&mut self, args: Vec<ValueType>) -> ValueType {
+    pub fn call(&mut self, args: Vec<Value>) -> Value {
         (self.func)(args)
     }
 }
@@ -78,14 +119,14 @@ pub trait Invokable {
         interpeter: &mut Interpreter,
         arguments: &Option<Vec<Node>>,
         ctx: &Context,
-    ) -> Vec<ValueType>;
+    ) -> Vec<Value>;
 }
 impl Invokable for Function {
     fn extract_args(
         interpeter: &mut Interpreter,
         arguments: &Option<Vec<Node>>,
         _ctx: &Context,
-    ) -> Vec<ValueType> {
+    ) -> Vec<Value> {
         let mut args = Vec::new();
         let args_col = arguments.as_ref().unwrap();
         for arg in args_col {
@@ -96,7 +137,7 @@ impl Invokable for Function {
     }
 }
 pub trait ContextHelpers {
-    fn add_range(&self, _args: &HashMap<String, ValueType>) -> ();
+    fn add_range(&self, _args: &HashMap<String, Value>) -> ();
 }
 impl Context {
     pub fn new() -> Context {
@@ -110,7 +151,7 @@ impl Context {
 }
 
 impl ContextHelpers for Context {
-    fn add_range(&self, _args: &HashMap<String, ValueType>) -> () {
+    fn add_range(&self, _args: &HashMap<String, Value>) -> () {
         todo!()
     }
 }

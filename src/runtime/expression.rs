@@ -3,27 +3,27 @@ use std::rc::Rc;
 use crate::{
     frontend::ast::Node,
     runtime::interpreter::Interpreter,
-    runtime::types::{Parameter, ValueType},
+    runtime::types::{Parameter, Value},
 };
 
 // loops
 impl Interpreter {
-    pub fn visit_conditional_repeat_stmnt(&mut self, id: &str, condition: &Option<Box<Node>>, block: &Box<Node>) -> ValueType {
+    pub fn visit_conditional_repeat_stmnt(&mut self, id: &str, condition: &Option<Box<Node>>, block: &Box<Node>) -> Value {
         match self.context.find_variable(&id) {
             Some(_) => {
                 
             }
             None => {
-                self.context.insert_variable(&id, Rc::new(ValueType::Float(0.0)));
+                self.context.insert_variable(&id, Rc::new(Value::Float(0.0)));
             }
         }
-        self.context.insert_variable(&id, Rc::new(ValueType::Float(0.0)));
+        self.context.insert_variable(&id, Rc::new(Value::Float(0.0)));
     
         let mut iter : f64 = 0.0;
         loop {
             let condition_result = match condition.as_ref() {
                 Some(expression) => {
-                    if let ValueType::Bool(val) = expression.accept(self) {
+                    if let Value::Bool(val) = expression.accept(self) {
                         val
                     } else {
                         panic!("Expected boolean condition");
@@ -35,17 +35,17 @@ impl Interpreter {
             if condition_result {
                 block.accept(self);
             } else {
-                return ValueType::None(());
+                return Value::None(());
             }
             self.context.variables.remove(id);
             
             iter += 1.0;
             
             // should we floor this here?
-            self.context.insert_variable(&id, Rc::new(ValueType::Float(iter.floor()))); 
+            self.context.insert_variable(&id, Rc::new(Value::Float(iter.floor()))); 
         }
     }
-    pub fn visit_conditionless_repeat_stmnt(&mut self, block: &Box<Node>) -> ValueType {
+    pub fn visit_conditionless_repeat_stmnt(&mut self, block: &Box<Node>) -> Value {
         loop {
             let result = block.accept(self);
         }
@@ -84,7 +84,7 @@ impl Interpreter {
         }
         params
     }
-    pub fn bin_op_float(&mut self, node: &Node, lhs: &f64, rhs: &f64) -> ValueType {
+    pub fn bin_op_float(&mut self, node: &Node, lhs: &f64, rhs: &f64) -> Value {
         let result: f64;
         match node {
             Node::AddOp(_, _) => result = lhs + rhs,
@@ -96,9 +96,9 @@ impl Interpreter {
                 panic!("Expected binary operation node");
             }
         }
-        ValueType::Float(result)
+        Value::Float(result)
     }
-    pub fn bin_op_string(&mut self, node: &Node, lhs: &String, rhs: &String) -> ValueType {
+    pub fn bin_op_string(&mut self, node: &Node, lhs: &String, rhs: &String) -> Value {
         let result: String;
         match node {
             Node::AddOp(_, _) => result = format!("{}{}", lhs, rhs),
@@ -107,6 +107,6 @@ impl Interpreter {
                 panic!("invalid binary operation on strings");
             }
         }
-        ValueType::String(result)
+        Value::String(result)
     }
 }

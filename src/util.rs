@@ -9,6 +9,7 @@ pub struct Flags {
     pub proj_root: String,
     pub dump: bool,
     pub cli: bool,
+    pub no_interpret: bool,
 }
 impl Flags {
     pub fn new(flags_map: HashMap<String, bool>) -> Flags {
@@ -16,6 +17,7 @@ impl Flags {
             proj_root: get_project_root(),
             dump: flags_map.contains_key("dump"),
             cli: flags_map.contains_key("cli"),
+            no_interpret: flags_map.contains_key("no-interpret"),
         }
     }
     pub fn qualify_from_root(&self, path: String) {
