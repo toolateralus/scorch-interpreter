@@ -1,11 +1,10 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, borrow::BorrowMut};
 
 use super::types::*;
 use crate::{
     ast::{Node, Visitor},
     tokens::TokenKind,
 };
-
 
 pub struct Interpreter {
     pub context: Context,
@@ -366,6 +365,13 @@ impl Visitor<ValueType> for Interpreter {
         let return_value = ValueType::None(());
         if let Node::FunctionCall { id, arguments } = node {
             
+            if self.builtin.contains_key(id) {
+                let ctx = self.context.clone();
+                let args = Function::create_args(self.borrow_mut(), arguments, &ctx);
+                let builtin = self.builtin.get_mut(id).unwrap();
+                return builtin.call(args.clone());
+            }
+                        
             if self.context.variables.contains_key(id) {
                 let old = self.context.clone();
                 let function = old.functions.get(id).unwrap();
@@ -397,7 +403,7 @@ impl Visitor<ValueType> for Interpreter {
                             .insert(param.name.clone(), Box::new(arg.clone()));
                     }
                 }
-
+                
                 self.context = ctx;
                 function.body.accept(self);
             }

@@ -39,7 +39,7 @@ impl BuiltInFunction {
     pub fn new(id: String, func: Box<dyn FnMut(Vec<ValueType>) -> ValueType>) -> Self {
         BuiltInFunction { id, func }
     }
-
+    
     pub fn call(&mut self, args: Vec<ValueType>) -> ValueType {
         (self.func)(args)
     }
