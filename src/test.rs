@@ -5,7 +5,9 @@ pub fn if_else_statements() {
 }
 // todo!()
 pub fn fields_vars_literal() {
-    let ctx = super::execute(String::from("scorch_src/unit_tests/test_fields_vars_literal.scorch"));
+    let ctx = super::execute(String::from(
+        "scorch_src/unit_tests/test_fields_vars_literal.scorch",
+    ));
     dbg!(ctx);
 }
 
@@ -53,7 +55,7 @@ fn test_rel_expr() {
         let variable = variables[i];
         let expected_result = expected_results[i];
         let value = *ctx.variables[*&variable].clone();
-        
+
         if let super::runtime::types::ValueType::Bool(v) = value {
             assert_eq!(v, expected_result, "test failed: {}", variable);
         }

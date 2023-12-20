@@ -1,4 +1,4 @@
-use std::{collections::HashMap, borrow::BorrowMut};
+use std::{borrow::BorrowMut, collections::HashMap};
 
 use super::types::*;
 use crate::{
@@ -21,23 +21,22 @@ impl Interpreter {
 }
 
 fn get_builtin_functions() -> HashMap<String, BuiltInFunction> {
-    
-    let println_func = BuiltInFunction::new(String::from("println"),
-    Box::new(|args: Vec<ValueType>| -> ValueType {
-        for arg in args {
-            match arg {
-                ValueType::Float(val) => print!("{}\n", val),
-                ValueType::Bool(val) => print!("{}\n", val),
-                ValueType::String(val) => print!("{}\n", val),
-                ValueType::None(_) => print!("undefined"),
+    let println_func = BuiltInFunction::new(
+        String::from("println"),
+        Box::new(|args: Vec<ValueType>| -> ValueType {
+            for arg in args {
+                match arg {
+                    ValueType::Float(val) => print!("{}\n", val),
+                    ValueType::Bool(val) => print!("{}\n", val),
+                    ValueType::String(val) => print!("{}\n", val),
+                    ValueType::None(_) => print!("undefined"),
+                }
             }
-        }
-        ValueType::None(())
-    }));
-    
-    HashMap::from(
-        [(String::from("println"), println_func)]
-    )
+            ValueType::None(())
+        }),
+    );
+
+    HashMap::from([(String::from("println"), println_func)])
 }
 
 impl Visitor<ValueType> for Interpreter {
@@ -63,8 +62,8 @@ impl Visitor<ValueType> for Interpreter {
         }
         return ValueType::None(());
     }
-    
-    // statements    
+
+    // statements
     fn visit_if_stmnt(&mut self, node: &Node) -> ValueType {
         if let Node::IfStmnt {
             condition,
@@ -181,7 +180,7 @@ impl Visitor<ValueType> for Interpreter {
             }
         }
     }
-        
+
     // literals & values
     fn visit_identifier(&mut self, node: &Node) -> ValueType {
         let Node::Identifier(id) = node else {
@@ -220,7 +219,7 @@ impl Visitor<ValueType> for Interpreter {
     fn visit_eof(&mut self, _node: &Node) -> ValueType {
         ValueType::None(()) // do nothing.
     }
-    
+
     // unary operations
     fn visit_not_op(&mut self, node: &Node) -> ValueType {
         if let Node::NotOp(operand) = node {
@@ -251,7 +250,7 @@ impl Visitor<ValueType> for Interpreter {
             panic!("Expected NegOp node");
         }
     }
-    
+
     // binary operations & expressions
     fn visit_relational_expression(&mut self, node: &Node) -> ValueType {
         if let Node::RelationalExpression { lhs, op, rhs } = node {
@@ -324,7 +323,7 @@ impl Visitor<ValueType> for Interpreter {
             panic!("Expected Expression node");
         }
     }
-    
+
     fn visit_binary_op(&mut self, node: &Node) -> ValueType {
         match node {
             Node::AddOp(lhs, rhs)
@@ -364,22 +363,21 @@ impl Visitor<ValueType> for Interpreter {
             }
         }
     }
-    
+
     // functions
     fn visit_param_decl(&mut self, _node: &Node) -> ValueType {
-    todo!()
+        todo!()
     }
     fn visit_function_call(&mut self, node: &Node) -> ValueType {
         let return_value = ValueType::None(());
         if let Node::FunctionCall { id, arguments } = node {
-            
             if self.builtin.contains_key(id) {
                 let ctx = self.context.clone();
                 let args = Function::create_args(self.borrow_mut(), arguments, &ctx);
                 let builtin = self.builtin.get_mut(id).unwrap();
                 return builtin.call(args.clone());
             }
-                        
+
             if self.context.variables.contains_key(id) {
                 let old = self.context.clone();
                 let function = old.functions.get(id).unwrap();
@@ -411,7 +409,7 @@ impl Visitor<ValueType> for Interpreter {
                             .insert(param.name.clone(), Box::new(arg.clone()));
                     }
                 }
-                
+
                 self.context = ctx;
                 function.body.accept(self);
             }

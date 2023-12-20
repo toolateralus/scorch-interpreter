@@ -29,7 +29,6 @@ pub struct Function {
     pub return_type: String,
 }
 
-
 pub struct BuiltInFunction {
     id: String,
     func: Box<dyn FnMut(Vec<ValueType>) -> ValueType>,
@@ -39,7 +38,7 @@ impl BuiltInFunction {
     pub fn new(id: String, func: Box<dyn FnMut(Vec<ValueType>) -> ValueType>) -> Self {
         BuiltInFunction { id, func }
     }
-    
+
     pub fn call(&mut self, args: Vec<ValueType>) -> ValueType {
         (self.func)(args)
     }

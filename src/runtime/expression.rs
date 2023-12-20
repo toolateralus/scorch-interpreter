@@ -1,4 +1,8 @@
-use crate::{runtime::types::{ValueType, Parameter}, ast::Node, runtime::interpreter::Interpreter};
+use crate::{
+    ast::Node,
+    runtime::interpreter::Interpreter,
+    runtime::types::{Parameter, ValueType},
+};
 
 // binary operation definitions
 impl Interpreter {
@@ -26,7 +30,7 @@ impl Interpreter {
                     name: param_name,
                     typename: type_name,
                 };
-                
+
                 params.push(parameter);
             }
         }

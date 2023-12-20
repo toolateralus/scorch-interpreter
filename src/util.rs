@@ -1,5 +1,5 @@
-use std::{fs::File, collections::HashMap, io::Read};
 use crate::*;
+use std::{collections::HashMap, fs::File, io::Read};
 
 pub struct Flags {
     pub proj_root: String,
@@ -9,10 +9,10 @@ impl Flags {
     pub fn new(flags_map: HashMap<String, bool>) -> Flags {
         Flags {
             proj_root: get_project_root(),
-            dump: flags_map.contains_key("dump"), 
+            dump: flags_map.contains_key("dump"),
         }
     }
-    pub fn qualify_from_root(&self, path : String) {
+    pub fn qualify_from_root(&self, path: String) {
         let mut path = path;
         if path.starts_with("/") {
             path.remove(0);
@@ -25,7 +25,7 @@ pub fn get_project_root() -> String {
     let src_dir = current_dir.join("src");
     let parent_dir = src_dir.parent().expect("Failed to get project root");
     let project_root = parent_dir.to_path_buf();
-    project_root .to_str().unwrap().to_string()
+    project_root.to_str().unwrap().to_string()
 }
 pub fn execute(filename: String) -> Box<Context> {
     let mut tokenizer = tokens::create_tokenizer();
@@ -34,13 +34,13 @@ pub fn execute(filename: String) -> Box<Context> {
     file.read_to_string(&mut contents)
         .expect("Failed to read file");
     tokenizer.tokenize(&contents.as_str());
-    
+
     let tokens = tokenizer.tokens;
     let ast_root = ast::parse_program(&tokens);
     let mut interpreter = Interpreter::new();
 
     ast_root.accept(&mut interpreter);
-    
+
     let ctx = interpreter.context;
     return Box::new(ctx);
 }
