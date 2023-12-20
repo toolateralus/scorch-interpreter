@@ -1,4 +1,7 @@
+let_this := 100
+
 main := (arg : string) {
+    println(let_this)
     msg := 'running from ' + arg
     println(msg)
 }
