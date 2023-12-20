@@ -1,14 +1,37 @@
 pub mod ast;
 pub mod runtime;
 pub mod tokens;
+pub mod types;
+
+#[cfg(test)]
+pub mod test;
 
 use std::{env, collections::HashMap};
 use std::fs::File;
-use std::io::{Read, Write};
-
-use ast::{Node, Visitor};
-use runtime::{Interpreter, Context, ValueType};
+use std::io::Read;
+use runtime::Interpreter;
+use types::Context;
 use tokens::*;
+
+
+fn main() -> () {
+    let flags = parse_cmd_line_args();
+	
+    if  flags.len() == 0 {
+        println!("Usage: scorch [options]");
+        println!("Options:");
+        println!("  --dump: dump tokens, ast, and global context");
+        return;
+    }
+    
+	let file = "test_functions.scorch";
+    if flags.contains_key("dump") {
+    	execute_file_and_dump(String::from(file));
+    } else {
+		execute_return_global_ctx(String::from(file));
+	}
+}
+
 
 fn parse_cmd_line_args() -> HashMap<String, bool> {
     let mut flags = HashMap::new();
@@ -22,71 +45,6 @@ fn parse_cmd_line_args() -> HashMap<String, bool> {
     return flags;
 }
 
-
-fn main() -> () {
-    let flags = parse_cmd_line_args();
-    
-    //test_fields_vars_literal();
-    //test_rel_expr();
-    
-    //test_if_else_statements();
-	let file = "test_functions.scorch";
-
-    if flags.contains_key("dump") {
-    	execute_file_and_dump(String::from(file));
-    } else {
-		execute_return_global_ctx(String::from(file));
-	}
-}
-fn test_functions() {
-    let ctx = execute_return_global_ctx(String::from("test_functions.scorch"));
-    dbg!(ctx);
-}
-fn test_if_else_statements() {
-    let ctx = execute_return_global_ctx(String::from("test_if_else.scorch"));
-    dbg!(ctx);
-}
-fn test_fields_vars_literal() {
-    let ctx = execute_return_global_ctx(String::from("test_fields_vars_literal.scorch"));
-    dbg!(ctx);
-}
-fn test_rel_expr() {
-    let ctx = execute_return_global_ctx(String::from("test_rel_expr.scorch"));
-    let variables = [
-        "rel_t1", "rel_t2", "rel_t3", "rel_t4", "rel_t5", "rel_t6", "rel_t7", "rel_t8",
-        "rel_t9", "rel_t10", "rel_t11", "rel_t12",
-    ];
-    let expected_results = [
-        true,  // rel_t1 := 5 < 10
-        false, // rel_t2 := 5 > 10
-        true,  // rel_t3 := 5 <= 10
-        false, // rel_t4 := 5 >= 10
-        false, // rel_t5 := 5 == 10
-        true,  // rel_t6 := 5 != 10
-        true,  // rel_t7 := 5 == 5
-        false, // rel_t8 := 5 != 5
-        true,  // rel_t9  := 5 <= 5
-        true,  // rel_t10 := 5 >= 5
-        false, // rel_t11 := 5 < 5
-        false, // rel_t12 := 5 > 5
-    ];
-    for i in 0..11 {
-        let variable = variables[i];
-        let expected_result = expected_results[i];
-        let value = *ctx.variables[*&variable].clone();
-        if let ValueType::Bool(v) = value {
-            if v == expected_result {
-                println!("test passed: {}", variable);
-            } else {
-                panic!("failed test: bool value");
-            }
-        } else  {
-            dbg!(variables);
-            dbg!(variable);
-            panic!("failed test: bool value");
-        }
-    }
-}
 fn execute_return_global_ctx(filename: String) -> Box<Context> {
     let mut tokenizer = tokens::create_tokenizer();
     let mut file = File::open(filename).expect("Failed to open file");
@@ -98,7 +56,7 @@ fn execute_return_global_ctx(filename: String) -> Box<Context> {
     let tokens = tokenizer.tokens;
 	let ast_root = ast::parse_program(&tokens);
     let mut interpreter = Interpreter {
-        context: runtime::Context::new(),
+        context: types::Context::new(),
     };
     
     ast_root.accept(&mut interpreter);
@@ -121,7 +79,7 @@ fn execute_file_and_dump(filename: String) {
 	println!("AST Root:");
 	dbg!(&ast_root);
 	let mut interpreter = Interpreter {
-		context: runtime::Context::new(),
+		context: types::Context::new(),
 	};
 	ast_root.accept(&mut interpreter);
 	println!("Global Context:");

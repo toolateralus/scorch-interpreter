@@ -1,21 +1,24 @@
-_zero := 'undefined'
-_one := 'undefined'
-if false {
-    _zero = 'test failed : if false executed'
-} else false {
-    _zero = 'test failed : else executed'
-} else {
-    _zero = 'test passed : else executed'
-}
+status := 'failed'
 
+fail_status := 'failed'
+pass_status := 'passed'
+
+if false {
+    status = fail_status
+} else false {
+    status = fail_status
+} else {
+    status = pass_status
+}
 
 if true {
-    _one = 'test passed : if true executed'
+    status = pass_status
 }
 else false {
-    _one = 'test failed : else executed'
-} else {
-    _one = 'test failed : else executed'
+    status = fail_status
+}
+else {
+    status = fail_status
 }
 
 

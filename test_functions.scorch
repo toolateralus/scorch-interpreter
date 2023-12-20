@@ -1,6 +1,3 @@
-implicit := (a: string, b: num) {
-    xaryu := 100;
-    this_was := 'from the function params'
+recursive_fn := (a: String) {
+    return := a + 'hamburger'
 }
-
-implicit("i hate farting", 2000)

@@ -165,6 +165,26 @@ fn consume_newlines<'a>(index: &mut usize, tokens: &'a Vec<Token>) -> &'a Token 
     }
     return current;
 }
+fn consume_normal_expr_delimiter(tokens: &Vec<Token>, index: &mut usize) {
+    let current = get_current(tokens, index).kind;
+    match current {
+        TokenKind::OpenBrace |
+        TokenKind::Comma => {
+            dbg!(current);
+            panic!("expected newline or ) token");
+        }
+        TokenKind::Newline => {
+            *index += 1;
+        }
+        TokenKind::CloseParenthesis => {
+            *index += 1;
+        }
+        _ => {
+            // continue
+        }
+    }
+}
+
 // ########################################
 // START PARSER FUNCTION HIERARCHY
 // TOP -> BOTTOM
@@ -370,193 +390,6 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
     }
 }
 
-fn consume_normal_expr_delimiter(tokens: &Vec<Token>, index: &mut usize) {
-    let current = get_current(tokens, index).kind;
-    match current {
-        TokenKind::OpenBrace |
-        TokenKind::Comma => {
-            dbg!(current);
-            panic!("expected newline or ) token");
-        }
-        TokenKind::Newline => {
-            *index += 1;
-        }
-        TokenKind::CloseParenthesis => {
-            *index += 1;
-        }
-        _ => {
-            // continue
-        }
-    }
-}
-
-fn parse_parameters(tokens: &Vec<Token>, index: &mut usize) -> Vec<Node> {
-    *index += 1; // discard open_paren
-    
-    let mut params = Vec::new();
-    
-    loop {
-        let mut token = get_current(tokens, index);
-        
-        if token.kind == TokenKind::CloseParenthesis {
-            *index += 1;
-            break;
-        }
-        
-        // parsing varname
-        // ^varname: Typename
-        if token.family != TokenFamily::Identifier {
-            panic!("Expected variable name in parameter declaration");
-        }
-        
-        let varname = parse_factor(tokens, index);
-        
-        token = get_current(tokens, index);
-        //parsing colon 
-        // varname^: Typename
-        match token.kind {
-            TokenKind::ColonEquals => {
-                panic!("implicit default value & parameter type not yet implement")
-            }
-            TokenKind::Colon => {
-                // got our valid case.
-                *index += 1;
-            }
-            _ => {
-                dbg!(token);
-                panic!("Expected colon token after variable name in parameter declaration got");
-            }
-        }
-        
-        // parsing type
-        // varname: ^Typename
-        let typename = parse_factor(tokens, index);
-        
-        // consume comma if there is one.
-        if get_current(tokens, index).kind == TokenKind::Comma {
-            *index += 1;
-        }
-        
-        let param_decl_node = Node::ParamDeclNode {
-            varname: Box::new(varname),
-            typename: Box::new(typename)
-        };
-        
-        params.push(param_decl_node);
-    }
-    
-    params
-}
-
-fn parse_arguments(tokens: &Vec<Token>, index: &mut usize) -> Vec<Node> {
-    *index += 1; // discard open_paren
-    
-    let mut args = Vec::new();
-    
-    while let Some(token) = tokens.get(*index) {
-        // paramless.
-        if token.kind == TokenKind::CloseParenthesis {
-            *index += 1;
-            break;
-        }
-        // accumulate parameter expressions
-        let arg = parse_expression(tokens, index);
-        // skip commas
-        if get_current(tokens, index).kind == TokenKind::Comma {
-            *index += 1;
-        }
-        args.push(arg);
-    }
-    args
-}
-fn parse_if_else(tokens: &Vec<Token>, index: &mut usize) -> Node {
-    *index += 1; // discard 'if'
-    let if_condition = parse_expression(tokens, index);
-    
-	if get_current(tokens, index).kind != TokenKind::OpenBrace {
-		dbg!(get_current(tokens, index));
-		dbg!(if_condition);
-		panic!("If expected open brace after condition");
-	}
-	
-    *index += 1; // skip open brace
-    
-    let if_block = parse_block(tokens, index);
-    
-    let else_or_end = consume_newlines(index, tokens);
-    
-    // if, no else.
-    if else_or_end.kind == TokenKind::Else {
-        let else_node = parse_else(tokens, index);
-        return Node::IfStmnt { 
-            condition: Box::new(if_condition),
-            block: Box::new(if_block),
-            else_stmnt: Option::Some(Box::new(else_node)) 
-        };
-    } else {
-        // an 'if' with no 'else.
-        return Node::IfStmnt { condition : Box::new(if_condition), block : Box::new(if_block), else_stmnt: Option::None };
-    }
-}
-
-fn parse_else(tokens: &Vec<Token>, index: &mut usize) -> Node {
-    *index += 1; // discard 'else'
-    
-    let _ = consume_newlines(index, tokens);
-    
-    // if else with no comparison -> if ... {} else {}
-    if get_current(tokens, index).kind == TokenKind::OpenBrace {
-        let else_block = parse_block(tokens, index);
-        
-        // Check for another else after this block
-        if get_current(tokens, index).kind == TokenKind::Else {
-            let nested_else = parse_else(tokens, index);
-            return Node::ElseStmnt { 
-                condition : Option::None, 
-                block : Box::new(else_block),
-                else_stmnt: Option::Some(Box::new(nested_else))
-            };
-        } else {
-            return Node::ElseStmnt { 
-                condition : Option::None, 
-                block : Box::new(else_block),
-                else_stmnt: Option::None
-            };
-        }
-    } 
-    // if else with comparison -> if ... {} else ... {}
-    else {
-        let else_condition = parse_expression(tokens, index);
-        let cur = get_current(tokens, index);
-        
-        match cur.kind  {
-            TokenKind::OpenBrace | 
-            TokenKind::CloseParenthesis => {
-                *index += 1; // skip open brace
-            }
-            _ => {
-                // continue.
-            }
-        }
-        
-        let else_block = parse_block(tokens, index);
-        
-        if get_current(tokens, index).kind == TokenKind::Else {
-            let nested_else = parse_else(tokens, index);
-            return Node::ElseStmnt { 
-                condition : Option::Some(Box::new(else_condition)), 
-                block : Box::new(else_block),
-                else_stmnt: Option::Some(Box::new(nested_else))
-            };
-        } else {
-            return Node::ElseStmnt { 
-                condition : Option::Some(Box::new(else_condition)), 
-                block : Box::new(else_block),
-                else_stmnt: Option::None
-            };
-        }
-    }
-}
 fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Node {
     let mut left = parse_logical_expr(tokens, index);
 
@@ -738,3 +571,170 @@ fn parse_factor(tokens: &Vec<Token>, index: &mut usize) -> Node {
 // ########################################
 // END PARSER FUNCTION HIERARCHY
 // ########################################
+
+
+fn parse_parameters(tokens: &Vec<Token>, index: &mut usize) -> Vec<Node> {
+    *index += 1; // discard open_paren
+    
+    let mut params = Vec::new();
+    
+    loop {
+        let mut token = get_current(tokens, index);
+        
+        if token.kind == TokenKind::CloseParenthesis {
+            *index += 1;
+            break;
+        }
+        
+        // parsing varname
+        // ^varname: Typename
+        if token.family != TokenFamily::Identifier {
+            panic!("Expected variable name in parameter declaration");
+        }
+        
+        let varname = parse_factor(tokens, index);
+        
+        token = get_current(tokens, index);
+        //parsing colon 
+        // varname^: Typename
+        match token.kind {
+            TokenKind::ColonEquals => {
+                panic!("implicit default value & parameter type not yet implement")
+            }
+            TokenKind::Colon => {
+                // got our valid case.
+                *index += 1;
+            }
+            _ => {
+                dbg!(token);
+                panic!("Expected colon token after variable name in parameter declaration got");
+            }
+        }
+        
+        // parsing type
+        // varname: ^Typename
+        let typename = parse_factor(tokens, index);
+        
+        // consume comma if there is one.
+        if get_current(tokens, index).kind == TokenKind::Comma {
+            *index += 1;
+        }
+        
+        let param_decl_node = Node::ParamDeclNode {
+            varname: Box::new(varname),
+            typename: Box::new(typename)
+        };
+        
+        params.push(param_decl_node);
+    }
+    
+    params
+}
+fn parse_arguments(tokens: &Vec<Token>, index: &mut usize) -> Vec<Node> {
+    *index += 1; // discard open_paren
+    
+    let mut args = Vec::new();
+    
+    while let Some(token) = tokens.get(*index) {
+        // paramless.
+        if token.kind == TokenKind::CloseParenthesis {
+            *index += 1;
+            break;
+        }
+        // accumulate parameter expressions
+        let arg = parse_expression(tokens, index);
+        // skip commas
+        if get_current(tokens, index).kind == TokenKind::Comma {
+            *index += 1;
+        }
+        args.push(arg);
+    }
+    args
+}
+fn parse_if_else(tokens: &Vec<Token>, index: &mut usize) -> Node {
+    *index += 1; // discard 'if'
+    let if_condition = parse_expression(tokens, index);
+    
+	if get_current(tokens, index).kind != TokenKind::OpenBrace {
+		dbg!(get_current(tokens, index));
+		dbg!(if_condition);
+		panic!("If expected open brace after condition");
+	}
+	
+    *index += 1; // skip open brace
+    
+    let if_block = parse_block(tokens, index);
+    
+    let else_or_end = consume_newlines(index, tokens);
+    
+    // if, no else.
+    if else_or_end.kind == TokenKind::Else {
+        let else_node = parse_else(tokens, index);
+        return Node::IfStmnt { 
+            condition: Box::new(if_condition),
+            block: Box::new(if_block),
+            else_stmnt: Option::Some(Box::new(else_node)) 
+        };
+    } else {
+        // an 'if' with no 'else.
+        return Node::IfStmnt { condition : Box::new(if_condition), block : Box::new(if_block), else_stmnt: Option::None };
+    }
+}
+fn parse_else(tokens: &Vec<Token>, index: &mut usize) -> Node {
+    *index += 1; // discard 'else'
+    
+    let _ = consume_newlines(index, tokens);
+    
+    // if else with no comparison -> if ... {} else {}
+    if get_current(tokens, index).kind == TokenKind::OpenBrace {
+        let else_block = parse_block(tokens, index);
+        
+        // Check for another else after this block
+        if get_current(tokens, index).kind == TokenKind::Else {
+            let nested_else = parse_else(tokens, index);
+            return Node::ElseStmnt { 
+                condition : Option::None, 
+                block : Box::new(else_block),
+                else_stmnt: Option::Some(Box::new(nested_else))
+            };
+        } else {
+            return Node::ElseStmnt { 
+                condition : Option::None, 
+                block : Box::new(else_block),
+                else_stmnt: Option::None
+            };
+        }
+    } 
+    // if else with comparison -> if ... {} else ... {}
+    else {
+        let else_condition = parse_expression(tokens, index);
+        let cur = get_current(tokens, index);
+        
+        match cur.kind  {
+            TokenKind::OpenBrace | 
+            TokenKind::CloseParenthesis => {
+                *index += 1; // skip open brace
+            }
+            _ => {
+                // continue.
+            }
+        }
+        
+        let else_block = parse_block(tokens, index);
+        
+        if get_current(tokens, index).kind == TokenKind::Else {
+            let nested_else = parse_else(tokens, index);
+            return Node::ElseStmnt { 
+                condition : Option::Some(Box::new(else_condition)), 
+                block : Box::new(else_block),
+                else_stmnt: Option::Some(Box::new(nested_else))
+            };
+        } else {
+            return Node::ElseStmnt { 
+                condition : Option::Some(Box::new(else_condition)), 
+                block : Box::new(else_block),
+                else_stmnt: Option::None
+            };
+        }
+    }
+}
