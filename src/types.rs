@@ -51,8 +51,8 @@ impl Context {
             variables: HashMap::new(),
         }
     }
-
+    
     fn add_range(&self, _args: &HashMap<String, ValueType>) -> () {
-        // todo: add function arguments to the context.
+        todo!()
     }
 }

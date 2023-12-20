@@ -22,7 +22,7 @@ impl Visitor<ValueType> for Interpreter {
             expression,
         } = node
         {
-            let mut value: ValueType = ValueType::None(());
+            let value: ValueType;
 
             match target_type.as_str() {
                 "dynamic" | "num" | "string" => {
@@ -85,7 +85,7 @@ impl Visitor<ValueType> for Interpreter {
     fn visit_assignment(&mut self, node: &Node) -> ValueType {
         match node {
             Node::AssignStmnt { id, expression } => {
-                let mut val = ValueType::None(());
+                let val : ValueType;
                 val = self.visit_expression(expression);
                 let str_id: String = match id.as_ref() {
                     Node::Identifier(id) => id.clone(),
@@ -442,7 +442,7 @@ impl Interpreter {
         params
     }
     fn bin_op_float(&mut self, node: &Node, lhs: &f64, rhs: &f64) -> ValueType {
-        let mut result: f64 = f64::NAN;
+        let result: f64;
         match node {
             Node::AddOp(_, _) => result = lhs + rhs,
             Node::SubOp(_, _) => result = lhs - rhs,

@@ -196,7 +196,6 @@ pub fn parse_program(tokens: &Vec<Token>) -> Node {
     while index < tokens.len() {
         let token = consume_newlines(&mut index, tokens);
         if token.kind == TokenKind::Eof {
-            index += 1;
             break;
         }
         let statement = parse_statement(tokens, &mut index);
