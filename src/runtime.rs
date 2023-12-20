@@ -294,14 +294,10 @@ impl Visitor<ValueType> for Interpreter {
             let lhs_value = lhs.accept(self);
             let rhs_value = rhs.accept(self);
             match (lhs_value, rhs_value) {
-                (ValueType::Bool(lhs_float), ValueType::Bool(rhs_float)) => {
+                (ValueType::Bool(lhs_bool), ValueType::Bool(rhs_bool)) => {
                     match op {
-                        TokenKind::LeftAngle => return ValueType::Bool(lhs_float < rhs_float),
-                        TokenKind::LessThanEquals  => return ValueType::Bool(lhs_float <= rhs_float),
-                        TokenKind::RightAngle => return ValueType::Bool(lhs_float > rhs_float),
-                        TokenKind::GreaterThanEquals  => return ValueType::Bool(lhs_float >= rhs_float),
-                        TokenKind::Equals => return ValueType::Bool(lhs_float == rhs_float),
-                        TokenKind::NotEquals  => return ValueType::Bool(lhs_float != rhs_float),
+                        TokenKind::Equals => return ValueType::Bool(lhs_bool == rhs_bool),
+                        TokenKind::NotEquals  => return ValueType::Bool(lhs_bool != rhs_bool),
                         _ => {
                             dbg!(node);
                             panic!("invalid operator");
@@ -324,10 +320,6 @@ impl Visitor<ValueType> for Interpreter {
                 }
                 (ValueType::String(lhs_string), ValueType::String(rhs_string)) => {
                     match op {
-                        TokenKind::LeftAngle => return ValueType::Bool(lhs_string < rhs_string),
-                        TokenKind::LessThanEquals => return ValueType::Bool(lhs_string <= rhs_string),
-                        TokenKind::RightAngle=> return ValueType::Bool(lhs_string > rhs_string),
-                        TokenKind::GreaterThanEquals => return ValueType::Bool(lhs_string >= rhs_string),
                         TokenKind::Equals => return ValueType::Bool(lhs_string == rhs_string),
                         TokenKind::NotEquals => return ValueType::Bool(lhs_string != rhs_string),
                         _ => {
