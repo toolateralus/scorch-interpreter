@@ -1,5 +1,5 @@
 use crate::{
-    ast::Node,
+    frontend::ast::Node,
     runtime::interpreter::Interpreter,
     runtime::types::{Parameter, ValueType},
 };

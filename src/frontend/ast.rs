@@ -1,6 +1,9 @@
 use core::panic;
 
-use crate::tokens::*;
+use crate::frontend::*;
+
+use super::tokens::{Token, TokenKind, TokenFamily};
+
 pub trait Visitor<T> {
     fn visit_number(&mut self, node: &Node) -> T;
     fn visit_term(&mut self, node: &Node) -> T;

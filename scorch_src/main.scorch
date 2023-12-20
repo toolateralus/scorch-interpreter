@@ -1,8 +1,9 @@
 let_this := 100
 
 main := (arg : string) {
-    println(let_this)
+    println('the following line should be 100. it is printed from a parent scope.', let_this)
     msg := 'running from ' + arg
     println(msg)
 }
+
 main('scorch-lang/scorch_src/main.scorch/main()')

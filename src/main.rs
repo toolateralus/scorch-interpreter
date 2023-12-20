@@ -1,6 +1,5 @@
-pub mod ast;
 pub mod runtime;
-pub mod tokens;
+pub mod frontend;
 pub mod util;
 
 #[cfg(test)]
@@ -10,7 +9,7 @@ use runtime::interpreter::*;
 use runtime::types::Context;
 
 use std::{collections::HashMap, env};
-use tokens::*;
+use frontend::tokens::*;
 use util::*;
 
 fn main() -> () {

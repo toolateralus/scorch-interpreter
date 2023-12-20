@@ -1,6 +1,6 @@
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
-use crate::{ast::Node, runtime::interpreter::Interpreter};
+use crate::{frontend::{*, ast::Node}, runtime::interpreter::Interpreter};
 
 #[derive(Debug, Clone)]
 pub enum ValueType {
