@@ -427,9 +427,32 @@ impl Visitor<ValueType> for Interpreter {
                 let old = self.context.clone();
                 let function = old.functions.get(id).unwrap();
                 let args = Function::create_args(self, arguments, &old);
-                
                 let ctx = Context::new();
-                ctx.add_range(args);
+                
+                if (args.len() == 0){
+                    return function.body.accept(self);
+                }
+                
+                // Check if the number of arguments matches the number of parameters
+                if args.len() != function.params.len() {
+                    panic!("Number of arguments does not match the number of parameters");
+                }
+                
+                // Check if the types and order of arguments match the parameters
+                for (arg, param) in args.iter().zip(function.params.iter()) {
+                    let arg_type_name = match *arg {
+                        ValueType::Float(_) => "num",
+                        ValueType::Bool(_) => "bool",
+                        ValueType::String(_) => "string",
+                        ValueType::None(_) => "undefined",
+                    };
+                    if arg_type_name != param.name {
+                        panic!("Argument type does not match parameter type") 
+                    }
+                    else {
+                        self.context.variables.insert(param.name.clone(), Box::new(arg.clone()));
+                    }
+                }
                 
                 self.context = ctx;
                 function.body.accept(self);
