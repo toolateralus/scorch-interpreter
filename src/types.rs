@@ -32,7 +32,7 @@ pub trait Invokable {
     fn create_args(interpeter: &mut Interpreter, arguments : &Option<Vec<Node>>, ctx: &Context) -> Vec<ValueType>;
 }
 impl Invokable for Function {
-    fn create_args(interpeter: &mut Interpreter, arguments : &Option<Vec<Node>>, ctx: &Context) -> Vec<ValueType> {
+    fn create_args(interpeter: &mut Interpreter, arguments : &Option<Vec<Node>>, _ctx: &Context) -> Vec<ValueType> {
         let mut args = Vec::new();
         let args_col = arguments.as_ref().unwrap();
         for arg in args_col {
@@ -52,7 +52,7 @@ impl Context {
         }
     }
 
-    fn add_range(&self, args: &HashMap<String, ValueType>) -> () {
+    fn add_range(&self, _args: &HashMap<String, ValueType>) -> () {
         // todo: add function arguments to the context.
     }
 }

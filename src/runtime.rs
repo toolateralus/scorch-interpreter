@@ -352,7 +352,7 @@ impl Visitor<ValueType> for Interpreter {
         ValueType::None(())
     }
     
-    fn visit_param_decl(&mut self, node: &Node) -> ValueType {
+    fn visit_param_decl(&mut self, _node: &Node) -> ValueType {
         todo!()
     }
     fn visit_program(&mut self, node: &Node) -> ValueType {
@@ -376,7 +376,7 @@ impl Visitor<ValueType> for Interpreter {
                 let args = Function::create_args(self, arguments, &old);
                 let ctx = Context::new();
                 
-                if (args.len() == 0){
+                if args.len() == 0 {
                     return function.body.accept(self);
                 }
                 

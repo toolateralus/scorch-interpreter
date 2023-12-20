@@ -1,5 +1,5 @@
 use core::panic;
-use std::f32::consts::E;
+
 use crate::tokens::*;
 pub trait Visitor<T> {
     fn visit_number(&mut self, node: &Node) -> T;
@@ -140,12 +140,12 @@ impl Node {
                 block: _,
                 else_stmnt: _,
             } => visitor.visit_else_stmnt(self),
-            Node::RelationalExpression { lhs, op, rhs } => visitor.visit_relational_expression(self),
-            Node::LogicalExpression { lhs, op, rhs } => visitor.visit_logical_expression(self),
-            Node::BinaryOperation { lhs, op, rhs } => visitor.visit_binary_op(self),
-            Node::FnDeclStmnt { id, body, params, return_type } => visitor.visit_function_decl(self),
-            Node::ParamDeclNode { varname, typename } => visitor.visit_param_decl(self),
-            Node::FunctionCall { id, arguments } => visitor.visit_function_call(self),
+            Node::RelationalExpression { lhs: _, op: _, rhs: _ } => visitor.visit_relational_expression(self),
+            Node::LogicalExpression { lhs: _, op: _, rhs: _ } => visitor.visit_logical_expression(self),
+            Node::BinaryOperation { lhs: _, op: _, rhs: _ } => visitor.visit_binary_op(self),
+            Node::FnDeclStmnt { id: _, body: _, params: _, return_type: _ } => visitor.visit_function_decl(self),
+            Node::ParamDeclNode { varname: _, typename: _ } => visitor.visit_param_decl(self),
+            Node::FunctionCall { id: _, arguments: _ } => visitor.visit_function_call(self),
 			Node::Program(_statements) => visitor.visit_program(self),
         }
     }
@@ -539,7 +539,7 @@ fn parse_factor(tokens: &Vec<Token>, index: &mut usize) -> Node {
             TokenKind::Subtract => {
                 let node = parse_factor(tokens, index);
                 
-                if let Node::NegOp(node) = node {
+                if let Node::NegOp(_node) = node {
                     panic!("Double not operations are not allowed");                    
                 }
                 
@@ -548,7 +548,7 @@ fn parse_factor(tokens: &Vec<Token>, index: &mut usize) -> Node {
             TokenKind::Not => {
                 let node = parse_factor(tokens, index);
                 
-                if let Node::NotOp(node) = node {
+                if let Node::NotOp(_node) = node {
                     panic!("Double not operations are not allowed");                    
                 }
                 
