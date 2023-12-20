@@ -9,6 +9,7 @@ pub trait Visitor<T> {
     fn visit_binary_op(&mut self, node: &Node) -> T;
     fn visit_function_decl(&mut self, node: &Node) -> T;
     fn visit_param_decl(&mut self, node: &Node) -> T;
+    fn visit_function_call(&mut self, node: &Node) -> T;
     fn visit_relational_expression(&mut self, node: &Node) -> T;
     fn visit_logical_expression(&mut self, node: &Node) -> T;
     // unary operations
@@ -78,6 +79,11 @@ pub enum Node {
         expression: Box<Node>,
     },
     
+    FunctionCall {
+        id: String,
+        arguments: Option<Vec<Node>>,
+    },
+    
     DeclStmt {
         target_type: String,
         id: String,
@@ -139,6 +145,7 @@ impl Node {
             Node::BinaryOperation { lhs, op, rhs } => visitor.visit_binary_op(self),
             Node::FnDeclStmnt { id, body, params, return_type } => visitor.visit_function_decl(self),
             Node::ParamDeclNode { varname, typename } => visitor.visit_param_decl(self),
+            Node::FunctionCall { id, arguments } => visitor.visit_function_call(self),
         }
     }
 }
@@ -391,20 +398,17 @@ fn parse_parameters(tokens: &Vec<Token>, index: &mut usize) -> Vec<Node> {
 fn parse_arguments(tokens: &Vec<Token>, index: &mut usize) -> Vec<Node> {
     *index += 1; // discard open_paren
     
-    
-    
-    let mut params = Vec::new();
+    let mut args = Vec::new();
     
     while let Some(token) = tokens.get(*index) {
         if token.kind == TokenKind::CloseParenthesis {
             *index += 1;
             break;
         }
-        let param = parse_expression(tokens, index);
-        params.push(param);
+        let arg = parse_expression(tokens, index);
+        args.push(arg);
     }
-    
-    params
+    args
 }
 fn parse_if_else(tokens: &Vec<Token>, index: &mut usize) -> Node {
     *index += 1; // discard 'if'
