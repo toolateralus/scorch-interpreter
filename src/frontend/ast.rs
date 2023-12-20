@@ -504,6 +504,9 @@ fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Node {
             TokenKind::Comma => {
                 break;
             }
+            TokenKind::Eof => {
+                break;
+            }
             _ => {
                 println!("left");
                 dbg!(left);
