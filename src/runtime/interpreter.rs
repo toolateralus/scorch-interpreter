@@ -61,7 +61,7 @@ impl Visitor<ValueType> for Interpreter {
         }
         return ValueType::None(());
     }
-
+    
     // statements
     fn visit_if_stmnt(&mut self, node: &Node) -> ValueType {
         if let Node::IfStmnt {
@@ -181,7 +181,6 @@ impl Visitor<ValueType> for Interpreter {
     }
 
     // literals & values
-
     // todo: move this into it's own visitor, previous to this one? it needs a
     // different return type otherwise reference counting nad pointers will be very very challenging, as far as i can see.
     // there's probably a way.
@@ -471,6 +470,17 @@ impl Visitor<ValueType> for Interpreter {
             None => {
                 self.visit_conditionless_repeat_stmnt(block)
             }
+        }
+    }
+    
+    fn visit_break_stmnt(&mut self, node: &Node) -> ValueType {
+        if let Node::BreakStmnt(opt_val) = node {
+            let Some(value_node) = opt_val else {
+                return ValueType::None(());
+            };
+            return value_node.accept(self);
+        } else {
+            panic!("Expected BreakStmnt node");
         }
     }
 }

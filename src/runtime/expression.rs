@@ -47,7 +47,7 @@ impl Interpreter {
     }
     pub fn visit_conditionless_repeat_stmnt(&mut self, block: &Box<Node>) -> ValueType {
         loop {
-            block.accept(self);
+            let result = block.accept(self);
         }
     }
 }

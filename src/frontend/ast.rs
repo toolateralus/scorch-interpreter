@@ -13,6 +13,7 @@ pub trait Visitor<T> {
     fn visit_function_call(&mut self, node: &Node) -> T;
     fn visit_program(&mut self, node: &Node) -> T;
     fn visit_repeat_stmnt(&mut self, node: &Node) -> T;
+    fn visit_break_stmnt(&mut self, node: &Node) -> T;
     fn visit_relational_expression(&mut self, node: &Node) -> T;
     fn visit_logical_expression(&mut self, node: &Node) -> T;
     // unary operations
@@ -116,6 +117,7 @@ pub enum Node {
         varname: Box<Node>,
         typename: Box<Node>,
     },
+    BreakStmnt(Option<Box<Node>>),
 }
 impl Node {
     pub fn accept<T>(&self, visitor: &mut dyn Visitor<T>) -> T {
@@ -145,6 +147,7 @@ impl Node {
             Node::FunctionCall {..} => visitor.visit_function_call(self),
             Node::Program(..) => visitor.visit_program(self),
             Node::RepeatStmnt { .. } => visitor.visit_repeat_stmnt(self),
+            Node::BreakStmnt(_) => visitor.visit_break_stmnt(self),
         }
     }
 }
@@ -248,11 +251,26 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
     }
 
     let next = tokens.get(*index + 1).unwrap();
-
+    
+    // NOTE:: next is ahead one and must be discarded.
+    // NOTE:: token is the current, but must also be discarded.
+    // any branch of this must move the index forward at least once.
     match token.family {
         TokenFamily::Keyword => match token.kind {
+            TokenKind::Break => {
+                *index += 1; // discard break
+                if next.kind == TokenKind::Newline {
+                    Ok(Node::BreakStmnt(Option::None))
+                }
+                else if next.kind != TokenKind::CloseBrace {
+                    let value = parse_expression(tokens, index);
+                    Ok(Node::BreakStmnt(Option::Some(Box::new(value))))
+                }
+                else {
+                    panic!("break statements must be followed by a newline or a return value.");
+                }
+            }
             TokenKind::Repeat => {
-                
                 parse_repeat_stmnt(next, index, tokens)
             }
             TokenKind::If => {
@@ -274,31 +292,12 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
 
             match next.kind {
                 TokenKind::OpenParenthesis => {
-                    *index += 1;
-                    let arguments = parse_arguments(tokens, index);
-                    let node = Node::FunctionCall {
-                        id: token.value.clone(),
-                        arguments: Option::Some(arguments),
-                    };
-                    Ok(node)
+                    parse_fn_call(index, tokens, token)
                 }
                 // varname := default;
                 // declaring a variable with implicit type.
                 TokenKind::ColonEquals => {
-                    *index += 2; // skip id, := tokens
-                    
-                    if let Some(value) = parse_function_decl_stmnt(tokens, index, &id) {
-                        return value;
-                    }
-                    // implicit variable declaration
-                    let value = parse_expression(tokens, index);
-                    consume_normal_expr_delimiter(tokens, index);
-
-                    Ok(Node::DeclStmt {
-                        target_type: String::from("dynamic"),
-                        id,
-                        expression: Box::new(value),
-                    })
+                    parse_implicit_decl(index, tokens, &id)
                 }
                 // declaraing a variable with explicit type.
                 TokenKind::Colon => {
@@ -337,7 +336,32 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
         }
     }
 }
+fn parse_fn_call(index: &mut usize, tokens: &Vec<Token>, token: &Token) -> Result<Node, ()> {
+    *index += 1;
+    let arguments = parse_arguments(tokens, index);
+    let node = Node::FunctionCall {
+        id: token.value.clone(),
+        arguments: Option::Some(arguments),
+    };
+    Ok(node)
+}
+fn parse_implicit_decl(index: &mut usize, tokens: &Vec<Token>, id: &String) -> Result<Node, ()> {
+    *index += 2;
+    // skip id, := tokens
+                    
+    if let Some(value) = parse_function_decl_stmnt(tokens, index, id) {
+        return value;
+    }
+    // implicit variable declaration
+    let value = parse_expression(tokens, index);
+    consume_normal_expr_delimiter(tokens, index);
 
+    Ok(Node::DeclStmt {
+        target_type: String::from("dynamic"),
+        id: id.clone(),
+        expression: Box::new(value),
+    })
+}
 fn parse_function_decl_stmnt(tokens: &Vec<Token>, index: &mut usize, id: &String) -> Option<Result<Node, ()>> {
     if get_current(tokens, index).kind == TokenKind::OpenBrace {
         let body = parse_block(tokens, index);
@@ -376,7 +400,6 @@ fn parse_function_decl_stmnt(tokens: &Vec<Token>, index: &mut usize, id: &String
     }
     None
 }
-
 fn parse_explicit_decl(index: &mut usize, tokens: &Vec<Token>, token: &Token, id: String) -> Result<Node, ()> {
     *index += 2;
     // varname :^ type = default;
@@ -408,7 +431,6 @@ fn parse_explicit_decl(index: &mut usize, tokens: &Vec<Token>, token: &Token, id
         expression: Box::new(expression),
     })
 }
-
 fn parse_repeat_stmnt(next: &Token, index: &mut usize, tokens: &Vec<Token>) -> Result<Node, ()> {
     // style::
     // repeat i < 200 {...}
@@ -435,7 +457,6 @@ fn parse_repeat_stmnt(next: &Token, index: &mut usize, tokens: &Vec<Token>) -> R
         block: Box::new(block) 
     })
 }
-
 fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Node {
     let mut left = parse_logical_expr(tokens, index);
 
