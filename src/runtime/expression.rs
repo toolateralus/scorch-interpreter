@@ -1,8 +1,56 @@
+use std::rc::Rc;
+
 use crate::{
     frontend::ast::Node,
     runtime::interpreter::Interpreter,
     runtime::types::{Parameter, ValueType},
 };
+
+// loops
+impl Interpreter {
+    pub fn visit_conditional_repeat_stmnt(&mut self, id: &str, condition: &Option<Box<Node>>, block: &Box<Node>) -> ValueType {
+        match self.context.find_variable(&id) {
+            Some(_) => {
+                
+            }
+            None => {
+                self.context.insert_variable(&id, Rc::new(ValueType::Float(0.0)));
+            }
+        }
+        self.context.insert_variable(&id, Rc::new(ValueType::Float(0.0)));
+    
+        let mut iter : f64 = 0.0;
+        loop {
+            let condition_result = match condition.as_ref() {
+                Some(expression) => {
+                    if let ValueType::Bool(val) = expression.accept(self) {
+                        val
+                    } else {
+                        panic!("Expected boolean condition");
+                    }
+                }
+                None => panic!("Expected condition in conditional repeat statement"),
+            };
+    
+            if condition_result {
+                block.accept(self);
+            } else {
+                return ValueType::None(());
+            }
+            self.context.variables.remove(id);
+            
+            iter += 1.0;
+            
+            // should we floor this here?
+            self.context.insert_variable(&id, Rc::new(ValueType::Float(iter.floor()))); 
+        }
+    }
+    pub fn visit_conditionless_repeat_stmnt(&mut self, block: &Box<Node>) -> ValueType {
+        loop {
+            block.accept(self);
+        }
+    }
+}
 
 // binary operation definitions
 impl Interpreter {

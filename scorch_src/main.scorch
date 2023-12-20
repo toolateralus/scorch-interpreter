@@ -1,9 +1,3 @@
-let_this := 100
-
-main := (arg : string) {
-    println('the following line should be 100. it is printed from a parent scope.', let_this)
-    msg := 'running from ' + arg
-    println(msg)
+repeat i < 250 {
+    println(i)
 }
-
-main('scorch-lang/scorch_src/main.scorch/main()')

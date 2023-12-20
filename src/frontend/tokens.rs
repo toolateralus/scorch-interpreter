@@ -30,8 +30,11 @@ pub fn create_tokenizer() -> Tokenizer {
         (String::from("%"), TokenKind::Modulo),
         (String::from("!"), TokenKind::Not),
     ]);
-
+    
     let keywords = HashMap::from([
+        (String::from("repeat"), TokenKind::Repeat),
+        (String::from("return"), TokenKind::Return),
+        (String::from("break"), TokenKind::Break),
         (String::from("if"), TokenKind::If),
         (String::from("else"), TokenKind::Else),
     ]);
@@ -96,18 +99,21 @@ pub enum TokenKind {
 
     Comma,
     Colon,
-
+    
     If,
     Else,
-    Return,
+    Repeat,
+    
+    Return, // todo: design return. idk how we should do this @Cooper-Pilot
     Eof,
-
+    
     // special operators
     Lambda, // =>, Extract out.
     DubColon,
     ColonEquals,
     Assignment,
-    Bool, // ::
+    Bool,
+    Break, // ::
 }
 #[derive(Debug, Clone)]
 pub struct Token {
@@ -146,7 +152,7 @@ impl TokenProcessor for Tokenizer {
         self.index = 0;
         self.line = 1;
         self.column = 1;
-
+        
         let comment_regex = Regex::new(r"(//.*\n)|(/\*.*?\*/)").unwrap();
         let input = comment_regex.replace_all(original_input, "");
 

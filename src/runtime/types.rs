@@ -39,9 +39,6 @@ impl Context {
         }
     }
     pub fn insert_variable(&mut self, name: &str, value: Rc<ValueType>) -> () {
-        if self.variables.contains_key(name) {
-            panic!("Redefinition : Variable {} already exists", name);
-        }
         let name_str = name.to_string();
         self.variables.insert(name_str, value);
     }

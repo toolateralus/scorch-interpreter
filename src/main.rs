@@ -1,7 +1,13 @@
+// tokenizer, parser.
 pub mod frontend;
+
+// interpreter, execution. types.
 pub mod runtime;
+
+// cli repl, load & run file, etc.
 pub mod util;
 
+// unit test module, see /test.rs
 #[cfg(test)]
 pub mod test;
 

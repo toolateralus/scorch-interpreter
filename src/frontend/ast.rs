@@ -12,6 +12,7 @@ pub trait Visitor<T> {
     fn visit_param_decl(&mut self, node: &Node) -> T;
     fn visit_function_call(&mut self, node: &Node) -> T;
     fn visit_program(&mut self, node: &Node) -> T;
+    fn visit_repeat_stmnt(&mut self, node: &Node) -> T;
     fn visit_relational_expression(&mut self, node: &Node) -> T;
     fn visit_logical_expression(&mut self, node: &Node) -> T;
     // unary operations
@@ -89,7 +90,11 @@ pub enum Node {
         id: String,
         expression: Box<Node>,
     },
-
+    RepeatStmnt {
+        iterator_id : Option<String>,
+        condition: Option<Box<Node>>,
+        block: Box<Node>,
+    },
     // not implemented
     IfStmnt {
         condition: Box<Node>,
@@ -116,67 +121,30 @@ impl Node {
     pub fn accept<T>(&self, visitor: &mut dyn Visitor<T>) -> T {
         match self {
             Node::Undefined() => visitor.visit_eof(self),
-            Node::Identifier(_key) => visitor.visit_identifier(self),
-            Node::Number(_value) => visitor.visit_number(self),
-            Node::AddOp(_lhs, _rhs) => visitor.visit_binary_op(self),
-            Node::SubOp(_lhs, _rhs) => visitor.visit_binary_op(self),
-            Node::MulOp(_lhs, _rhs) => visitor.visit_binary_op(self),
-            Node::DivOp(_lhs, _rhs) => visitor.visit_binary_op(self),
-            Node::AssignStmnt {
-                id: _,
-                expression: _,
-            } => visitor.visit_assignment(self),
-            Node::DeclStmt {
-                target_type: _,
-                id: _,
-                expression: _,
-            } => visitor.visit_declaration(self),
-            Node::Block(_statements) => visitor.visit_block(self),
-            Node::Expression(_root) => visitor.visit_expression(self),
-            Node::String(_) => visitor.visit_string(self),
-            Node::NegOp(_) => visitor.visit_neg_op(self),
-            Node::NotOp(_) => visitor.visit_not_op(self),
-            Node::Bool(_) => visitor.visit_bool(self),
-            Node::IfStmnt {
-                condition: _,
-                block: _true_block,
-                else_stmnt: _,
-            } => visitor.visit_if_stmnt(self),
-            Node::ElseStmnt {
-                condition: _,
-                block: _,
-                else_stmnt: _,
-            } => visitor.visit_else_stmnt(self),
-            Node::RelationalExpression {
-                lhs: _,
-                op: _,
-                rhs: _,
-            } => visitor.visit_relational_expression(self),
-            Node::LogicalExpression {
-                lhs: _,
-                op: _,
-                rhs: _,
-            } => visitor.visit_logical_expression(self),
-            Node::BinaryOperation {
-                lhs: _,
-                op: _,
-                rhs: _,
-            } => visitor.visit_binary_op(self),
-            Node::FnDeclStmnt {
-                id: _,
-                body: _,
-                params: _,
-                return_type: _,
-            } => visitor.visit_function_decl(self),
-            Node::ParamDeclNode {
-                varname: _,
-                typename: _,
-            } => visitor.visit_param_decl(self),
-            Node::FunctionCall {
-                id: _,
-                arguments: _,
-            } => visitor.visit_function_call(self),
-            Node::Program(_statements) => visitor.visit_program(self),
+            Node::Identifier(..) => visitor.visit_identifier(self),
+            Node::Number(..) => visitor.visit_number(self),
+            Node::AddOp(..) => visitor.visit_binary_op(self),
+            Node::SubOp(..) => visitor.visit_binary_op(self),
+            Node::MulOp(..) => visitor.visit_binary_op(self),
+            Node::DivOp(..) => visitor.visit_binary_op(self),
+            Node::AssignStmnt {..} => visitor.visit_assignment(self),
+            Node::DeclStmt {..} => visitor.visit_declaration(self),
+            Node::Block(..) => visitor.visit_block(self),
+            Node::Expression(..) => visitor.visit_expression(self),
+            Node::String(..) => visitor.visit_string(self),
+            Node::NegOp(..) => visitor.visit_neg_op(self),
+            Node::NotOp(..) => visitor.visit_not_op(self),
+            Node::Bool(..) => visitor.visit_bool(self),
+            Node::IfStmnt {..} => visitor.visit_if_stmnt(self),
+            Node::ElseStmnt {..} => visitor.visit_else_stmnt(self),
+            Node::RelationalExpression {..} => visitor.visit_relational_expression(self),
+            Node::LogicalExpression {..} => visitor.visit_logical_expression(self),
+            Node::BinaryOperation {..} => visitor.visit_binary_op(self),
+            Node::FnDeclStmnt {..} => visitor.visit_function_decl(self),
+            Node::ParamDeclNode {..} => visitor.visit_param_decl(self),
+            Node::FunctionCall {..} => visitor.visit_function_call(self),
+            Node::Program(..) => visitor.visit_program(self),
+            Node::RepeatStmnt { .. } => visitor.visit_repeat_stmnt(self),
         }
     }
 }
@@ -233,7 +201,7 @@ pub fn parse_program(tokens: &Vec<Token>) -> Node {
         match statement {
             Ok(node) => statements.push(Box::new(node)),
             Err(_) => {
-                if token.kind == TokenKind::Newline {
+                if token.kind == TokenKind::Newline || token.kind ==  TokenKind::Eof {
                     break; // ignore newlines.
                 }
                 panic!("Expected statement node");
@@ -257,7 +225,7 @@ fn parse_block(tokens: &Vec<Token>, index: &mut usize) -> Node {
         match statement {
             Ok(node) => statements.push(Box::new(node)),
             Err(_) => {
-                if token.kind == TokenKind::Newline {
+                if token.kind == TokenKind::Newline || token.kind == TokenKind::Eof {
                     break; // ignore newlines.
                 }
                 println!("Block encountered unexpected token:");
@@ -272,9 +240,9 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
     if *index >= tokens.len() {
         return Err(());
     }
-
+    
     let token = consume_newlines(index, tokens);
-
+    
     if *index + 1 >= tokens.len() {
         return Err(()); // probably a newline
     }
@@ -283,6 +251,33 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
 
     match token.family {
         TokenFamily::Keyword => match token.kind {
+            TokenKind::Repeat => {
+                
+                // style::
+                // repeat i < 200 {...}
+                if next.family == TokenFamily::Identifier {
+                    let id = next.value.clone();
+                    *index += 1; // skip repeat, leaev identifier in expression.
+                    let condition = parse_expression(tokens, index);
+                    let block = parse_block(tokens, index);
+                    let node = Node::RepeatStmnt {
+                        iterator_id: Option::Some(id),
+                        condition: Option::Some(Box::new(condition)),
+                        block: Box::new(block) 
+                    };
+                    return Ok(node);
+                }
+                
+                // style::
+                // repeat {... }
+                let block = parse_block(tokens, index);
+                
+                Ok(Node::RepeatStmnt { 
+                    iterator_id:Option::None,
+                    condition:Option::None,
+                    block: Box::new(block) 
+                })
+            }
             TokenKind::If => {
                 let statement = parse_if_else(tokens, index);
                 Ok(statement)
@@ -328,7 +323,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
                         };
                         return Ok(node);
                     }
-
+                    
                     // function definition : implicit, with parameters
                     // example : foo := (a, b) {...}
                     if get_current(tokens, index).kind == TokenKind::OpenParenthesis {

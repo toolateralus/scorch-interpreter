@@ -453,4 +453,23 @@ impl Visitor<ValueType> for Interpreter {
         };
         ValueType::None(())
     }
+    
+    fn visit_repeat_stmnt(&mut self, node: &Node) -> ValueType {
+        let Node::RepeatStmnt{ iterator_id, condition, block } = node else {
+            dbg!(node);
+            panic!("Expected RepeatStmnt node");
+        };
+    
+        match iterator_id {
+            // see expression for the implementation of these function
+            // with a conditional expression
+            Some(id) => {
+                self.visit_conditional_repeat_stmnt(id, condition, block)
+            }
+            // without a conditional expression
+            None => {
+                self.visit_conditionless_repeat_stmnt(block)
+            }
+        }
+    }
 }
