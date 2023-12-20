@@ -8,18 +8,23 @@ use crate::{
 
 // loops
 impl Interpreter {
-    pub fn visit_conditional_repeat_stmnt(&mut self, id: &str, condition: &Option<Box<Node>>, block: &Box<Node>) -> Value {
+    pub fn visit_conditional_repeat_stmnt(
+        &mut self,
+        id: &str,
+        condition: &Option<Box<Node>>,
+        block: &Box<Node>,
+    ) -> Value {
         match self.context.find_variable(&id) {
-            Some(_) => {
-                
-            }
+            Some(_) => {}
             None => {
-                self.context.insert_variable(&id, Rc::new(Value::Float(0.0)));
+                self.context
+                    .insert_variable(&id, Rc::new(Value::Float(0.0)));
             }
         }
-        self.context.insert_variable(&id, Rc::new(Value::Float(0.0)));
-    
-        let mut iter : f64 = 0.0;
+        self.context
+            .insert_variable(&id, Rc::new(Value::Float(0.0)));
+
+        let mut iter: f64 = 0.0;
         loop {
             let condition_result = match condition.as_ref() {
                 Some(expression) => {
@@ -31,23 +36,24 @@ impl Interpreter {
                 }
                 None => panic!("Expected condition in conditional repeat statement"),
             };
-    
+
             if condition_result {
                 block.accept(self);
             } else {
                 return Value::None(());
             }
             self.context.variables.remove(id);
-            
+
             iter += 1.0;
-            
+
             // should we floor this here?
-            self.context.insert_variable(&id, Rc::new(Value::Float(iter.floor()))); 
+            self.context
+                .insert_variable(&id, Rc::new(Value::Float(iter.floor())));
         }
     }
     pub fn visit_conditionless_repeat_stmnt(&mut self, block: &Box<Node>) -> Value {
         loop {
-            let result = block.accept(self);
+            let _result = block.accept(self);
         }
     }
 }

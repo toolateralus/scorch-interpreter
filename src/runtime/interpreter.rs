@@ -1,4 +1,4 @@
-use std::{collections::HashMap, rc::Rc, thread::panicking};
+use std::{collections::HashMap, rc::Rc};
 
 use super::types::*;
 use crate::frontend::{
@@ -20,7 +20,7 @@ impl Interpreter {
     }
 }
 
-fn print_ln (args: Vec<Value>) -> Value {
+fn print_ln(args: Vec<Value>) -> Value {
     for arg in args {
         match arg {
             Value::Float(val) => print!("{}\n", val),
@@ -28,8 +28,7 @@ fn print_ln (args: Vec<Value>) -> Value {
             Value::String(val) => print!("{}\n", val),
             Value::None(_) => print!("none"),
             Value::Function(_) => todo!(),
-            _ => panic!("print : invalid argument type")
-            
+            _ => panic!("print : invalid argument type"),
         }
     }
     Value::None(())
@@ -49,7 +48,10 @@ fn wait(args: Vec<Value>) -> Value {
 // todo: move this somewhere more appropriate, and organize the definitions of these
 fn get_builtin_functions() -> HashMap<String, BuiltInFunction> {
     HashMap::from([
-        (String::from("println"), BuiltInFunction::new(Box::new(print_ln))),
+        (
+            String::from("println"),
+            BuiltInFunction::new(Box::new(print_ln)),
+        ),
         (String::from("wait"), BuiltInFunction::new(Box::new(wait))),
     ])
 }
@@ -82,7 +84,7 @@ impl Visitor<Value> for Interpreter {
         }
         return Value::None(());
     }
-    
+
     // statements
     fn visit_if_stmnt(&mut self, node: &Node) -> Value {
         if let Node::IfStmnt {
@@ -200,7 +202,7 @@ impl Visitor<Value> for Interpreter {
             }
         }
     }
-    
+
     // literals & values
     // todo: move this into it's own visitor, previous to this one? it needs a
     // different return type otherwise reference counting nad pointers will be very very challenging, as far as i can see.
@@ -215,7 +217,7 @@ impl Visitor<Value> for Interpreter {
             Some(func) => return Value::Function(func),
             None => {
                 // to be consumed elsewhere.
-            }   
+            }
         }
         match self.context.find_variable(id) {
             Some(value) => (*value).clone(), // todo: fix cloning all values.
@@ -224,7 +226,6 @@ impl Visitor<Value> for Interpreter {
                 panic!("Variable not found");
             }
         }
-        
     }
     fn visit_bool(&mut self, node: &Node) -> Value {
         if let Node::Bool(value) = node {
@@ -287,7 +288,7 @@ impl Visitor<Value> for Interpreter {
         if let Node::RelationalExpression { lhs, op, rhs } = node {
             let lhs_value = lhs.accept(self);
             let rhs_value = rhs.accept(self);
-            
+
             match (lhs_value, rhs_value) {
                 (Value::Bool(lhs_bool), Value::Bool(rhs_bool)) => match op {
                     TokenKind::Equals => return Value::Bool(lhs_bool == rhs_bool),
@@ -407,26 +408,24 @@ impl Visitor<Value> for Interpreter {
             let function;
             {
                 args = Function::extract_args(self, arguments, &old);
-              
+
                 // builtin, written in Rust
                 if self.builtin.contains_key(id) {
                     let builtin = self.builtin.get_mut(id).unwrap();
                     return builtin.call(args.clone());
                 }
                 // native function, written in Scorch.
-                else if let Some(fn_ptr) = self.context.find_function(id){
-                   function = fn_ptr
+                else if let Some(fn_ptr) = self.context.find_function(id) {
+                    function = fn_ptr
                 }
                 // function pointer
-                else if let Some(fn_ptr) = self.context.find_variable(id){
+                else if let Some(fn_ptr) = self.context.find_variable(id) {
                     if let Value::Function(func) = &*fn_ptr.clone() {
                         function = func.clone()
-                    }
-                    else {
+                    } else {
                         panic!("Expected function");
                     }
-                }
-                else {
+                } else {
                     dbg!(node);
                     panic!("Function not found");
                 }
@@ -442,10 +441,10 @@ impl Visitor<Value> for Interpreter {
                 panic!("Number of arguments does not match the number of parameters");
             }
             self.context = old.clone();
-            
+
             for (arg, param) in args.iter().zip(function.params.iter()) {
                 let arg_type_name = get_type_name(arg);
-                
+
                 // typecheck args. very basic.
                 if arg_type_name.to_string() != param.typename {
                     panic!("Argument type does not match parameter type.\n provided argument: {:?} expected parameter : {:?}", arg, param)
@@ -455,12 +454,12 @@ impl Visitor<Value> for Interpreter {
                         .insert_variable(&param.name, Rc::new(arg.clone()));
                 }
             }
-            
+
             let ret = function.body.accept(self);
-            
+
             if let Value::Return(ret_val) = ret {
                 if let Some(return_value) = ret_val {
-                    return *return_value;    
+                    return *return_value;
                 }
             };
             // todo: don't discard changes made by functions
@@ -491,26 +490,27 @@ impl Visitor<Value> for Interpreter {
         };
         Value::None(())
     }
-    
+
     fn visit_repeat_stmnt(&mut self, node: &Node) -> Value {
-        let Node::RepeatStmnt{ iterator_id, condition, block } = node else {
+        let Node::RepeatStmnt {
+            iterator_id,
+            condition,
+            block,
+        } = node
+        else {
             dbg!(node);
             panic!("Expected RepeatStmnt node");
         };
-    
+
         match iterator_id {
             // see expression for the implementation of these function
             // with a conditional expression
-            Some(id) => {
-                self.visit_conditional_repeat_stmnt(id, condition, block)
-            }
+            Some(id) => self.visit_conditional_repeat_stmnt(id, condition, block),
             // without a conditional expression
-            None => {
-                self.visit_conditionless_repeat_stmnt(block)
-            }
+            None => self.visit_conditionless_repeat_stmnt(block),
         }
     }
-    
+
     fn visit_break_stmnt(&mut self, node: &Node) -> Value {
         if let Node::BreakStmnt(opt_val) = node {
             let Some(value_node) = opt_val else {
@@ -529,7 +529,7 @@ fn get_type_name<'a>(arg: &'a Value) -> &'a str {
         Value::Bool(_) => "bool",
         Value::String(_) => "string",
         Value::None(_) => "undefined",
-        Value::Function(func) => "function",
+        Value::Function(_func) => "function",
         _ => {
             dbg!(arg);
             panic!("invalid argument type")

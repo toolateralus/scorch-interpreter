@@ -16,21 +16,21 @@ impl Value {
     pub fn as_bool(&self) -> Option<&bool> {
         let value = match self {
             Value::Bool(val) => Some(val),
-            _ => None
+            _ => None,
         };
         value
     }
     pub fn as_float(&self) -> Option<&f64> {
         let value = match self {
             Value::Float(val) => Some(val),
-            _ => None
+            _ => None,
         };
         value
     }
     pub fn as_string(&self) -> Option<&String> {
         let value = match self {
             Value::String(val) => Some(val),
-            _ => None
+            _ => None,
         };
         value
     }

@@ -92,7 +92,7 @@ pub enum Node {
         expression: Box<Node>,
     },
     RepeatStmnt {
-        iterator_id : Option<String>,
+        iterator_id: Option<String>,
         condition: Option<Box<Node>>,
         block: Box<Node>,
     },
@@ -129,22 +129,22 @@ impl Node {
             Node::SubOp(..) => visitor.visit_binary_op(self),
             Node::MulOp(..) => visitor.visit_binary_op(self),
             Node::DivOp(..) => visitor.visit_binary_op(self),
-            Node::AssignStmnt {..} => visitor.visit_assignment(self),
-            Node::DeclStmt {..} => visitor.visit_declaration(self),
+            Node::AssignStmnt { .. } => visitor.visit_assignment(self),
+            Node::DeclStmt { .. } => visitor.visit_declaration(self),
             Node::Block(..) => visitor.visit_block(self),
             Node::Expression(..) => visitor.visit_expression(self),
             Node::String(..) => visitor.visit_string(self),
             Node::NegOp(..) => visitor.visit_neg_op(self),
             Node::NotOp(..) => visitor.visit_not_op(self),
             Node::Bool(..) => visitor.visit_bool(self),
-            Node::IfStmnt {..} => visitor.visit_if_stmnt(self),
-            Node::ElseStmnt {..} => visitor.visit_else_stmnt(self),
-            Node::RelationalExpression {..} => visitor.visit_relational_expression(self),
-            Node::LogicalExpression {..} => visitor.visit_logical_expression(self),
-            Node::BinaryOperation {..} => visitor.visit_binary_op(self),
-            Node::FnDeclStmnt {..} => visitor.visit_function_decl(self),
-            Node::ParamDeclNode {..} => visitor.visit_param_decl(self),
-            Node::FunctionCall {..} => visitor.visit_function_call(self),
+            Node::IfStmnt { .. } => visitor.visit_if_stmnt(self),
+            Node::ElseStmnt { .. } => visitor.visit_else_stmnt(self),
+            Node::RelationalExpression { .. } => visitor.visit_relational_expression(self),
+            Node::LogicalExpression { .. } => visitor.visit_logical_expression(self),
+            Node::BinaryOperation { .. } => visitor.visit_binary_op(self),
+            Node::FnDeclStmnt { .. } => visitor.visit_function_decl(self),
+            Node::ParamDeclNode { .. } => visitor.visit_param_decl(self),
+            Node::FunctionCall { .. } => visitor.visit_function_call(self),
             Node::Program(..) => visitor.visit_program(self),
             Node::RepeatStmnt { .. } => visitor.visit_repeat_stmnt(self),
             Node::BreakStmnt(_) => visitor.visit_break_stmnt(self),
@@ -204,7 +204,7 @@ pub fn parse_program(tokens: &Vec<Token>) -> Node {
         match statement {
             Ok(node) => statements.push(Box::new(node)),
             Err(_) => {
-                if token.kind == TokenKind::Newline || token.kind ==  TokenKind::Eof {
+                if token.kind == TokenKind::Newline || token.kind == TokenKind::Eof {
                     break; // ignore newlines.
                 }
                 panic!("Expected statement node");
@@ -243,15 +243,15 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
     if *index >= tokens.len() {
         return Err(());
     }
-    
+
     let token = consume_newlines(index, tokens);
-    
+
     if *index + 1 >= tokens.len() {
         return Err(()); // probably a newline
     }
 
     let next = tokens.get(*index + 1).unwrap();
-    
+
     // NOTE:: next is ahead one and must be discarded.
     // NOTE:: token is the current, but must also be discarded.
     // any branch of this must move the index forward at least once.
@@ -261,18 +261,14 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
                 *index += 1; // discard break
                 if next.kind == TokenKind::Newline {
                     Ok(Node::BreakStmnt(Option::None))
-                }
-                else if next.kind != TokenKind::CloseBrace {
+                } else if next.kind != TokenKind::CloseBrace {
                     let value = parse_expression(tokens, index);
                     Ok(Node::BreakStmnt(Option::Some(Box::new(value))))
-                }
-                else {
+                } else {
                     panic!("break statements must be followed by a newline or a return value.");
                 }
             }
-            TokenKind::Repeat => {
-                parse_repeat_stmnt(next, index, tokens)
-            }
+            TokenKind::Repeat => parse_repeat_stmnt(next, index, tokens),
             TokenKind::If => {
                 let statement = parse_if_else(tokens, index);
                 Ok(statement)
@@ -293,13 +289,9 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
             match next.kind {
                 // varname := default;
                 // declaring a variable with implicit type.
-                TokenKind::ColonEquals => {
-                    parse_implicit_decl(index, tokens, &id)
-                }
+                TokenKind::ColonEquals => parse_implicit_decl(index, tokens, &id),
                 // declaraing a variable with explicit type.
-                TokenKind::Colon => {
-                    parse_explicit_decl(index, tokens, token, id)
-                }
+                TokenKind::Colon => parse_explicit_decl(index, tokens, token, id),
                 // assigning a value to an already declared variable.
                 TokenKind::Assignment => {
                     *index += 2;
@@ -312,10 +304,8 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
                     })
                 }
                 // function call
-                TokenKind::OpenParenthesis => {
-                    Ok(parse_expression(tokens, index))
-                }
-                
+                TokenKind::OpenParenthesis => Ok(parse_expression(tokens, index)),
+
                 _ => {
                     dbg!(token);
                     println!("Expected ':' or '=' token after Identifier,\n instead got : \n current : {:?}\n next : {:?}", token, next);
@@ -339,7 +329,6 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
     }
 }
 fn parse_fn_call(index: &mut usize, tokens: &Vec<Token>, token: &String) -> Result<Node, ()> {
-    
     let arguments = parse_arguments(tokens, index);
     let node = Node::FunctionCall {
         id: token.clone(),
@@ -350,7 +339,7 @@ fn parse_fn_call(index: &mut usize, tokens: &Vec<Token>, token: &String) -> Resu
 fn parse_implicit_decl(index: &mut usize, tokens: &Vec<Token>, id: &String) -> Result<Node, ()> {
     *index += 2;
     // skip id, := tokens
-                    
+
     if let Some(value) = parse_function_decl_stmnt(tokens, index, id) {
         return value;
     }
@@ -364,7 +353,11 @@ fn parse_implicit_decl(index: &mut usize, tokens: &Vec<Token>, id: &String) -> R
         expression: Box::new(value),
     })
 }
-fn parse_function_decl_stmnt(tokens: &Vec<Token>, index: &mut usize, id: &String) -> Option<Result<Node, ()>> {
+fn parse_function_decl_stmnt(
+    tokens: &Vec<Token>,
+    index: &mut usize,
+    id: &String,
+) -> Option<Result<Node, ()>> {
     if get_current(tokens, index).kind == TokenKind::OpenBrace {
         let body = parse_block(tokens, index);
         //dbg!(&body);
@@ -378,7 +371,7 @@ fn parse_function_decl_stmnt(tokens: &Vec<Token>, index: &mut usize, id: &String
     }
     // function defintion : implicit, parameterless
     // example : foo := {...}
-                    
+
     // function definition : implicit, with parameters
     // example : foo := (a, b) {...}
     if get_current(tokens, index).kind == TokenKind::OpenParenthesis {
@@ -402,7 +395,12 @@ fn parse_function_decl_stmnt(tokens: &Vec<Token>, index: &mut usize, id: &String
     }
     None
 }
-fn parse_explicit_decl(index: &mut usize, tokens: &Vec<Token>, token: &Token, id: String) -> Result<Node, ()> {
+fn parse_explicit_decl(
+    index: &mut usize,
+    tokens: &Vec<Token>,
+    token: &Token,
+    id: String,
+) -> Result<Node, ()> {
     *index += 2;
     // varname :^ type = default;
     // todo: check for valid type / builtins
@@ -444,24 +442,24 @@ fn parse_repeat_stmnt(next: &Token, index: &mut usize, tokens: &Vec<Token>) -> R
         let node = Node::RepeatStmnt {
             iterator_id: Option::Some(id),
             condition: Option::Some(Box::new(condition)),
-            block: Box::new(block) 
+            block: Box::new(block),
         };
         return Ok(node);
     }
-                
+
     // style::
     // repeat {... }
     let block = parse_block(tokens, index);
-                
-    Ok(Node::RepeatStmnt { 
-        iterator_id:Option::None,
-        condition:Option::None,
-        block: Box::new(block) 
+
+    Ok(Node::RepeatStmnt {
+        iterator_id: Option::None,
+        condition: Option::None,
+        block: Box::new(block),
     })
 }
 fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Node {
     let mut left = parse_logical_expr(tokens, index);
-    loop  {
+    loop {
         let token = get_current(tokens, index);
         match token.kind {
             TokenKind::LogicalAnd | TokenKind::LogicalOr => {
@@ -485,19 +483,18 @@ fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Node {
                             panic!("Expected function call node");
                         }
                     }
-                    
                 } else {
                     panic!("Expected identifier token");
                 }
             }
-            
+
             // these 5 token kinds are expression delimiters, but
             // the tokens are expected to be consumed by the caller of this function.
-            TokenKind::CloseParenthesis |
-            TokenKind::OpenBrace |
-            TokenKind::Newline |
-            TokenKind::Comma |
-            TokenKind::Eof => {
+            TokenKind::CloseParenthesis
+            | TokenKind::OpenBrace
+            | TokenKind::Newline
+            | TokenKind::Comma
+            | TokenKind::Eof => {
                 break;
             }
             _ => {
@@ -616,11 +613,11 @@ fn parse_factor(tokens: &Vec<Token>, index: &mut usize) -> Node {
             }
             TokenKind::Subtract => {
                 let node = parse_factor(tokens, index);
-                
+
                 if let Node::NegOp(_node) = node {
                     panic!("Double not operations are not allowed");
                 }
-                
+
                 Node::NegOp(Box::new(node))
             }
             TokenKind::Not => {
@@ -709,11 +706,10 @@ fn parse_parameters(tokens: &Vec<Token>, index: &mut usize) -> Vec<Node> {
 }
 fn parse_arguments(tokens: &Vec<Token>, index: &mut usize) -> Vec<Node> {
     *index += 1; // discard open_paren
-    
+
     let mut args = Vec::new();
-    
+
     loop {
-        
         let token = get_current(tokens, index);
         // paramless.
         if token.kind == TokenKind::CloseParenthesis {

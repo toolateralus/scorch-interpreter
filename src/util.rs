@@ -1,9 +1,8 @@
 use std::fs::File;
-use std::io::{self, Write, Read};
+use std::io::{self, Read, Write};
 
 use crate::frontend::*;
 use crate::*;
-
 
 pub struct Flags {
     pub proj_root: String,
