@@ -16,17 +16,7 @@ use util::*;
 fn main() -> () {
     let flags_map = parse_cmd_line_args();
     
-    dbg!(flags_map.clone());
-    
-    if flags_map.len() == 0 {
-        println!("Usage: scorch [options]");
-        println!("Options:");
-        println!("  --dump: dump tokens, ast, and global context");
-        return;
-    }
-    
     let flags = util::Flags::new(flags_map);
-    
     
     let file = format!("{}/{}", flags.proj_root, "scorch_src/main.scorch");
     

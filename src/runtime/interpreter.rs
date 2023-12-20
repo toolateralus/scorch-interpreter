@@ -12,24 +12,32 @@ pub struct Interpreter {
 }
 impl Interpreter {
     pub fn new() -> Interpreter {
-        let print_fn = BuiltInFunction::new("println".to_string(), Box::new(|args: Vec<ValueType>| -> ValueType {
-            for arg in args {
-                match arg {
-                    ValueType::Float(val) => print!("{}", val),
-                    ValueType::Bool(val) => print!("{}", val),
-                    ValueType::String(val) => print!("{}", val),
-                    ValueType::None(_) => print!("undefined"),
-                }
-            } 
-            ValueType::None(())
-        }));
+        let builtins = get_builtin_functions();
         Interpreter {
             context: Context::new(),
-            builtin: HashMap::from(
-                [(String::from("println"), print_fn)]
-            ),
+            builtin: builtins,
         }
     }
+}
+
+fn get_builtin_functions() -> HashMap<String, BuiltInFunction> {
+    
+    let println_func = BuiltInFunction::new(String::from("println"),
+    Box::new(|args: Vec<ValueType>| -> ValueType {
+        for arg in args {
+            match arg {
+                ValueType::Float(val) => print!("{}\n", val),
+                ValueType::Bool(val) => print!("{}\n", val),
+                ValueType::String(val) => print!("{}\n", val),
+                ValueType::None(_) => print!("undefined"),
+            }
+        }
+        ValueType::None(())
+    }));
+    
+    HashMap::from(
+        [(String::from("println"), println_func)]
+    )
 }
 
 impl Visitor<ValueType> for Interpreter {
