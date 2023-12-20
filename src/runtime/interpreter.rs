@@ -22,7 +22,6 @@ impl Interpreter {
 
 fn get_builtin_functions() -> HashMap<String, BuiltInFunction> {
     let println_func = BuiltInFunction::new(
-        String::from("println"),
         Box::new(|args: Vec<ValueType>| -> ValueType {
             for arg in args {
                 match arg {
