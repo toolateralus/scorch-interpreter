@@ -2,6 +2,7 @@ pub mod ast;
 pub mod runtime;
 pub mod tokens;
 pub mod types;
+pub mod bin_op;
 
 #[cfg(test)]
 pub mod test;
