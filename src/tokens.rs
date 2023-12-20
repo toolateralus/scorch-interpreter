@@ -2,39 +2,39 @@ use regex::Regex;
 use std::collections::HashMap;
 
 pub fn create_tokenizer() -> Tokenizer {
-    let mut operators: HashMap<String, TokenKind> = HashMap::new();
-    let mut keywords: HashMap<String, TokenKind> = HashMap::new();
+    let operators = HashMap::from([
+        (String::from("("), TokenKind::OpenParenthesis),
+        (String::from(")"), TokenKind::CloseParenthesis),
+        (String::from("{"), TokenKind::OpenBrace),
+        (String::from("}"), TokenKind::CloseBrace),
+        (String::from("["), TokenKind::OpenBracket),
+        (String::from("]"), TokenKind::CloseBracket),
+        (String::from(","), TokenKind::Comma),
+        (String::from("::"), TokenKind::DubColon),
+        (String::from(":"), TokenKind::Colon),
+        (String::from(":="), TokenKind::ColonEquals),
+        (String::from("="), TokenKind::Assignment),
+        (String::from("=="), TokenKind::Equals),
+        (String::from("!="), TokenKind::NotEquals),
+        (String::from("<="), TokenKind::LessThanEquals),
+        (String::from(">="), TokenKind::GreaterThanEquals),
+        (String::from("<"), TokenKind::LeftAngle),
+        (String::from(">"), TokenKind::RightAngle),
+        (String::from("&&"), TokenKind::LogicalAnd),
+        (String::from("||"), TokenKind::LogicalOr),
+        (String::from("=>"), TokenKind::Lambda),
+        (String::from("+"), TokenKind::Add),
+        (String::from("-"), TokenKind::Subtract),
+        (String::from("*"), TokenKind::Multiply),
+        (String::from("/"), TokenKind::Divide),
+        (String::from("%"), TokenKind::Modulo),
+        (String::from("!"), TokenKind::Not),
+    ]);
 
-    keywords.insert(String::from("if"), TokenKind::If);
-    keywords.insert(String::from("else"), TokenKind::Else);
-    operators.insert(String::from("("), TokenKind::OpenParenthesis);
-    operators.insert(String::from(")"), TokenKind::CloseParenthesis);
-    operators.insert(String::from("{"), TokenKind::OpenBrace);
-    operators.insert(String::from("}"), TokenKind::CloseBrace);
-    operators.insert(String::from("["), TokenKind::OpenBracket);
-    operators.insert(String::from("]"), TokenKind::CloseBracket);
-    operators.insert(String::from(","), TokenKind::Comma);
-    operators.insert(String::from(";"), TokenKind::Semicolon);
-    operators.insert(String::from("::"), TokenKind::DubColon);
-    operators.insert(String::from(":"), TokenKind::Colon);
-    operators.insert(String::from(":="), TokenKind::ColonEquals);
-    operators.insert(String::from("."), TokenKind::Period);
-    operators.insert(String::from("="), TokenKind::Assignment);
-    operators.insert(String::from("=="), TokenKind::Equals);
-    operators.insert(String::from("!="), TokenKind::NotEquals);
-    operators.insert(String::from("<="), TokenKind::LessThanEquals);
-    operators.insert(String::from(">="), TokenKind::GreaterThanEquals);
-    operators.insert(String::from("<"), TokenKind::LeftAngle);
-    operators.insert(String::from(">"), TokenKind::RightAngle);
-    operators.insert(String::from("&&"), TokenKind::LogicalAnd);
-    operators.insert(String::from("||"), TokenKind::LogicalOr);
-    operators.insert(String::from("=>"), TokenKind::Lambda);
-    operators.insert(String::from("+"), TokenKind::Add);
-    operators.insert(String::from("-"), TokenKind::Subtract);
-    operators.insert(String::from("*"), TokenKind::Multiply);
-    operators.insert(String::from("/"), TokenKind::Divide);
-    operators.insert(String::from("%"), TokenKind::Modulo);
-    operators.insert(String::from("!"), TokenKind::Not);
+    let keywords = HashMap::from([
+        (String::from("if"), TokenKind::If),
+        (String::from("else"), TokenKind::Else),
+    ]);
 
     let tokenizer = Tokenizer {
         operators,
@@ -42,8 +42,8 @@ pub fn create_tokenizer() -> Tokenizer {
         tokens: Vec::<Token>::new(),
         source: String::new(),
         index: 0,
-		line: 1,
-		column: 1,
+        line: 1,
+        column: 1,
         length: 0,
     };
     tokenizer
@@ -81,23 +81,26 @@ pub enum TokenKind {
     LogicalAnd,
     LogicalOr,
     Not,
-
+	
     // punctuation
     Newline,
+    
     OpenParenthesis,
     CloseParenthesis,
+    
     OpenBrace,
     CloseBrace,
+    
     OpenBracket,
     CloseBracket,
-    Comma,
-    Semicolon,
-    Colon,
-    Period,
     
+    Comma,
+    Colon,
+        
     If,
     Else,
     Return,
+	Eof,
     
     // special operators
     Lambda,        // =>, Extract out.
@@ -297,5 +300,13 @@ impl TokenProcessor for Tokenizer {
                 self.tokens.push(token);
             }
         }
+		let token = Token {
+			family: TokenFamily::Undefined,
+			kind: TokenKind::Eof,
+			value: String::from(""),
+			line: self.line,
+			column: self.column,
+		};
+		self.tokens.push(token)
     }
 }

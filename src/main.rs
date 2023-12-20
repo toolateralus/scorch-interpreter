@@ -30,17 +30,13 @@ fn main() -> () {
     //test_rel_expr();
     
     //test_if_else_statements();
-    test_functions();
-    return;
-    let (tokens, root, ctx) = execute_file(String::from("test_fields_vars_literal.scorch"));
+	let file = "test_functions.scorch";
+
     if flags.contains_key("dump") {
-		println!("Tokens:");
-        dbg!(tokens);
-		println!("AST Root:");
-        dbg!(root);
-		println!("Global Context:");
-        dbg!(ctx);
-    }
+    	execute_file_and_dump(String::from(file));
+    } else {
+		execute_return_global_ctx(String::from(file));
+	}
 }
 fn test_functions() {
     let ctx = execute_return_global_ctx(String::from("test_functions.scorch"));
@@ -110,19 +106,24 @@ fn execute_return_global_ctx(filename: String) -> Box<Context> {
     let ctx = interpreter.context;
     return Box::new(ctx);
 }
-fn execute_file(filename: String) -> (Vec<Token>, Node, Context) {
+fn execute_file_and_dump(filename: String) {
     let mut tokenizer = tokens::create_tokenizer();
     let mut file = File::open(filename).expect("Failed to open file");
     let mut contents = String::new();
-
+    
     file.read_to_string(&mut contents)
-        .expect("Failed to read file");
-    tokenizer.tokenize(&contents.as_str());
-    let tokens = tokenizer.tokens;
+	.expect("Failed to read file");
+	tokenizer.tokenize(&contents.as_str());
+	let tokens = tokenizer.tokens;
+	println!("Tokens:");
+	dbg!(&tokens);
 	let ast_root = ast::parse_program(&tokens);
-    let mut interpreter = Interpreter {
-        context: runtime::Context::new(),
-    };
-    ast_root.accept(&mut interpreter);
-    return (tokens, ast_root, interpreter.context);
+	println!("AST Root:");
+	dbg!(&ast_root);
+	let mut interpreter = Interpreter {
+		context: runtime::Context::new(),
+	};
+	ast_root.accept(&mut interpreter);
+	println!("Global Context:");
+	dbg!(interpreter.context);
 }

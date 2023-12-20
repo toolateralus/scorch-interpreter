@@ -10,6 +10,7 @@ pub trait Visitor<T> {
     fn visit_function_decl(&mut self, node: &Node) -> T;
     fn visit_param_decl(&mut self, node: &Node) -> T;
     fn visit_function_call(&mut self, node: &Node) -> T;
+	fn visit_program(&mut self, node: &Node) -> T;
     fn visit_relational_expression(&mut self, node: &Node) -> T;
     fn visit_logical_expression(&mut self, node: &Node) -> T;
     // unary operations
@@ -28,8 +29,7 @@ pub trait Visitor<T> {
 }
 #[derive(Debug, Clone)]
 pub enum Node {
-    // todo: add a program node
-    // the highest level AST node.
+    Program(Vec<Box<Node>>),
     Block(Vec<Box<Node>>),
     
     // literal & values
@@ -146,6 +146,7 @@ impl Node {
             Node::FnDeclStmnt { id, body, params, return_type } => visitor.visit_function_decl(self),
             Node::ParamDeclNode { varname, typename } => visitor.visit_param_decl(self),
             Node::FunctionCall { id, arguments } => visitor.visit_function_call(self),
+			Node::Program(_statements) => visitor.visit_program(self),
         }
     }
 }
@@ -171,12 +172,31 @@ fn consume_newlines<'a>(index: &mut usize, tokens: &'a Vec<Token>) -> &'a Token 
 // ########################################
 pub fn parse_program(tokens: &Vec<Token>) -> Node {
     let mut index = 0;
-    let program = parse_block(tokens, &mut index);
-    program
-}
-fn parse_block(tokens: &Vec<Token>, index: &mut usize) -> Node {
     let mut statements = Vec::new();
+    while index < tokens.len() {
+        let token = consume_newlines(&mut index, tokens);
+        if token.kind == TokenKind::Eof {
+            index += 1;
+            break;
+        }
+        let statement = parse_statement(tokens, &mut index);
+        
+        match statement {
+            Ok(node) => statements.push(Box::new(node)),
+            Err(_) => {
+                if token.kind == TokenKind::Newline {
+                    break; // ignore newlines.
+                }
+                panic!("Expected statement node");
+            }
+        }
+    }
+    Node::Program(statements)
+}
 
+fn parse_block(tokens: &Vec<Token>, index: &mut usize) -> Node {
+	*index += 1;
+    let mut statements = Vec::new();
     while *index < tokens.len() {
         let token = consume_newlines(index, tokens);
         if token.kind == TokenKind::CloseBrace {
@@ -188,9 +208,11 @@ fn parse_block(tokens: &Vec<Token>, index: &mut usize) -> Node {
         match statement {
             Ok(node) => statements.push(Box::new(node)),
             Err(_) => {
-                if token.kind == TokenKind::Newline || token.kind == TokenKind::Semicolon {
+                if token.kind == TokenKind::Newline {
                     break; // ignore newlines.
                 }
+				println!("Block encountered unexpected token:");
+				dbg!(&token);
                 panic!("Expected statement node");
             }
         }
@@ -202,15 +224,14 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
         return Err(());
     }
 
-    let mut token = get_current(tokens, index);
-    token = consume_newlines(index, tokens);
-
+    let token = consume_newlines(index, tokens);
+    
     if *index + 1 >= tokens.len() {
         return Err(()); // probably a newline
     }
 
     let next = tokens.get(*index + 1).unwrap();
-
+    
     match token.family {
         TokenFamily::Keyword => match token.kind {
             TokenKind::If => {
@@ -230,6 +251,15 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
             // varname : type = default;
             let id = token.value.clone();
             match next.kind {
+                TokenKind::OpenParenthesis => {
+                    *index += 1;
+                    let arguments = parse_arguments(tokens, index);
+                    let node = Node::FunctionCall {
+                        id: token.value.clone(),
+                        arguments: Option::Some(arguments),
+                    };
+                    Ok(node)
+                }
                 // varname := default;
                 // declaring a variable with implicit type.
                 TokenKind::ColonEquals => {
@@ -240,6 +270,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
                     // example : foo := {...}
                     if get_current(tokens, index).kind == TokenKind::OpenBrace {
                         let body = parse_block(tokens, index);
+						//dbg!(&body);
                         let node = Node::FnDeclStmnt {
                             id,
                             body: Box::new(body),
@@ -263,8 +294,9 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
                         return Ok(node);
                     }
                     
-                    // varname := ^default;
+                    // implicit variable declaration
                     let value = parse_expression(tokens, index);
+                    consume_normal_expr_delimiter(tokens, index);
                     
                     Ok(Node::DeclStmt {
                         target_type: String::from("dynamic"),
@@ -297,6 +329,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
 
                     // varname : type = ^default;
                     let expression = parse_expression(tokens, index);
+                    consume_normal_expr_delimiter(tokens, index);
                     Ok(Node::DeclStmt {
                         target_type,
                         id,
@@ -308,6 +341,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
                     *index += 2;
                     let id = Node::Identifier(token.value.clone());
                     let expression = parse_expression(tokens, index);
+                    consume_normal_expr_delimiter(tokens, index);
                     Ok(Node::AssignStmnt {
                         id: Box::new(id),
                         expression: Box::new(expression),
@@ -322,7 +356,6 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
         }
         TokenFamily::Operator => {
             if token.kind == TokenKind::OpenBrace {
-                *index += 1;
                 let block = parse_block(tokens, index);
                 Ok(block)
             } else {
@@ -333,6 +366,26 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
         _ => {
             dbg!(token);
             panic!("Expected keyword, identifier or operator token");
+        }
+    }
+}
+
+fn consume_normal_expr_delimiter(tokens: &Vec<Token>, index: &mut usize) {
+    let current = get_current(tokens, index).kind;
+    match current {
+        TokenKind::OpenBrace |
+        TokenKind::Comma => {
+            dbg!(current);
+            panic!("expected newline or ) token");
+        }
+        TokenKind::Newline => {
+            *index += 1;
+        }
+        TokenKind::CloseParenthesis => {
+            *index += 1;
+        }
+        _ => {
+            // continue
         }
     }
 }
@@ -401,11 +454,17 @@ fn parse_arguments(tokens: &Vec<Token>, index: &mut usize) -> Vec<Node> {
     let mut args = Vec::new();
     
     while let Some(token) = tokens.get(*index) {
+        // paramless.
         if token.kind == TokenKind::CloseParenthesis {
             *index += 1;
             break;
         }
+        // accumulate parameter expressions
         let arg = parse_expression(tokens, index);
+        // skip commas
+        if get_current(tokens, index).kind == TokenKind::Comma {
+            *index += 1;
+        }
         args.push(arg);
     }
     args
@@ -413,6 +472,15 @@ fn parse_arguments(tokens: &Vec<Token>, index: &mut usize) -> Vec<Node> {
 fn parse_if_else(tokens: &Vec<Token>, index: &mut usize) -> Node {
     *index += 1; // discard 'if'
     let if_condition = parse_expression(tokens, index);
+    
+	if get_current(tokens, index).kind != TokenKind::OpenBrace {
+		dbg!(get_current(tokens, index));
+		dbg!(if_condition);
+		panic!("If expected open brace after condition");
+	}
+	
+    *index += 1; // skip open brace
+    
     let if_block = parse_block(tokens, index);
     
     let else_or_end = consume_newlines(index, tokens);
@@ -459,6 +527,18 @@ fn parse_else(tokens: &Vec<Token>, index: &mut usize) -> Node {
     // if else with comparison -> if ... {} else ... {}
     else {
         let else_condition = parse_expression(tokens, index);
+        let cur = get_current(tokens, index);
+        
+        match cur.kind  {
+            TokenKind::OpenBrace | 
+            TokenKind::CloseParenthesis => {
+                *index += 1; // skip open brace
+            }
+            _ => {
+                // continue.
+            }
+        }
+        
         let else_block = parse_block(tokens, index);
         
         if get_current(tokens, index).kind == TokenKind::Else {
@@ -492,25 +572,18 @@ fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Node {
                     rhs : Box::new(right) 
                 };
             }
+            // these 4 token kinds are expression delimiters, but
+            // the tokens are expected to be consumed by the caller of this function.
             TokenKind::CloseParenthesis => {
-                *index += 1;
                 break;
             }
-            TokenKind::OpenBrace => 
-            {
-                *index += 1;
+            TokenKind::OpenBrace => {
                 break;
             }
             TokenKind::Newline => {
-                *index += 1;
-                break;
-            }
-            TokenKind::Semicolon => {
-                *index += 1;
                 break;
             }
             TokenKind::Comma => {
-                *index += 1;
                 break;
             }
             _ => {
@@ -621,6 +694,13 @@ fn parse_factor(tokens: &Vec<Token>, index: &mut usize) -> Node {
             }
             TokenKind::OpenParenthesis => {
                 let node = parse_expression(tokens, index);
+                if let Some(token) = tokens.get(*index) {
+                    if token.kind != TokenKind::CloseParenthesis {
+                        dbg!(token);
+                        panic!("Expected close parenthesis token");
+                    }
+                    *index += 1;
+                }
                 node
             }
             TokenKind::Subtract => {
