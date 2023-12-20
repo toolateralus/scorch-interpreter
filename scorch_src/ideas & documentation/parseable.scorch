@@ -35,4 +35,9 @@ void_parametersless := {
     //# return not yet implemented   
 }
 
+void_parametersless()
+
+equals("a", "b") //# does not return yet
+
+
 //# END CURRENTLY PARSEABLE

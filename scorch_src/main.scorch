@@ -1,3 +1,15 @@
-println := (args : args..) {
-    @@invoke[[__COMPILER_MACRO__ | __PRINTLN__ => args]]
+println := {
+    
 }
+
+varyu := 10
+varya := false
+varyb := "hello"
+varyc := 'hello'
+
+
+println1 := (a:String) {
+    
+}
+
+println1("hello")
