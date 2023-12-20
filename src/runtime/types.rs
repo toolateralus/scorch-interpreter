@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, rc::Rc, cell::RefCell};
 
 use crate::{ast::Node, runtime::interpreter::Interpreter};
 
@@ -11,10 +11,22 @@ pub enum ValueType {
 }
 #[derive(Debug, Clone)]
 pub struct Context {
-    pub parent: Option<Box<Context>>,
-    pub children: Vec<Box<Context>>,
-    pub functions: HashMap<String, Box<Function>>,
-    pub variables: HashMap<String, Box<ValueType>>,
+    pub parent: Option<Rc<RefCell<Context>>>,
+    pub children: Vec<Rc<RefCell<Context>>>,
+    pub functions: HashMap<String, Rc<Function>>,
+    pub variables: HashMap<String, Rc<ValueType>>,
+}
+
+impl Context {
+    pub fn find_variable(&self, name: &str) -> Option<Rc<ValueType>> {
+        match self.variables.get(name) {
+            Some(var) => Some(var.clone()),
+            None => match &self.parent {
+                Some(parent) => parent.borrow().find_variable(name),
+                None => None,
+            },
+        }
+    }
 }
 #[derive(Debug, Clone)]
 pub struct Parameter {
@@ -28,21 +40,17 @@ pub struct Function {
     pub body: Box<Node>,
     pub return_type: String,
 }
-
 pub struct BuiltInFunction {
     func: Box<dyn FnMut(Vec<ValueType>) -> ValueType>,
 }
-
 impl BuiltInFunction {
     pub fn new(func: Box<dyn FnMut(Vec<ValueType>) -> ValueType>) -> Self {
         BuiltInFunction { func }
     }
-
     pub fn call(&mut self, args: Vec<ValueType>) -> ValueType {
         (self.func)(args)
     }
 }
-
 pub trait Invokable {
     fn create_args(
         interpeter: &mut Interpreter,

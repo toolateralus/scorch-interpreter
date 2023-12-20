@@ -1,4 +1,4 @@
-use std::{borrow::BorrowMut, collections::HashMap};
+use std::{borrow::BorrowMut, collections::HashMap, cell::{RefCell, Ref}, rc::Rc};
 
 use super::types::*;
 use crate::{
@@ -7,7 +7,7 @@ use crate::{
 };
 
 pub struct Interpreter {
-    pub context: Context,
+    pub context: Context, // initally the root context, but this is a kinda tree like structure.
     pub builtin: HashMap<String, BuiltInFunction>,
 }
 impl Interpreter {
@@ -20,6 +20,7 @@ impl Interpreter {
     }
 }
 
+// todo: move this somewhere more appropriate, and organize the definitions of these
 fn get_builtin_functions() -> HashMap<String, BuiltInFunction> {
     let println_func = BuiltInFunction::new(
         Box::new(|args: Vec<ValueType>| -> ValueType {
@@ -143,7 +144,7 @@ impl Visitor<ValueType> for Interpreter {
                 dbg!(node);
                 panic!("redefinition of variable");
             } else {
-                self.context.variables.insert(str_id, Box::new(value));
+                self.context.variables.insert(str_id, Rc::new(value));
             }
         } else {
             panic!("Expected Declaration node");
@@ -164,7 +165,7 @@ impl Visitor<ValueType> for Interpreter {
                 };
                 match self.context.variables.get_mut(&str_id) {
                     Some(value) => {
-                        *value = Box::new(val.clone());
+                        *value = Rc::new(val.clone());
                     }
                     None => {
                         dbg!(node);
@@ -179,15 +180,19 @@ impl Visitor<ValueType> for Interpreter {
             }
         }
     }
-
+    
     // literals & values
+    
+    // todo: move this into it's own visitor, previous to this one? it needs a 
+    // different return type otherwise reference counting nad pointers will be very very challenging, as far as i can see.
+    // there's probably a way.
     fn visit_identifier(&mut self, node: &Node) -> ValueType {
         let Node::Identifier(id) = node else {
             dbg!(node);
             panic!("Expected Identifier");
         };
         match self.context.variables.get(id) {
-            Some(value) => *value.clone(), // todo : fix copy on value type references here.
+            Some(value) => (**value).clone(), // todo: fix cloning all values.
             None => {
                 dbg!(node);
                 panic!("Variable not found");
@@ -218,7 +223,7 @@ impl Visitor<ValueType> for Interpreter {
     fn visit_eof(&mut self, _node: &Node) -> ValueType {
         ValueType::None(()) // do nothing.
     }
-
+    
     // unary operations
     fn visit_not_op(&mut self, node: &Node) -> ValueType {
         if let Node::NotOp(operand) = node {
@@ -368,52 +373,53 @@ impl Visitor<ValueType> for Interpreter {
         todo!()
     }
     fn visit_function_call(&mut self, node: &Node) -> ValueType {
-        let return_value = ValueType::None(());
         if let Node::FunctionCall { id, arguments } = node {
-            if self.builtin.contains_key(id) {
-                let ctx = self.context.clone();
-                let args = Function::create_args(self.borrow_mut(), arguments, &ctx);
-                let builtin = self.builtin.get_mut(id).unwrap();
-                return builtin.call(args.clone());
+            let args;
+            let function;
+            {
+                args = Function::create_args(self, arguments, &self.context.clone());
+                if self.builtin.contains_key(id) {
+                    let builtin = self.builtin.get_mut(id).unwrap();
+                    return builtin.call(args.clone());
+                }
+                if !self.context.functions.contains_key(id) {
+                    panic!("Function {} did not exist.", id);
+                }
+                function = self.context.functions.get(id).unwrap().clone();
+            }
+            
+            // parameterless invocation.
+            if args.len() == 0 {
+                return function.body.accept(self);
+            }
+            
+            // todo; varargs
+            if args.len() != function.params.len() {
+                panic!("Number of arguments does not match the number of parameters");
+            }
+            
+            for (arg, param) in args.iter().zip(function.params.iter()) {
+                // todo: get typename, make function
+                let arg_type_name = match *arg {
+                    ValueType::Float(_) => "num",
+                    ValueType::Bool(_) => "bool",
+                    ValueType::String(_) => "string",
+                    ValueType::None(_) => "undefined",
+                };
+                
+                // typecheck args. very basic.
+                if arg_type_name.to_string() != param.typename {
+                    panic!("Argument type does not match parameter type.\n provided argument: {:?} expected parameter : {:?}", arg, param)
+                } else {
+                    // copying param values into a context
+                    self.context.variables.insert(param.name.clone(), Rc::new(arg.clone()));
+                }
             }
 
-            if self.context.variables.contains_key(id) {
-                let old = self.context.clone();
-                let function = old.functions.get(id).unwrap();
-                let args = Function::create_args(self, arguments, &old);
-                let ctx = Context::new();
-
-                if args.len() == 0 {
-                    return function.body.accept(self);
-                }
-
-                // Check if the number of arguments matches the number of parameters
-                if args.len() != function.params.len() {
-                    panic!("Number of arguments does not match the number of parameters");
-                }
-
-                // Check if the types and order of arguments match the parameters
-                for (arg, param) in args.iter().zip(function.params.iter()) {
-                    let arg_type_name = match *arg {
-                        ValueType::Float(_) => "num",
-                        ValueType::Bool(_) => "bool",
-                        ValueType::String(_) => "string",
-                        ValueType::None(_) => "undefined",
-                    };
-                    if arg_type_name != param.name {
-                        panic!("Argument type does not match parameter type")
-                    } else {
-                        self.context
-                            .variables
-                            .insert(param.name.clone(), Box::new(arg.clone()));
-                    }
-                }
-
-                self.context = ctx;
-                function.body.accept(self);
-            }
+            let return_value = function.body.accept(self);
+            return return_value;
         }
-        return_value
+        ValueType::None(())
     }
     fn visit_function_decl(&mut self, node: &Node) -> ValueType {
         if let Node::FnDeclStmnt {
@@ -430,7 +436,7 @@ impl Visitor<ValueType> for Interpreter {
                 body: body_cloned,
                 return_type: return_type.clone(),
             };
-            let function = Box::new(func);
+            let function = Rc::new(func);
             self.context.functions.insert(id.clone(), function);
         } else {
             panic!("Expected FunctionDecl node");

@@ -1,3 +1,5 @@
+use crate::runtime::types::ValueType;
+
 // todo!()
 pub fn if_else_statements() {
     let ctx = super::execute(String::from("scorch_src/unit_tests/test_if_else.scorch"));
@@ -25,7 +27,7 @@ fn test_fields_vars_literal() {
 fn test_functions() {
     let ctx = super::execute(String::from("scorch_src/unit_tests/test_functions.scorch"));
     let status = ctx.variables["status"].clone();
-    if let super::runtime::types::ValueType::String(str_status) = *status {
+    if let ValueType::String(str_status) = &*status {
         assert!(str_status == "success", "test failed: {}", str_status);
     }
 }
@@ -54,10 +56,10 @@ fn test_rel_expr() {
     for i in 0..11 {
         let variable = variables[i];
         let expected_result = expected_results[i];
-        let value = *ctx.variables[*&variable].clone();
-
+        let value = &*ctx.variables[*&variable].clone();
+        
         if let super::runtime::types::ValueType::Bool(v) = value {
-            assert_eq!(v, expected_result, "test failed: {}", variable);
+            assert_eq!(v, &expected_result, "test failed: {}", &variable);
         }
     }
 }
