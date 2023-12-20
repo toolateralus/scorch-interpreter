@@ -1,4 +1,9 @@
-use std::{borrow::BorrowMut, collections::HashMap, cell::{RefCell, Ref}, rc::Rc};
+use std::{
+    borrow::BorrowMut,
+    cell::{Ref, RefCell},
+    collections::HashMap,
+    rc::Rc,
+};
 
 use super::types::*;
 use crate::{
@@ -22,19 +27,17 @@ impl Interpreter {
 
 // todo: move this somewhere more appropriate, and organize the definitions of these
 fn get_builtin_functions() -> HashMap<String, BuiltInFunction> {
-    let println_func = BuiltInFunction::new(
-        Box::new(|args: Vec<ValueType>| -> ValueType {
-            for arg in args {
-                match arg {
-                    ValueType::Float(val) => print!("{}\n", val),
-                    ValueType::Bool(val) => print!("{}\n", val),
-                    ValueType::String(val) => print!("{}\n", val),
-                    ValueType::None(_) => print!("undefined"),
-                }
+    let println_func = BuiltInFunction::new(Box::new(|args: Vec<ValueType>| -> ValueType {
+        for arg in args {
+            match arg {
+                ValueType::Float(val) => print!("{}\n", val),
+                ValueType::Bool(val) => print!("{}\n", val),
+                ValueType::String(val) => print!("{}\n", val),
+                ValueType::None(_) => print!("undefined"),
             }
-            ValueType::None(())
-        }),
-    );
+        }
+        ValueType::None(())
+    }));
 
     HashMap::from([(String::from("println"), println_func)])
 }
@@ -180,10 +183,10 @@ impl Visitor<ValueType> for Interpreter {
             }
         }
     }
-    
+
     // literals & values
-    
-    // todo: move this into it's own visitor, previous to this one? it needs a 
+
+    // todo: move this into it's own visitor, previous to this one? it needs a
     // different return type otherwise reference counting nad pointers will be very very challenging, as far as i can see.
     // there's probably a way.
     fn visit_identifier(&mut self, node: &Node) -> ValueType {
@@ -223,7 +226,7 @@ impl Visitor<ValueType> for Interpreter {
     fn visit_eof(&mut self, _node: &Node) -> ValueType {
         ValueType::None(()) // do nothing.
     }
-    
+
     // unary operations
     fn visit_not_op(&mut self, node: &Node) -> ValueType {
         if let Node::NotOp(operand) = node {
@@ -377,7 +380,7 @@ impl Visitor<ValueType> for Interpreter {
             let args;
             let function;
             {
-                args = Function::create_args(self, arguments, &self.context.clone());
+                args = Function::extract_args(self, arguments, &self.context.clone());
                 if self.builtin.contains_key(id) {
                     let builtin = self.builtin.get_mut(id).unwrap();
                     return builtin.call(args.clone());
@@ -387,17 +390,17 @@ impl Visitor<ValueType> for Interpreter {
                 }
                 function = self.context.functions.get(id).unwrap().clone();
             }
-            
+
             // parameterless invocation.
             if args.len() == 0 {
                 return function.body.accept(self);
             }
-            
+
             // todo; varargs
             if args.len() != function.params.len() {
                 panic!("Number of arguments does not match the number of parameters");
             }
-            
+
             for (arg, param) in args.iter().zip(function.params.iter()) {
                 // todo: get typename, make function
                 let arg_type_name = match *arg {
@@ -406,13 +409,15 @@ impl Visitor<ValueType> for Interpreter {
                     ValueType::String(_) => "string",
                     ValueType::None(_) => "undefined",
                 };
-                
+
                 // typecheck args. very basic.
                 if arg_type_name.to_string() != param.typename {
                     panic!("Argument type does not match parameter type.\n provided argument: {:?} expected parameter : {:?}", arg, param)
                 } else {
                     // copying param values into a context
-                    self.context.variables.insert(param.name.clone(), Rc::new(arg.clone()));
+                    self.context
+                        .variables
+                        .insert(param.name.clone(), Rc::new(arg.clone()));
                 }
             }
 

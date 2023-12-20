@@ -1,4 +1,4 @@
-use std::{collections::HashMap, rc::Rc, cell::RefCell};
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::{ast::Node, runtime::interpreter::Interpreter};
 
@@ -52,14 +52,14 @@ impl BuiltInFunction {
     }
 }
 pub trait Invokable {
-    fn create_args(
+    fn extract_args(
         interpeter: &mut Interpreter,
         arguments: &Option<Vec<Node>>,
         ctx: &Context,
     ) -> Vec<ValueType>;
 }
 impl Invokable for Function {
-    fn create_args(
+    fn extract_args(
         interpeter: &mut Interpreter,
         arguments: &Option<Vec<Node>>,
         _ctx: &Context,

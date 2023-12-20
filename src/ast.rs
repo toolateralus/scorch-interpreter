@@ -270,7 +270,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
     if *index >= tokens.len() {
         return Err(());
     }
-    
+
     let token = consume_newlines(index, tokens);
 
     if *index + 1 >= tokens.len() {
