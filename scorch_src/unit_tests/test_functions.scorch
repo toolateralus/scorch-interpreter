@@ -5,10 +5,12 @@ implicit_fn_test_params := (a: string) {
     status = 'passed'
 }
 
-implicit_fn_test_params('my argument')
-
 implicit_fn_test_no_params := {
     status = 'passed'
     println('recursive func paramless')
 }
+
+implicit_fn_test_params('my argument')
+
+
 implicit_fn_test_no_params()

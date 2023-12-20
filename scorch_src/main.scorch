@@ -1,9 +1,0 @@
-x:=0
-y:=0
-
-
-print := (v:string) {
-    println(v)
-}
-
-println("hello world! ", 'goodbye world.')

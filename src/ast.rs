@@ -179,6 +179,7 @@ impl Node {
         }
     }
 }
+
 fn get_current<'a>(tokens: &'a Vec<Token>, index: &mut usize) -> &'a Token {
     if let Some(token) = tokens.get(*index) {
         return token;
@@ -297,6 +298,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
         TokenFamily::Identifier => {
             // varname : type = default;
             let id = token.value.clone();
+            
             match next.kind {
                 TokenKind::OpenParenthesis => {
                     *index += 1;
@@ -329,17 +331,22 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
                     // function definition : implicit, with parameters
                     // example : foo := (a, b) {...}
                     if get_current(tokens, index).kind == TokenKind::OpenParenthesis {
-                        let params = parse_parameters(tokens, index);
-                        let body = parse_block(tokens, index);
-                        let node = Node::FnDeclStmnt {
-                            id,
-                            body: Box::new(body),
-                            params,
-                            return_type: String::from("dynamic"),
-                        };
-                        return Ok(node);
+                        *index += 2;
+                        if get_current(tokens, index).kind == TokenKind::Colon {
+                            *index -= 1;
+                            
+                            let params = parse_parameters(tokens, index);
+                            let body = parse_block(tokens, index);
+                            let node = Node::FnDeclStmnt {
+                                id,
+                                body: Box::new(body),
+                                params,
+                                return_type: String::from("dynamic"),
+                            };
+                            return Ok(node);
+                        }
+                        *index -= 1;
                     }
-
                     // implicit variable declaration
                     let value = parse_expression(tokens, index);
                     consume_normal_expr_delimiter(tokens, index);
