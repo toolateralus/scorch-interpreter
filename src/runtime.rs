@@ -357,13 +357,21 @@ impl Visitor<ValueType> for Interpreter {
             panic!("Expected LogicalExpression node");
         }
     }
-
     fn visit_function_decl(&mut self, node: &Node) -> ValueType {
         todo!()
     }
-
     fn visit_param_decl(&mut self, node: &Node) -> ValueType {
         todo!()
+    }
+    fn visit_program(&mut self, node: &Node) -> ValueType {
+        if let Node::Program(statements) = node {
+			for stmnt in statements {
+				stmnt.accept(self);
+		}
+		} else {
+			panic!("expected program node");
+		};
+		ValueType::None(())
     }
 }
 

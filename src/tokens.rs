@@ -81,7 +81,7 @@ pub enum TokenKind {
     LogicalAnd,
     LogicalOr,
     Not,
-
+	
     // punctuation
     Newline,
     OpenParenthesis,
@@ -98,6 +98,7 @@ pub enum TokenKind {
     If,
     Else,
     Return,
+	Eof,
     
     // special operators
     Lambda,        // =>, Extract out.
@@ -297,5 +298,13 @@ impl TokenProcessor for Tokenizer {
                 self.tokens.push(token);
             }
         }
+		let token = Token {
+			family: TokenFamily::Undefined,
+			kind: TokenKind::Eof,
+			value: String::from(""),
+			line: self.line,
+			column: self.column,
+		};
+		self.tokens.push(token)
     }
 }

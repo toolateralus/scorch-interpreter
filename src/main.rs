@@ -30,10 +30,13 @@ fn main() -> () {
     //test_rel_expr();
     
     //test_if_else_statements();
-	
+	let file = "test_functions.scorch";
+
     if flags.contains_key("dump") {
-    	execute_file_and_dump(String::from("test_functions.scorch"));
-    }
+    	execute_file_and_dump(String::from(file));
+    } else {
+		execute_return_global_ctx(String::from(file));
+	}
 }
 fn test_functions() {
     let ctx = execute_return_global_ctx(String::from("test_functions.scorch"));

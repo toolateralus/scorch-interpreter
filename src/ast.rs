@@ -9,6 +9,7 @@ pub trait Visitor<T> {
     fn visit_binary_op(&mut self, node: &Node) -> T;
     fn visit_function_decl(&mut self, node: &Node) -> T;
     fn visit_param_decl(&mut self, node: &Node) -> T;
+	fn visit_program(&mut self, node: &Node) -> T;
     fn visit_relational_expression(&mut self, node: &Node) -> T;
     fn visit_logical_expression(&mut self, node: &Node) -> T;
     // unary operations
@@ -27,8 +28,7 @@ pub trait Visitor<T> {
 }
 #[derive(Debug, Clone)]
 pub enum Node {
-    // todo: add a program node
-    // the highest level AST node.
+    Program(Vec<Box<Node>>),
     Block(Vec<Box<Node>>),
     
     // literal & values
@@ -139,6 +139,7 @@ impl Node {
             Node::BinaryOperation { lhs, op, rhs } => visitor.visit_binary_op(self),
             Node::FnDeclStmnt { id, body, params, return_type } => visitor.visit_function_decl(self),
             Node::ParamDeclNode { varname, typename } => visitor.visit_param_decl(self),
+			Node::Program(_statements) => visitor.visit_program(self),
         }
     }
 }
@@ -164,12 +165,31 @@ fn consume_newlines<'a>(index: &mut usize, tokens: &'a Vec<Token>) -> &'a Token 
 // ########################################
 pub fn parse_program(tokens: &Vec<Token>) -> Node {
     let mut index = 0;
-    let program = parse_block(tokens, &mut index);
-    program
-}
-fn parse_block(tokens: &Vec<Token>, index: &mut usize) -> Node {
     let mut statements = Vec::new();
+    while index < tokens.len() {
+        let token = consume_newlines(&mut index, tokens);
+        if token.kind == TokenKind::Eof {
+            index += 1;
+            break;
+        }
+        let statement = parse_statement(tokens, &mut index);
+        
+        match statement {
+            Ok(node) => statements.push(Box::new(node)),
+            Err(_) => {
+                if token.kind == TokenKind::Newline || token.kind == TokenKind::Semicolon {
+                    break; // ignore newlines.
+                }
+                panic!("Expected statement node");
+            }
+        }
+    }
+    Node::Program(statements)
+}
 
+fn parse_block(tokens: &Vec<Token>, index: &mut usize) -> Node {
+	*index += 1;
+    let mut statements = Vec::new();
     while *index < tokens.len() {
         let token = consume_newlines(index, tokens);
         if token.kind == TokenKind::CloseBrace {
@@ -184,6 +204,8 @@ fn parse_block(tokens: &Vec<Token>, index: &mut usize) -> Node {
                 if token.kind == TokenKind::Newline || token.kind == TokenKind::Semicolon {
                     break; // ignore newlines.
                 }
+				println!("Block encountered unexpected token:");
+				dbg!(&token);
                 panic!("Expected statement node");
             }
         }
@@ -195,15 +217,14 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
         return Err(());
     }
 
-    let mut token = get_current(tokens, index);
-    token = consume_newlines(index, tokens);
-
+    let token = consume_newlines(index, tokens);
+    
     if *index + 1 >= tokens.len() {
         return Err(()); // probably a newline
     }
 
     let next = tokens.get(*index + 1).unwrap();
-
+    
     match token.family {
         TokenFamily::Keyword => match token.kind {
             TokenKind::If => {
@@ -233,6 +254,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
                     // example : foo := {...}
                     if get_current(tokens, index).kind == TokenKind::OpenBrace {
                         let body = parse_block(tokens, index);
+						//dbg!(&body);
                         let node = Node::FnDeclStmnt {
                             id,
                             body: Box::new(body),
@@ -315,7 +337,6 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
         }
         TokenFamily::Operator => {
             if token.kind == TokenKind::OpenBrace {
-                *index += 1;
                 let block = parse_block(tokens, index);
                 Ok(block)
             } else {
@@ -409,6 +430,12 @@ fn parse_arguments(tokens: &Vec<Token>, index: &mut usize) -> Vec<Node> {
 fn parse_if_else(tokens: &Vec<Token>, index: &mut usize) -> Node {
     *index += 1; // discard 'if'
     let if_condition = parse_expression(tokens, index);
+	if get_current(tokens, index).kind != TokenKind::OpenBrace {
+		dbg!(get_current(tokens, index));
+		dbg!(if_condition);
+		panic!("If expected open brace after condition");
+	}
+	
     let if_block = parse_block(tokens, index);
     
     let else_or_end = consume_newlines(index, tokens);
@@ -494,7 +521,6 @@ fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Node {
             }
             TokenKind::OpenBrace => 
             {
-                *index += 1;
                 break;
             }
             TokenKind::Newline => {
