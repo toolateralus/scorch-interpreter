@@ -146,7 +146,7 @@ impl TokenProcessor for Tokenizer {
         self.index = 0;
         self.line = 1;
         self.column = 1;
-        
+
         let comment_regex = Regex::new(r"(//.*\n)|(/\*.*?\*/)").unwrap();
         let input = comment_regex.replace_all(original_input, "");
 

@@ -1,6 +1,6 @@
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
-use crate::{frontend::{*, ast::Node}, runtime::interpreter::Interpreter};
+use crate::{frontend::ast::Node, runtime::interpreter::Interpreter};
 
 #[derive(Debug, Clone)]
 pub enum ValueType {
@@ -16,7 +16,7 @@ pub struct Context {
     // todo: add return values
     pub functions: HashMap<String, Rc<Function>>,
     // todo: implement a Variable struct that can store more data about the var/const etc.
-    pub variables: HashMap<String, Rc<ValueType>>, 
+    pub variables: HashMap<String, Rc<ValueType>>,
 }
 
 impl Context {

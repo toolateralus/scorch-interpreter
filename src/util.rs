@@ -1,5 +1,5 @@
-use crate::*;
 use crate::frontend::*;
+use crate::*;
 use std::{collections::HashMap, fs::File, io::Read};
 
 pub struct Flags {
@@ -35,22 +35,22 @@ use std::io::{self, Write};
 pub fn run_cli() {
     let mut tokenizer = tokens::create_tokenizer();
     let mut interpreter = Interpreter::new();
-    
+
     let mut input = String::new();
-    
+
     loop {
         print!("> ");
         io::stdout().flush().unwrap();
-        
+
         io::stdin().read_line(&mut input).unwrap();
-        
+
         if input.trim() == "exit" {
             break;
         }
-        
+
         tokenizer.tokenize(&input.as_str());
         let tokens = &tokenizer.tokens;
-        
+
         let ast_root = ast::parse_program(&tokens);
         ast_root.accept(&mut interpreter);
         input.clear();

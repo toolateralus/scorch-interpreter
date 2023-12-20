@@ -1,8 +1,6 @@
 use core::panic;
 
-use crate::frontend::*;
-
-use super::tokens::{Token, TokenKind, TokenFamily};
+use super::tokens::{Token, TokenFamily, TokenKind};
 
 pub trait Visitor<T> {
     fn visit_number(&mut self, node: &Node) -> T;
@@ -301,7 +299,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
         TokenFamily::Identifier => {
             // varname : type = default;
             let id = token.value.clone();
-            
+
             match next.kind {
                 TokenKind::OpenParenthesis => {
                     *index += 1;
@@ -316,7 +314,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
                 // declaring a variable with implicit type.
                 TokenKind::ColonEquals => {
                     *index += 2; // skip id, := tokens
-                    
+
                     // function defintion : implicit, parameterless
                     // example : foo := {...}
                     if get_current(tokens, index).kind == TokenKind::OpenBrace {
@@ -339,7 +337,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
                         *index += 2;
                         if get_current(tokens, index).kind == TokenKind::Colon {
                             *index -= 2; // go back to the a :
-                            
+
                             let params = parse_parameters(tokens, index);
                             let body = parse_block(tokens, index);
                             let node = Node::FnDeclStmnt {
@@ -618,7 +616,7 @@ fn parse_parameters(tokens: &Vec<Token>, index: &mut usize) -> Vec<Node> {
             *index += 1;
             break;
         }
-        
+
         // parsing varname
         // ^varname: Typename
         if token.family != TokenFamily::Identifier {
@@ -626,7 +624,7 @@ fn parse_parameters(tokens: &Vec<Token>, index: &mut usize) -> Vec<Node> {
         }
 
         let varname = parse_factor(tokens, index);
-        
+
         token = get_current(tokens, index);
         //parsing colon
         // varname^: Typename

@@ -1,10 +1,10 @@
-use std::{
-    collections::HashMap,
-    rc::Rc,
-};
+use std::{collections::HashMap, rc::Rc};
 
 use super::types::*;
-use crate::frontend::{*, ast::{Visitor, Node}, tokens::TokenKind};
+use crate::frontend::{
+    ast::{Node, Visitor},
+    tokens::TokenKind,
+};
 
 pub struct Interpreter {
     pub context: Context, // initally the root context, but this is a kinda tree like structure.
@@ -134,7 +134,7 @@ impl Visitor<ValueType> for Interpreter {
                     panic!("Unsupported type");
                 }
             }
-            
+
             match self.context.find_variable(&id) {
                 Some(_) => {
                     dbg!(node);
@@ -144,7 +144,6 @@ impl Visitor<ValueType> for Interpreter {
                     self.context.insert_variable(&id, Rc::new(value));
                 }
             }
-      
         } else {
             panic!("Expected Declaration node");
         }
@@ -382,11 +381,11 @@ impl Visitor<ValueType> for Interpreter {
                     let builtin = self.builtin.get_mut(id).unwrap();
                     return builtin.call(args.clone());
                 }
-                
+
                 match self.context.find_function(&id.as_str()) {
                     Some(func) => {
                         function = func;
-                    } 
+                    }
                     None => {
                         panic!("Function {} did not exist.", id);
                     }
@@ -402,7 +401,7 @@ impl Visitor<ValueType> for Interpreter {
             if args.len() != function.params.len() {
                 panic!("Number of arguments does not match the number of parameters");
             }
-            
+
             for (arg, param) in args.iter().zip(function.params.iter()) {
                 // todo: get typename, make function
                 let arg_type_name = match *arg {
@@ -411,7 +410,7 @@ impl Visitor<ValueType> for Interpreter {
                     ValueType::String(_) => "string",
                     ValueType::None(_) => "undefined",
                 };
-                
+
                 // typecheck args. very basic.
                 if arg_type_name.to_string() != param.typename {
                     panic!("Argument type does not match parameter type.\n provided argument: {:?} expected parameter : {:?}", arg, param)
@@ -422,12 +421,12 @@ impl Visitor<ValueType> for Interpreter {
                         .insert_variable(&param.name, Rc::new(arg.clone()));
                 }
             }
-            
+
             let return_value = function.body.accept(self);
-            
+
             // todo: don't discard changes made by functions
             // right now - side effects are undone on context leave.
-            self.context = old; 
+            self.context = old;
             return return_value;
         }
         ValueType::None(())
