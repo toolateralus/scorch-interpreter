@@ -132,7 +132,7 @@ impl Visitor<Value> for Interpreter {
             let value: Value;
 
             match target_type.as_str() {
-                "dynamic" | "float" | "string" => {
+                "Dynamic" | "Float" | "String" | "Bool" | "Struct" | "Array" => {
                     // todo: add an actual type system.
                     value = expression.accept(self);
                 }
@@ -538,9 +538,9 @@ impl Visitor<Value> for Interpreter {
 
 fn get_type_name<'a>(arg: &'a Value) -> &'a str {
     let arg_type_name = match arg {
-        Value::Float(_) => "float",
-        Value::Bool(_) => "bool",
-        Value::String(_) => "string",
+        Value::Float(_) => "Float",
+        Value::Bool(_) => "Bool",
+        Value::String(_) => "String",
         Value::None(_) => "undefined",
         Value::Function(_func) => "function",
         _ => {

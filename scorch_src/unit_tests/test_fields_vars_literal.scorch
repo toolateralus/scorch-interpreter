@@ -2,7 +2,7 @@ x := 100.0
 vvz := -10
 not_true := !true
 not_false := !false
-my_bool := true
+my_Bool := true
 
 first_name := 'Cyitlec'
 last_name := 'Kivals'

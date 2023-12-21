@@ -74,7 +74,7 @@ impl Interpreter {
             None => {
                 let val = Value::Float(0.0);
                     
-                let var = Rc::new(Variable::from("float".to_string(), true, val, self.type_checker.clone()));
+                let var = Rc::new(Variable::from("Float".to_string(), true, val, self.type_checker.clone()));
                 
                 self.context.insert_variable(&id, var);
             }
@@ -116,7 +116,7 @@ impl Interpreter {
 
             let value = Value::Float(iter.floor());
 
-            let typename = "float".to_string();
+            let typename = "Float".to_string();
 
             // todo: fix this terrible variable stuff.
             // should we floor this here?

@@ -398,7 +398,7 @@ fn parse_implicit_decl(
     consume_normal_expr_delimiter(tokens, index);
 
     Ok(Node::DeclStmt {
-        target_type: String::from("dynamic"),
+        target_type: String::from("Dynamic"),
         id: id.clone(),
         expression: Box::new(value),
         mutable,
@@ -417,7 +417,7 @@ fn parse_function_decl_stmnt(
             id: id.clone(),
             body: Box::new(body),
             params: Vec::new(),
-            return_type: String::from("dynamic"),
+            return_type: String::from("Dynamic"),
             mutable,
         };
         return Some(Ok(node));
@@ -440,7 +440,7 @@ fn parse_function_decl_stmnt(
                 id: id.clone(),
                 body: Box::new(body),
                 params,
-                return_type: String::from("dynamic"),
+                return_type: String::from("Dynamic"),
                 mutable,
             };
             return Some(Ok(node));
@@ -466,19 +466,39 @@ fn parse_explicit_decl(
     *index += 1;
     
     // varname : type^ = default;
-
-    if let Some(token) = tokens.get(*index) {
-        assert_eq!(
-            token.kind,
-            TokenKind::Assignment,
-            "Expected identifier token"
-        );
-    } else {
-        dbg!(token);
-        panic!("expected type identifier in declaration statement");
-    }
+    
+    let token = get_current(tokens, index);
+    
+    // varname : type
+    // uninitialized ((defaulf for now))
+    if token.kind == TokenKind::Newline {
+        *index += 1;
+        
+        let default_value_expression = match target_type.as_str() {
+            "Float" => {
+                 Node::Expression(Box::new(Node::Number(0.0)))
+            },
+            "String" => {
+                Node::Expression(Box::new(Node::String(String::from(""))))
+            },
+           "Bool" => {
+            Node::Expression(Box::new(Node::Bool(false)))
+            },
+            _=> {
+                 Node::Expression(Box::new(Node::Undefined()))
+            }
+        };
+        
+        return Ok(Node::DeclStmt {
+            target_type,
+            id,
+            expression: Box::new(default_value_expression),
+            mutable,
+        });
+    }  
+    
     *index += 1;
-
+    
     // varname : type = ^default;
     let expression = parse_expression(tokens, index);
     consume_normal_expr_delimiter(tokens, index);

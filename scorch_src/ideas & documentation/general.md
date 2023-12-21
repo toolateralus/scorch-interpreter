@@ -1,4 +1,4 @@
-- all numbers are currently f64/doubles. type name 'float'
+- all numbers are currently f64/doubles. type name 'Float'
 
 - newlines are expression terminators, like semi colon in C.
 
@@ -22,7 +22,7 @@ if true {
 
 accum := ''
 
-print_lines := (str : string, x : float, y : float, z : float) {
+print_lines := (str : String, x : Float, y : Float, z : Float) {
 	loop := {
 		repeat i < x {
 accum = accum + '

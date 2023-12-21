@@ -76,8 +76,8 @@ we could use a clearer and moer distinctive syntax for struct declarations.
 
 ```
 vector : struct = |
-    x : float = 0
-    y : float = 1
+    x : Float = 0
+    y : Float = 1
 |
 
 vector := |
@@ -93,13 +93,13 @@ col := [] // implicit type
 
 col := [](250) // array length 200
 
-col := float[] // specify type
+col := Float[] // specify type
 
-col := float[](200) // hash table
+col := Float[](200) // hash table
 
-col := float[struct] // hash table
+col := Float[struct] // hash table
 
-col := float[struct](200) // hash with init len
+col := Float[struct](200) // hash with init len
 
 col := [0, 1, 2, 3, 4] // initializers
 
@@ -111,12 +111,12 @@ value := col~~   // pop or remove and return an element from the end
 col => print
 
 // foreach item in collection, call this anonymous function.
-col => (i : float) {
+col => (i : Float) {
     //.. do something
 }
 
-// basically a  'for (float i = 0; i < 200; ++i)' with this syntax
-[200] => (i : float) {
+// basically a  'for (Float i = 0; i < 200; ++i)' with this syntax
+[200] => (i : Float) {
     
 }
 

@@ -6,7 +6,7 @@ use super::types::Variable;
 #[derive(Debug, Clone)] 
 pub struct Type {
     name: String,
-    validator: Option<Box<fn(Value) -> bool>>,
+    validator: Box<fn(Value) -> bool>,
 }
 
 #[derive(Debug, Clone)]
@@ -17,25 +17,32 @@ impl TypeChecker {
     pub fn new() -> Self {
         Self {
             types: HashMap::from([
-                (String::from("float"), Type {
-                    name: String::from("float"),
-                    validator: Some(Box::new(|v| match v {
+                (String::from("Float"), Type {
+                    name: String::from("Float"),
+                    validator: Box::new(|v| match v {
                         Value::Float(_) => true,
                         _ => false,
-                    })),
+                    }),
                 }),
-                (String::from("dynamic"), Type {
-                    name: String::from("dynamic"),
-                    validator: Some(Box::new(|v| match v {
+                (String::from("Dynamic"), Type {
+                    name: String::from("Dynamic"),
+                    validator: Box::new(|v| match v {
                         _ => true, // :D
-                    })),
+                    }),
                 }),
-                (String::from("string"), Type {
-                    name: String::from("string"),
-                    validator: Some(Box::new(|v| match v {
+                (String::from("String"), Type {
+                    name: String::from("String"),
+                    validator: Box::new(|v| match v {
                         Value::String(_) => true,
                         _ => false,
-                    })),
+                    }),
+                }),
+                (String::from("Bool"), Type {
+                    name: String::from("Bool"),
+                    validator: Box::new(|v| match v {
+                        Value::Bool(_) => true,
+                        _ => false,
+                    }),
                 }),
             ]),
         }
@@ -46,15 +53,15 @@ impl TypeChecker {
     pub fn validate(val : &Variable, struct_name : Option<&String>) -> bool {
         let typename = &val.typename;
         
-        // temporarily, while we have no dynamic types due to no structs.
-        if typename == "dynamic" {
+        // temporarily, while we have no Dynamic types due to no structs.
+        if typename == "Dynamic" {
             return true;
         }
         
         match &val.value {
-            Value::Float(_) => typename == "float",
-            Value::Bool(_) => typename == "bool",
-            Value::String(_) => typename == "string",
+            Value::Float(_) => typename == "Float",
+            Value::Bool(_) => typename == "Bool",
+            Value::String(_) => typename == "String",
             Value::Function(_) => typename == "function",
             Value::Array(_) => typename == "array",
             Value::List(_) => typename == "list",

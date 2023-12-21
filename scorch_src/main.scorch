@@ -1,9 +1,6 @@
-var xaryu : float = 0
-const str := 'hello'
+password : String
+passy : Float
+Booly : Bool
 
-repeat i < 250 {
-	xaryu = i
-	println('hi! ' + 'xaryu' + hello)
-}
-
-println(xaryu, str)
+println('default value for String')
+println(password)
