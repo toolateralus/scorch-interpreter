@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use crate::runtime::types::Value;
 
 // todo!()
@@ -57,9 +58,33 @@ fn test_rel_expr() {
         let variable = variables[i];
         let expected_result = expected_results[i];
         let value = &*ctx.variables[*&variable].clone();
-
+        
         if let super::runtime::types::Value::Bool(v) = value.value {
             assert_eq!(v, expected_result, "test failed: {}", &variable);
+        }
+    }
+}
+
+#[test]
+fn test_arithmetic() {
+    let ctx = super::execute_from_file(String::from("scorch_src/unit_tests/test_arithmetic.scorch"));
+    let expected_results = HashMap::from([
+        ("f_arith_t02", 5.3 - 6.2),
+        ("f_arith_t03", 5.3 * 6.2),
+        ("f_arith_t04", 5.3 / 6.2),
+        ("f_arith_t05", (5.3 + 6.2) * 2.5),
+        ("f_arith_t06", 5.3 - (6.2 * 3.1)),
+        ("f_arith_t07", (5.3 + 6.2) / (3.1 - 2.0)),
+        ("f_arith_t08", 5.3 + (6.2 * 3.1) / 2.5),
+        ("f_arith_t09", (5.3 - 6.2) * 2.5 / 3.1),
+        ("f_arith_t10", 5.3 / (6.2 + 3.1) * 2.5),
+        ("f_arith_t11", 5.3 + 6.2 - 3.1 * 2.0 / 1.5),
+        ("f_arith_t12", ((5.3 * 2.5) - 6.2) / 3.1 + 1.0),
+    ]);
+    for (name, expected_val) in expected_results {
+        let value = ctx.variables[name].clone();
+        if let super::runtime::types::Value::Float(v) = value.value {
+            assert_eq!(v, expected_val, "test failed: {}", &name);
         }
     }
 }
