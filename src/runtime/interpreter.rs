@@ -51,7 +51,7 @@ impl Visitor<Value> for Interpreter {
                         return *return_value;
                     }
                     else {
-                        return Value::None(());
+                        return Value::Return(None);
                     }
                 }
             }
@@ -71,7 +71,14 @@ impl Visitor<Value> for Interpreter {
         {
             if let Value::Bool(condition_result) = condition.accept(self) {
                 if condition_result {
-                    true_block.accept(self);
+                   if let Node::Block(stmnts) = &**true_block {
+                        for stmnt in stmnts {
+                            let value = stmnt.accept(self);
+                            if let Value::Return(_) = value {
+                                return value;
+                            }                            
+                        }
+                   }
                 } else {
                     if let Some(else_stmnt) = else_block {
                         else_stmnt.accept(self);

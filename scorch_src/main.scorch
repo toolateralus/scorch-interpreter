@@ -1,10 +1,28 @@
 repl := {
+	password := 'failzorz'
 	input := 'no input.'
 	repeat i < 2500 {
 		input = readln()
 		
 		if input == 'exit' {
 			break
+		}
+		
+		if input == 'password_set' {
+			println('Enter password:')
+			input = readln()
+			password = input
+			println('Password set.')
+		}
+		
+		if input == 'password_check' {
+			println('Enter password:')
+			input = readln()
+			if input == password {
+				println('Password correct.')
+			} else {
+				println('Password incorrect.')
+			}
 		}
 		
 		println(input)

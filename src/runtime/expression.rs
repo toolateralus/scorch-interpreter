@@ -38,7 +38,7 @@ fn readln(args : Vec<Value>) -> Value {
     }
     let mut input = String::new();
     std::io::stdin().read_line(&mut input).expect("failed to read from stdin");
-    Value::String(input)
+    Value::String(input.replace("\n", ""))
 }
 
 // todo: move this somewhere more appropriate, and organize the definitions of these
@@ -88,9 +88,31 @@ impl Interpreter {
                 }
                 None => panic!("Expected condition in conditional repeat statement"),
             };
-
+            
             if condition_result {
-                block.accept(self);
+                let result = block.accept(self);
+                match result {
+                    Value::Float(..) => {
+                        return result
+                    }
+                    Value::Bool(_) => {
+                        return result
+                    }
+                    Value::String(_) => {
+                        return result
+                    }
+                    Value::Function(_) => {
+                        return result
+                    }
+                    Value::Return(value) => {
+                        if let Some(val) = value {
+                            return *val;
+                        }
+                    }
+                    _ => {
+                        
+                    }
+                }
             } else {
                 return Value::None(());
             }
