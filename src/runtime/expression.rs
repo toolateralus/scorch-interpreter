@@ -1,3 +1,4 @@
+use core::panic;
 use std::{collections::HashMap, rc::Rc};
 
 use crate::{
@@ -7,6 +8,7 @@ use crate::{
 };
 
 use super::{types::{BuiltInFunction, Variable}};
+use std::cell::RefCell;
 
 fn print_ln(args: Vec<Value>) -> Value {
     for arg in args {
@@ -16,10 +18,25 @@ fn print_ln(args: Vec<Value>) -> Value {
             Value::String(val) => print!("{}\n", val),
             Value::None(_) => print!("{:?}", Value::None(())),
             Value::Function(_) => print!("{:?}", arg),
-            _ => panic!("print : invalid argument type"),
+            Value::Array(_, elements) => {
+                for element in elements {
+                    print!("{:?}", element);
+                }
+            }
+            Value::List(elements) => {
+                for element in elements.try_borrow().unwrap().iter() {
+                    print!("{:?}", element);
+                }
+            }
+            Value::Struct { name, context } => todo!(),
+            Value::Return(_) => panic!("Cannot print return value"),
+            
         }
     }
     Value::None(())
+}
+fn get_vec_from_elements(elements: Rc<RefCell<Vec<Variable>>>) -> Vec<Variable> {
+    elements.borrow().clone()
 }
 fn wait(args: Vec<Value>) -> Value {
     if args.len() != 1 {

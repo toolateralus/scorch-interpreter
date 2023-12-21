@@ -5,8 +5,8 @@ pub fn create_tokenizer() -> Tokenizer {
     let operators = HashMap::from([
         (String::from("("), TokenKind::OpenParenthesis),
         (String::from(")"), TokenKind::CloseParenthesis),
-        (String::from("{"), TokenKind::OpenBrace),
-        (String::from("}"), TokenKind::CloseBrace),
+        (String::from("{"), TokenKind::OpenCurly),
+        (String::from("}"), TokenKind::CloseCurly),
         (String::from("["), TokenKind::OpenBracket),
         (String::from("]"), TokenKind::CloseBracket),
         (String::from(","), TokenKind::Comma),
@@ -93,9 +93,9 @@ pub enum TokenKind {
     OpenParenthesis,
     CloseParenthesis,
 
-    OpenBrace,
-    CloseBrace,
-
+    OpenCurly,
+    CloseCurly,
+    
     OpenBracket,
     CloseBracket,
 

@@ -536,8 +536,12 @@ impl Visitor<Value> for Interpreter {
     }
     
     fn visit_array(&mut self, node: &Node) -> Value {
-          if let Node::Array {typename, init_capacity, elements, mutability, elements_mutable} = node {
-            let mut values = Vec::new();
+          if let Node::Array {typename, init_capacity, elements, mutable: mutability, elements_mutable} = node {
+            let len = *init_capacity;
+            if len < elements.len() {
+                panic!("Array length is less than the number of elements");
+            }
+            let mut values = Vec::with_capacity(len);
             for value in elements {
                 let val = value.accept(self);
                 let var = Variable::from(typename.clone(), *elements_mutable, val,self.type_checker.clone());

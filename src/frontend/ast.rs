@@ -123,8 +123,8 @@ pub enum Node {
     Array {
         typename : String,
         elements: Vec<Box<Node>>,
-        init_capacity : Option<usize>,
-        mutability : bool,
+        init_capacity : usize,
+        mutable : bool,
         elements_mutable : bool,
     },
 }
@@ -180,7 +180,7 @@ fn consume_newlines<'a>(index: &mut usize, tokens: &'a Vec<Token>) -> &'a Token 
 fn consume_normal_expr_delimiter(tokens: &Vec<Token>, index: &mut usize) {
     let current = get_current(tokens, index).kind;
     match current {
-        TokenKind::OpenBrace | TokenKind::Comma => {
+        TokenKind::OpenCurly | TokenKind::Comma => {
             dbg!(current);
             panic!("expected newline or ) token");
         }
@@ -229,7 +229,7 @@ fn parse_block(tokens: &Vec<Token>, index: &mut usize) -> Node {
     let mut statements = Vec::new();
     while *index < tokens.len() {
         let token = consume_newlines(index, tokens);
-        if token.kind == TokenKind::CloseBrace {
+        if token.kind == TokenKind::CloseCurly {
             *index += 1;
             break;
         }
@@ -295,7 +295,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
                 *index += 1; // discard break
                 if second.kind == TokenKind::Newline {
                     Ok(Node::BreakStmnt(Option::None))
-                } else if second.kind != TokenKind::CloseBrace {
+                } else if second.kind != TokenKind::CloseCurly {
                     let value = parse_expression(tokens, index);
                     Ok(Node::BreakStmnt(Option::Some(Box::new(value))))
                 } else {
@@ -320,7 +320,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
             parse_decl(first, index, tokens, false) // default immutability
         }
         TokenFamily::Operator => {
-            if first.kind == TokenKind::OpenBrace {
+            if first.kind == TokenKind::OpenCurly {
                 let block = parse_block(tokens, index);
                 Ok(block)
             } else {
@@ -418,7 +418,7 @@ fn parse_function_decl_stmnt(
     id: &String,
     mutable: bool,
 ) -> Option<Result<Node, ()>> {
-    if get_current(tokens, index).kind == TokenKind::OpenBrace {
+    if get_current(tokens, index).kind == TokenKind::OpenCurly {
         let body = parse_block(tokens, index);
         //dbg!(&body);
         let node = Node::FnDeclStmnt {
@@ -478,7 +478,7 @@ fn parse_explicit_decl(
     let token = get_current(tokens, index);
     
     // varname : type
-    // uninitialized ((defaulf for now))
+    // uninitialized ((default for now))
     if token.kind == TokenKind::Newline {
         *index += 1;
         
@@ -494,13 +494,12 @@ fn parse_explicit_decl(
             },
             
             "Array" => {
-                Node::Expression(Box::new(Node::Array {
-                    typename : String::from("Dynamic"),
-                    init_capacity : Option::None,
-                    elements : Vec::new(),
-                    mutability : mutable,
-                    elements_mutable : mutable, // todo: how do we want to qualify this?
-                }))
+                let mut elements = Vec::new();
+                elements.push(Box::new(Node::Number(100.0)));
+                let init_capacity = elements.len();
+                let typename = String::from("Dynamic");
+                let elements_mutable = mutable;
+                Node::Expression(Box::new(new_array(typename, init_capacity, elements, mutable, elements_mutable)))
             }
             _=> {
                  Node::Expression(Box::new(Node::Undefined()))
@@ -526,6 +525,16 @@ fn parse_explicit_decl(
         expression: Box::new(expression),
         mutable,
     })
+}
+
+fn new_array(typename: String, init_capacity: usize, elements: Vec<Box<Node>>, mutable: bool, elements_mutable: bool) -> Node {
+    Node::Array {
+        typename,
+        init_capacity,
+        elements,
+        mutable,
+        elements_mutable, // todo: how do we want to qualify this?
+    }
 }
 
 fn parse_repeat_stmnt(next: &Token, index: &mut usize, tokens: &Vec<Token>) -> Result<Node, ()> {
@@ -591,9 +600,10 @@ fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Node {
             // these 5 token kinds are expression delimiters, but
             // the tokens are expected to be consumed by the caller of this function.
             TokenKind::CloseParenthesis
-            | TokenKind::OpenBrace
+            | TokenKind::OpenCurly
             | TokenKind::Newline
             | TokenKind::Comma
+            | TokenKind::CloseBracket
             | TokenKind::Eof => {
                 break;
             }
@@ -692,6 +702,12 @@ fn parse_factor(tokens: &Vec<Token>, index: &mut usize) -> Node {
         *index += 1;
         let node = match token.kind {
             TokenKind::Number => Node::Number(token.value.parse::<f64>().unwrap()),
+            // array literal
+            TokenKind::OpenBracket => {
+                *index += 1; // move past [
+                let init = parse_array_initializer(tokens, index);
+                new_array("Dynamic".to_string(), init.len(), init.clone(), false, false)
+            }
             TokenKind::Identifier => {
                 let id = Node::Identifier(token.value.clone());
                 id
@@ -700,6 +716,7 @@ fn parse_factor(tokens: &Vec<Token>, index: &mut usize) -> Node {
                 let id = Node::String(token.value.clone());
                 id
             }
+            
             TokenKind::OpenParenthesis => {
                 let node = parse_expression(tokens, index);
                 if let Some(token) = tokens.get(*index) {
@@ -747,6 +764,29 @@ fn parse_factor(tokens: &Vec<Token>, index: &mut usize) -> Node {
     } else {
         panic!("Unexpected end of tokens")
     }
+}
+
+fn parse_array_initializer(tokens: &Vec<Token>, index: &mut usize) -> Vec<Box<Node>> {
+    *index += 1; // discard open_paren
+    
+    let mut args = Vec::new();
+    
+    loop {
+        let token = get_current(tokens, index);
+        // paramless.
+        if token.kind == TokenKind::CloseBracket {
+            *index += 1;
+            break;
+        }
+        // accumulate parameter expressions
+        let arg = parse_expression(tokens, index);
+        // skip commas
+        if get_current(tokens, index).kind == TokenKind::Comma {
+            *index += 1;
+        }
+        args.push(Box::new(arg));
+    }
+    args
 }
 // ########################################
 // END PARSER FUNCTION HIERARCHY
@@ -811,9 +851,9 @@ fn parse_parameters(tokens: &Vec<Token>, index: &mut usize) -> Vec<Node> {
 }
 fn parse_arguments(tokens: &Vec<Token>, index: &mut usize) -> Vec<Node> {
     *index += 1; // discard open_paren
-
+    
     let mut args = Vec::new();
-
+    
     loop {
         let token = get_current(tokens, index);
         // paramless.
@@ -835,7 +875,7 @@ fn parse_if_else(tokens: &Vec<Token>, index: &mut usize) -> Node {
     *index += 1; // discard 'if'
     let if_condition = parse_expression(tokens, index);
 
-    if get_current(tokens, index).kind != TokenKind::OpenBrace {
+    if get_current(tokens, index).kind != TokenKind::OpenCurly {
         dbg!(get_current(tokens, index));
         dbg!(if_condition);
         panic!("If expected open brace after condition");
@@ -870,7 +910,7 @@ fn parse_else(tokens: &Vec<Token>, index: &mut usize) -> Node {
     let _ = consume_newlines(index, tokens);
 
     // if else with no comparison -> if ... {} else {}
-    if get_current(tokens, index).kind == TokenKind::OpenBrace {
+    if get_current(tokens, index).kind == TokenKind::OpenCurly {
         let else_block = parse_block(tokens, index);
 
         // Check for another else after this block
@@ -895,7 +935,7 @@ fn parse_else(tokens: &Vec<Token>, index: &mut usize) -> Node {
         let cur = get_current(tokens, index);
 
         match cur.kind {
-            TokenKind::OpenBrace | TokenKind::CloseParenthesis => {
+            TokenKind::OpenCurly | TokenKind::CloseParenthesis => {
                 *index += 1; // skip open brace
             }
             _ => {
