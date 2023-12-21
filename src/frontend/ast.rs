@@ -321,6 +321,11 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
             }
         },
         TokenFamily::Identifier => {
+            if second.kind == TokenKind::OpenBracket {
+                *index += 2; // discard id[
+                let node = parse_array_access(index, tokens, &first.value).unwrap();
+                return Ok(node);
+            }
             parse_decl(first, index, tokens, false) // default immutability
         }
         TokenFamily::Operator => {
@@ -365,6 +370,7 @@ fn parse_decl(token: &Token, index: &mut usize, tokens: &Vec<Token>, mutable: bo
             })
         }
         TokenKind::OpenBracket => {
+            *index += 1; // discard [
             Ok(parse_array_access(index, tokens, token.value.as_str()).unwrap())
         }
         
@@ -606,28 +612,29 @@ fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Node {
             }
             TokenKind::OpenBracket => {
                 if let Node::Identifier(id) = left {
-                    *index += 1;
+                    *index += 1; // move past [
                     match parse_array_access(index, tokens, &id) {
                         Ok(node) => {
                             left = node;
-                            continue;
+                            break;
                         }
                         Err(_) => {
                             dbg!(token);
-                            panic!("Expected function call node");
+                            panic!("Expected array access node");
                         }
                     }
                 } else {
-                    panic!("Expected identifier token");
+                    let init = parse_array_initializer(tokens, index);
+                    return new_array("Dynamic".to_string(), init.len(), init.clone(), true, false);
                 }
             }
             // these 5 token kinds are expression delimiters, but
             // the tokens are expected to be consumed by the caller of this function.
             TokenKind::CloseParenthesis
+            | TokenKind::CloseBracket
             | TokenKind::OpenCurly
             | TokenKind::Newline
             | TokenKind::Comma
-            | TokenKind::CloseBracket
             | TokenKind::Eof => {
                 break;
             }
@@ -645,14 +652,19 @@ fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Node {
 
 fn parse_array_access(index: &mut usize, tokens: &Vec<Token>, id: &str) -> Result<Node, ()> {
     let accessor = parse_expression(tokens, index);
- 
-    if get_current(tokens, index).kind != TokenKind::CloseBracket {
-        dbg!(get_current(tokens, index));
-        panic!("Expected close bracket token");
-    }
-    *index += 1;
+    let mut token = get_current(tokens, index);
     
-    let token = get_current(tokens, index);
+    if token.kind == TokenKind::CloseBracket {
+        *index += 1; // move past ]
+        token = get_current(tokens, index);
+    }
+    
+    if token.kind == TokenKind::Newline{
+        *index += 1; // move past \n
+        token = consume_newlines(index, tokens);
+    }
+    
+    token = get_current(tokens, index);
      
     let mut node = Node::ArrayAccessExpr {
         id: id.to_string(),
@@ -667,6 +679,7 @@ fn parse_array_access(index: &mut usize, tokens: &Vec<Token>, id: &str) -> Resul
       
     match token.kind {
         TokenKind::Assignment => {
+            *index += 1;
             if let Node::ArrayAccessExpr { id, index_expr, expression : _ , assignment : _ } = node {
                 node = Node::ArrayAccessExpr {
                     id,
@@ -766,10 +779,7 @@ fn parse_factor(tokens: &Vec<Token>, index: &mut usize) -> Node {
     if let Some(token) = tokens.get(*index) {
         *index += 1;
         let node = match token.kind {
-            TokenKind::OpenBracket => {
-                let init = parse_array_initializer(tokens, index);
-                new_array("Dynamic".to_string(), init.len(), init.clone(), true, false)
-            }
+           
             TokenKind::Number => Node::Number(token.value.parse::<f64>().unwrap()),
             // array literal.. one problem
             // we cant know much about mutability at this point here, and the way this is intended to be used,
@@ -783,7 +793,10 @@ fn parse_factor(tokens: &Vec<Token>, index: &mut usize) -> Node {
                 let id = Node::String(token.value.clone());
                 id
             }
-            
+            TokenKind::OpenBracket => {
+                let init = parse_array_initializer(tokens, index);
+                return new_array("Dynamic".to_string(), init.len(), init.clone(), true, false);
+            }
             TokenKind::OpenParenthesis => {
                 let node = parse_expression(tokens, index);
                 if let Some(token) = tokens.get(*index) {

@@ -565,16 +565,18 @@ impl Visitor<Value> for Interpreter {
                         panic!("Cannot assign to immutable array");
                     }
                     
+                    let Value::Float(index_value) = value_node else {
+                        panic!("Expected numerical index value, got {:?}", value_node);
+                    };
                     
-                    
-                    let index_value = value_node.as_float().unwrap();
-                    
-                    if elements.len() < *index_value as usize {
-                        panic!("Array index out of bounds :: {}[{}]", id, *index_value as usize);
+                    if elements.len() < index_value as usize {
+                        panic!("Array index out of bounds :: {}[{}]", id, index_value as usize);
                     }
                      
-                    let variable = &elements[*index_value as usize];
+                    let variable = &elements[index_value as usize];
                      
+                    //dbg!(variable);
+                    
                     variable.value.clone()
                 }
                 else {

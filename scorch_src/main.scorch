@@ -1,5 +1,5 @@
-password : String
-var passy := ["hi", "bye", "shy", "guy", "fly", "by", 10]
-Booly : Bool
+var passy : Array = ['xaryyus']
 
-println(passy[3])
+passy[0] = 'xaryu'
+
+println(passy[0])
