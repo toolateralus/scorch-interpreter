@@ -174,6 +174,13 @@ impl Visitor<Value> for Interpreter {
                 };
                 match self.context.variables.get_mut(&str_id) {
                     Some(value) => {
+                        
+                        if TypeChecker::validate(value, None) == false {
+                            dbg!(node);
+                            panic!("Type mismatch");
+                        }
+                        
+                        
                         if value.mutable == false {
                             dbg!(node);
                             panic!("Cannot assign to immutable variable");

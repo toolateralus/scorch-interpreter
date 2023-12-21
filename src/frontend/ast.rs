@@ -391,9 +391,6 @@ fn parse_implicit_decl(
     
     if get_current(tokens, index).kind == TokenKind::Newline {
         let token = consume_newlines(index, tokens);
-        
-        let v  = token;
-        
     }
     
     // implicit variable declaration

@@ -40,20 +40,10 @@ impl TypeChecker {
             ]),
         }
     }
-    
-    pub fn set(&mut self, name: &String, type_ : Type) -> () {
-        self.types.insert(name.clone(), type_);
-    }
-    
-    pub fn get(&self, name: &str) -> Option<Type> {
-        match self.types.get(name) {
-            Some(t) => Some(t.clone()),
-            None => None,
-        }
-    }
-    
+}
+
+impl TypeChecker {
     pub fn validate(val : &Variable, struct_name : Option<&String>) -> bool {
-        // todo: use type validator field from in variable. adding it now.
         let typename = val.typename.clone();
         match &val.value {
             Value::Float(_) => typename == "float",
@@ -67,5 +57,13 @@ impl TypeChecker {
             _ => false,
         }
     }
-    
+    pub fn set(&mut self, name: &String, type_ : Type) -> () {
+        self.types.insert(name.clone(), type_);
+    }
+    pub fn get(&self, name: &str) -> Option<Type> {
+        match self.types.get(name) {
+            Some(t) => Some(t.clone()),
+            None => None,
+        }
+    }
 }
