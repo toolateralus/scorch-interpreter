@@ -1,6 +1,6 @@
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
-use crate::{frontend::{ast::{Node, Visitor}, tokens::TokenKind}, runtime::interpreter::Interpreter};
+use crate::{frontend::ast::{Node, Visitor}, runtime::interpreter::Interpreter};
 
 use super::typechecker::{Type, TypeChecker};
 

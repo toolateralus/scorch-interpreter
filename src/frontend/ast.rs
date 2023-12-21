@@ -161,7 +161,7 @@ impl Node {
             Node::RepeatStmnt { .. } => visitor.visit_repeat_stmnt(self),
             Node::BreakStmnt(_) => visitor.visit_break_stmnt(self),
             Node::Array{..} => visitor.visit_array(self),
-            Node::ArrayAccessExpr { id, index_expr: index, expression, assignment } => visitor.visit_array_access(self),
+            Node::ArrayAccessExpr { id: _, index_expr: _index, expression: _, assignment: _ } => visitor.visit_array_access(self),
         }
     }
 }
@@ -412,7 +412,7 @@ fn parse_implicit_decl(
     }
     
     if get_current(tokens, index).kind == TokenKind::Newline {
-        let token = consume_newlines(index, tokens);
+        let _token = consume_newlines(index, tokens);
     }
     
     // implicit variable declaration
@@ -474,7 +474,7 @@ fn parse_function_decl_stmnt(
 fn parse_explicit_decl(
     index: &mut usize,
     tokens: &Vec<Token>,
-    token: &Token,
+    _token: &Token,
     id: String,
     mutable: bool,
 ) -> Result<Node, ()> {
@@ -661,7 +661,7 @@ fn parse_array_access(index: &mut usize, tokens: &Vec<Token>, id: &str) -> Resul
     
     if token.kind == TokenKind::Newline{
         *index += 1; // move past \n
-        token = consume_newlines(index, tokens);
+        _ = consume_newlines(index, tokens);
     }
     
     token = get_current(tokens, index);

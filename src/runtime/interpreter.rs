@@ -1,4 +1,4 @@
-use std::{collections::HashMap, rc::Rc, cell::RefCell, thread::panicking};
+use std::{collections::HashMap, rc::Rc};
 
 use super::{types::*, typechecker::TypeChecker};
 use crate::frontend::{
@@ -556,7 +556,7 @@ impl Visitor<Value> for Interpreter {
     }
 
     fn visit_array_access(&mut self, node: &Node) -> Value {
-        if let Node::ArrayAccessExpr { id, index_expr: index, expression, assignment } = node {
+        if let Node::ArrayAccessExpr { id, index_expr: index, expression: _, assignment } = node {
             if let Some(var) = self.context.find_variable(id) {
                 if let Value::Array(mutable, elements) = var.value.clone() {
                     let value_node = index.accept(self);

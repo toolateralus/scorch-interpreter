@@ -1,5 +1,7 @@
-var passy : Array = ['xaryyus']
+var array : Array = ['xaryu', 'cdew', 'venruki']
 
-passy[0] = 'xaryu'
-
-println(passy[0])
+repeat i < 3 {
+    println('before... ', array[i])
+    array[i] = 'xaryu'
+    println('after... ', array[i + 1])
+}

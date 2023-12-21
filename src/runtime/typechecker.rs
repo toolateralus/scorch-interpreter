@@ -5,8 +5,8 @@ use super::types::Variable;
 
 #[derive(Debug, Clone)] 
 pub struct Type {
-    name: String,
-    validator: Box<fn(Value) -> bool>,
+    pub name: String,
+    pub validator: Box<fn(Value) -> bool>,
 }
 
 #[derive(Debug, Clone)]
@@ -58,7 +58,7 @@ impl TypeChecker {
 }
 
 impl TypeChecker {
-    pub fn validate(val : &Variable, struct_name : Option<&String>) -> bool {
+    pub fn validate(val : &Variable, _struct_name : Option<&String>) -> bool {
         let typename = &val.typename;
         
         // temporarily, while we have no Dynamic types due to no structs.
@@ -66,7 +66,10 @@ impl TypeChecker {
             return true;
         }
         
-        match &val.value {
+        let t = val.type_.clone();
+        let type_valid = (t.try_borrow().unwrap().validator)(val.value.clone());
+        
+        type_valid && match &val.value {
             Value::Float(_) => typename == "Float",
             Value::Bool(_) => typename == "Bool",
             Value::String(_) => typename == "String",

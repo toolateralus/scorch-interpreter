@@ -7,8 +7,8 @@ use crate::{
     runtime::types::{Parameter, Value},
 };
 
-use super::{types::{BuiltInFunction, Variable}};
-use std::cell::RefCell;
+use super::types::{BuiltInFunction, Variable};
+
 
 fn print_ln(args: Vec<Value>) -> Value {
     for arg in args {
@@ -37,7 +37,7 @@ fn print_ln(args: Vec<Value>) -> Value {
                     print_ln(Vec::from([element.value.clone()]));
                 }
             }
-            Value::Struct { name, context } => todo!(),
+            Value::Struct { name: _, context: _ } => todo!(),
             Value::Return(_) => panic!("Cannot print return value"),
             
         }
