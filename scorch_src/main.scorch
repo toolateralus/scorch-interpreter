@@ -1,0 +1,6 @@
+password : String
+passy : Float
+Booly : Bool
+
+println('default value for String')
+println(password)

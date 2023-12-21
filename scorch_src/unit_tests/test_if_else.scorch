@@ -1,0 +1,23 @@
+var status := 'failed'
+
+fail_status := 'failed'
+pass_status := 'passed'
+
+if false {
+    status = fail_status
+} else false {
+    status = fail_status
+} else {
+    status = pass_status
+}
+
+if true {
+    status = pass_status
+} else false {
+    status = fail_status
+} else {
+    status = fail_status
+}
+
+
+

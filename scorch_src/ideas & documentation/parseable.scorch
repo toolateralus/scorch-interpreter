@@ -1,0 +1,42 @@
+//# BEGIN CURRENTLY PARSEABLE
+explicitly_typed_variable : type = value
+Dynamically_typed_variable := value
+
+x := 100.0
+y : Float = 2500.16
+
+//# to demonstrate both : 
+//# such as 
+name : String = 'joe schmoe'
+birthplace : String = "america"
+age : String = 'mid 20s'
+height : Float = '6 feet, 3.758168 inches'
+
+//# is the same as
+name := 'joe schmoe'
+birthplace := "america"
+age := 'mid 20s'
+height := '6 feet, 3.758168 inches'
+
+//# Strings may start or end with " and ' interchangably.
+//# right now, as much of a bug as it is, you may start a String with ' and end with ".
+
+//# concatenating Strings:
+
+first_name := 'Cyitlec' //# ch yee t' leck
+last_name := 'Kivals' //  # kih vahlS
+full_name := first_name + ' ' + last_name
+
+equals := (a : String, b : String) {
+    //# return not yet implemented   
+}
+
+void_parametersless := {
+    //# return not yet implemented   
+}
+
+void_parametersless()
+
+equals("a", "b") //# does not return yet
+
+//# END CURRENTLY PARSEABLE

@@ -1,7 +1,7 @@
 {
     "oneDarkPro.editorTheme": "One Dark Pro",
     "files.associations": {
-        "*.scorch": "coffeescript"
+        "*.scorch": "r"
     },
     "rust-analyzer.showUnlinkedFileNotification": false
 }
