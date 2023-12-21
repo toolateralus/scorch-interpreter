@@ -19,13 +19,13 @@ fn print_ln(args: Vec<Value>) -> Value {
             Value::None(_) => print!("{:?}", Value::None(())),
             Value::Function(_) => print!("{:?}", arg),
             Value::Array(_, elements) => {
-                for element in elements {
-                    print!("{:?}", element);
+                for element in elements.iter() {
+                    print_ln(Vec::from([element.value.clone()]));
                 }
             }
             Value::List(elements) => {
                 for element in elements.try_borrow().unwrap().iter() {
-                    print!("{:?}", element);
+                    print_ln(Vec::from([element.value.clone()]));
                 }
             }
             Value::Struct { name, context } => todo!(),
@@ -34,9 +34,6 @@ fn print_ln(args: Vec<Value>) -> Value {
         }
     }
     Value::None(())
-}
-fn get_vec_from_elements(elements: Rc<RefCell<Vec<Variable>>>) -> Vec<Variable> {
-    elements.borrow().clone()
 }
 fn wait(args: Vec<Value>) -> Value {
     if args.len() != 1 {

@@ -1,6 +1,5 @@
 password : String
-passy : Array = [1,2]
+passy : Array = [1,2,3,4,5,6,7,8,9,0]
 Booly : Bool
 
-println('default value for String')
 println(passy)

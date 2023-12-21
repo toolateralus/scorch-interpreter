@@ -704,7 +704,6 @@ fn parse_factor(tokens: &Vec<Token>, index: &mut usize) -> Node {
             TokenKind::Number => Node::Number(token.value.parse::<f64>().unwrap()),
             // array literal
             TokenKind::OpenBracket => {
-                *index += 1; // move past [
                 let init = parse_array_initializer(tokens, index);
                 new_array("Dynamic".to_string(), init.len(), init.clone(), false, false)
             }
@@ -767,8 +766,6 @@ fn parse_factor(tokens: &Vec<Token>, index: &mut usize) -> Node {
 }
 
 fn parse_array_initializer(tokens: &Vec<Token>, index: &mut usize) -> Vec<Box<Node>> {
-    *index += 1; // discard open_paren
-    
     let mut args = Vec::new();
     
     loop {
@@ -780,6 +777,7 @@ fn parse_array_initializer(tokens: &Vec<Token>, index: &mut usize) -> Vec<Box<No
         }
         // accumulate parameter expressions
         let arg = parse_expression(tokens, index);
+        
         // skip commas
         if get_current(tokens, index).kind == TokenKind::Comma {
             *index += 1;
