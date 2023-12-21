@@ -1,8 +1,14 @@
-v := 0
-main := {
-	repeat { 
-		println(v)
-		break v
+xaryu := 100
+
+MAIN := (argc : float, argv : string) {
+	delay := 250
+	xaryu = repeat {
+		println('waiting for ', delay, ' milliseconds')
+		wait(delay)	
+		break 100
 	}
 }
-main()
+
+MAIN(0.0, 'I am not xaryu.')
+
+println(xaryu)

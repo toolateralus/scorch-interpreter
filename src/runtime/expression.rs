@@ -54,6 +54,28 @@ impl Interpreter {
     pub fn visit_conditionless_repeat_stmnt(&mut self, block: &Box<Node>) -> Value {
         loop {
             let _result = block.accept(self);
+            match _result {
+                Value::None(_) => {
+                    return _result;
+                },
+                Value::Return(value) => {
+                    if let Some(val) = value {
+                        return *val;
+                    }
+                }
+                Value::Float(..) => {
+                    return _result;
+                },
+                Value::Bool(_) => {
+                    return _result;
+                },
+                Value::String(_) => {
+                    return _result;
+                },
+                Value::Function(_) => {
+                    return _result;
+                },
+            }
         }
     }
 }

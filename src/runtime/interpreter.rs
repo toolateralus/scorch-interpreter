@@ -61,7 +61,15 @@ impl Visitor<Value> for Interpreter {
     fn visit_program(&mut self, node: &Node) -> Value {
         if let Node::Program(statements) = node {
             for stmnt in statements {
-                stmnt.accept(self);
+                let result = stmnt.accept(self);
+                if let Value::Return(ret_val) = result {
+                    if let Some(return_value) = ret_val {
+                        return *return_value;
+                    }
+                    else {
+                        return Value::None(());
+                    }
+                }
             }
         } else {
             panic!("expected program node");
@@ -76,6 +84,9 @@ impl Visitor<Value> for Interpreter {
                 if let Value::Return(ret_val) = value {
                     if let Some(return_value) = ret_val {
                         return *return_value;
+                    }
+                    else {
+                        return Value::None(());
                     }
                 }
             }
@@ -430,9 +441,9 @@ impl Visitor<Value> for Interpreter {
                     panic!("Function not found");
                 }
             }
-
+            
             // parameterless invocation.
-            if args.len() == 0 {
+            if function.params.len() + args.len() == 0 {
                 return function.body.accept(self);
             }
 
@@ -440,8 +451,7 @@ impl Visitor<Value> for Interpreter {
             if args.len() != function.params.len() {
                 panic!("Number of arguments does not match the number of parameters");
             }
-            self.context = old.clone();
-
+            
             for (arg, param) in args.iter().zip(function.params.iter()) {
                 let arg_type_name = get_type_name(arg);
 
@@ -510,13 +520,14 @@ impl Visitor<Value> for Interpreter {
             None => self.visit_conditionless_repeat_stmnt(block),
         }
     }
-
+    
     fn visit_break_stmnt(&mut self, node: &Node) -> Value {
         if let Node::BreakStmnt(opt_val) = node {
             let Some(value_node) = opt_val else {
-                return Value::None(());
+                return Value::Return(None);
             };
-            return value_node.accept(self);
+            let value = value_node.accept(self);
+            return Value::Return(Some(Box::new(value.clone())));
         } else {
             panic!("Expected BreakStmnt node");
         }

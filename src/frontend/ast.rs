@@ -636,6 +636,11 @@ fn parse_factor(tokens: &Vec<Token>, index: &mut usize) -> Node {
                 let boolean = Node::Bool(token.value.parse::<bool>().unwrap());
                 boolean
             }
+            TokenKind::Repeat => {
+                let next = get_current(tokens, index);
+                let stmnt = parse_repeat_stmnt(next, index, tokens);
+                stmnt.unwrap()
+            }
             _ => {
                 dbg!(token);
                 panic!("Expected number or identifier token");
