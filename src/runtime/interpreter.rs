@@ -176,9 +176,14 @@ impl Visitor<Value> for Interpreter {
                 };
                 match self.context.variables.get_mut(&str_id) {
                     Some(value) => {
+                        if value.mutable == false {
+                            dbg!(node);
+                            panic!("Cannot assign to immutable variable");
+                        }
+                        
                         *value = Rc::new(Variable {
-                            typename: "dynamic".to_string(),
-                            mutable: true,
+                            typename: value.typename.clone(),
+                            mutable: value.mutable,
                             value: val,
                         });
                     }

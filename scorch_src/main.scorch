@@ -1,7 +1,7 @@
 
 repl := {
-	password := 'failzorz'
-	input := 'no input.'
+	var password := 'failzorz'
+	var input := 'no input.'
 	i := 0
 	repeat i < 2500 {
 		input = readln()
@@ -31,4 +31,4 @@ repl := {
 	}
 }
 
-repl()
+const result := repl()
