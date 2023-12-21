@@ -2,7 +2,8 @@ var xaryu : float = 0
 const str := 'hello'
 
 repeat i < 250 {
-	xaryu = 'oops'
+	xaryu = i
+	println('hi! ' + 'xaryu')
 }
 
 println(xaryu, str)

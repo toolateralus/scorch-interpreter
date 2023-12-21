@@ -44,7 +44,13 @@ impl TypeChecker {
 
 impl TypeChecker {
     pub fn validate(val : &Variable, struct_name : Option<&String>) -> bool {
-        let typename = val.typename.clone();
+        let typename = &val.typename;
+        
+        // temporarily, while we have no dynamic types due to no structs.
+        if typename == "dynamic" {
+            return true;
+        }
+        
         match &val.value {
             Value::Float(_) => typename == "float",
             Value::Bool(_) => typename == "bool",
@@ -52,7 +58,7 @@ impl TypeChecker {
             Value::Function(_) => typename == "function",
             Value::Array(_) => typename == "array",
             Value::List(_) => typename == "list",
-            Value::Struct { name, .. } => typename == *name,
+            Value::Struct { name, .. } => *typename == *name,
             Value::None(_) => typename == "none",
             _ => false,
         }
