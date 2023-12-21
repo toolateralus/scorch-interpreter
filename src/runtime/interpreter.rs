@@ -20,7 +20,6 @@ impl Interpreter {
     }
 }
 
-
 impl Visitor<Value> for Interpreter {
     // top level nodes
     fn visit_program(&mut self, node: &Node) -> Value {
@@ -30,8 +29,7 @@ impl Visitor<Value> for Interpreter {
                 if let Value::Return(ret_val) = result {
                     if let Some(return_value) = ret_val {
                         return *return_value;
-                    }
-                    else {
+                    } else {
                         return Value::None(());
                     }
                 }
@@ -49,8 +47,7 @@ impl Visitor<Value> for Interpreter {
                 if let Value::Return(ret_val) = value {
                     if let Some(return_value) = ret_val {
                         return *return_value;
-                    }
-                    else {
+                    } else {
                         return Value::Return(None);
                     }
                 }
@@ -71,14 +68,14 @@ impl Visitor<Value> for Interpreter {
         {
             if let Value::Bool(condition_result) = condition.accept(self) {
                 if condition_result {
-                   if let Node::Block(stmnts) = &**true_block {
+                    if let Node::Block(stmnts) = &**true_block {
                         for stmnt in stmnts {
                             let value = stmnt.accept(self);
                             if let Value::Return(_) = value {
                                 return value;
-                            }                            
+                            }
                         }
-                   }
+                    }
                 } else {
                     if let Some(else_stmnt) = else_block {
                         else_stmnt.accept(self);
@@ -127,6 +124,7 @@ impl Visitor<Value> for Interpreter {
             target_type,
             id,
             expression,
+            mutable,
         } = node
         {
             let value: Value;
@@ -148,13 +146,15 @@ impl Visitor<Value> for Interpreter {
                     panic!("redefinition of variable");
                 }
                 None => {
-                    self.context.insert_variable(&id, Rc::new(
-                        Variable {
+                    let mutability = *mutable;
+                    self.context.insert_variable(
+                        &id,
+                        Rc::new(Variable {
                             typename: target_type.clone(),
-                            mutable: false,
-                            value: value,
-                        }
-                    ));
+                            mutable : mutability,
+                            value,
+                        }),
+                    );
                 }
             }
         } else {
@@ -423,7 +423,7 @@ impl Visitor<Value> for Interpreter {
                     panic!("Function not found");
                 }
             }
-            
+
             // parameterless invocation.
             if function.params.len() + args.len() == 0 {
                 return function.body.accept(self);
@@ -433,7 +433,7 @@ impl Visitor<Value> for Interpreter {
             if args.len() != function.params.len() {
                 panic!("Number of arguments does not match the number of parameters");
             }
-            
+
             for (arg, param) in args.iter().zip(function.params.iter()) {
                 let arg_type_name = get_type_name(arg);
 
@@ -442,14 +442,14 @@ impl Visitor<Value> for Interpreter {
                     panic!("Argument type does not match parameter type.\n provided argument: {:?} expected parameter : {:?}", arg, param)
                 } else {
                     // copying param values into a context
-                    self.context
-                        .insert_variable(&param.name, Rc::new(
-                            Variable {
-                                typename: param.typename.clone(),
-                                mutable: false,
-                                value: arg.clone()
-                            }
-                        ));
+                    self.context.insert_variable(
+                        &param.name,
+                        Rc::new(Variable {
+                            typename: param.typename.clone(),
+                            mutable: false,
+                            value: arg.clone(),
+                        }),
+                    );
                 }
             }
 
@@ -472,6 +472,7 @@ impl Visitor<Value> for Interpreter {
             params,
             body,
             return_type,
+            mutable
         } = node
         {
             let body_cloned = body.clone();
@@ -480,6 +481,7 @@ impl Visitor<Value> for Interpreter {
                 params: self.get_params_list(params),
                 body: body_cloned,
                 return_type: return_type.clone(),
+                mutable: *mutable,
             };
             let function = Rc::new(func);
             self.context.insert_function(&id, function);
@@ -508,7 +510,7 @@ impl Visitor<Value> for Interpreter {
             None => self.visit_conditionless_repeat_stmnt(block),
         }
     }
-    
+
     fn visit_break_stmnt(&mut self, node: &Node) -> Value {
         if let Node::BreakStmnt(opt_val) = node {
             let Some(value_node) = opt_val else {

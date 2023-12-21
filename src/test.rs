@@ -57,7 +57,7 @@ fn test_rel_expr() {
         let variable = variables[i];
         let expected_result = expected_results[i];
         let value = &*ctx.variables[*&variable].clone();
-        
+
         if let super::runtime::types::Value::Bool(v) = value.value {
             assert_eq!(v, expected_result, "test failed: {}", &variable);
         }

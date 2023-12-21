@@ -80,7 +80,7 @@ pub enum Node {
         id: Box<Node>,
         expression: Box<Node>,
     },
-    
+
     FunctionCall {
         id: String,
         arguments: Option<Vec<Node>>,
@@ -90,6 +90,7 @@ pub enum Node {
         target_type: String,
         id: String,
         expression: Box<Node>,
+        mutable: bool,
     },
     RepeatStmnt {
         iterator_id: Option<String>,
@@ -112,6 +113,7 @@ pub enum Node {
         body: Box<Node>,
         params: Vec<Node>,
         return_type: String,
+        mutable: bool,
     },
     ParamDeclNode {
         varname: Box<Node>,
@@ -257,6 +259,16 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
     // any branch of this must move the index forward at least once.
     match token.family {
         TokenFamily::Keyword => match token.kind {
+            TokenKind::Const => {
+                // consume 'const' 
+                *index += 1;
+                parse_implicit_decl(index, tokens, &next.value, true)
+            }
+            TokenKind::Var => {
+                // consume 'const' 
+                *index += 1;
+                parse_implicit_decl(index, tokens, &next.value, true)
+            }
             TokenKind::Break => {
                 *index += 1; // discard break
                 if next.kind == TokenKind::Newline {
@@ -283,35 +295,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
             }
         },
         TokenFamily::Identifier => {
-            // varname : type = default;
-            let id = token.value.clone();
-
-            match next.kind {
-                // varname := default;
-                // declaring a variable with implicit type.
-                TokenKind::ColonEquals => parse_implicit_decl(index, tokens, &id),
-                // declaraing a variable with explicit type.
-                TokenKind::Colon => parse_explicit_decl(index, tokens, token, id),
-                // assigning a value to an already declared variable.
-                TokenKind::Assignment => {
-                    *index += 2;
-                    let id = Node::Identifier(token.value.clone());
-                    let expression = parse_expression(tokens, index);
-                    consume_normal_expr_delimiter(tokens, index);
-                    Ok(Node::AssignStmnt {
-                        id: Box::new(id),
-                        expression: Box::new(expression),
-                    })
-                }
-                // function call
-                TokenKind::OpenParenthesis => Ok(parse_expression(tokens, index)),
-
-                _ => {
-                    dbg!(token);
-                    println!("Expected ':' or '=' token after Identifier,\n instead got : \n current : {:?}\n next : {:?}", token, next);
-                    panic!("parser failure : check logs.");
-                }
-            }
+            parse_decl(token, next, index, tokens, false) // default immutability
         }
         TokenFamily::Operator => {
             if token.kind == TokenKind::OpenBrace {
@@ -328,6 +312,38 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
         }
     }
 }
+
+fn parse_decl(token: &Token, next: &Token, index: &mut usize, tokens: &Vec<Token>, mutable: bool) -> Result<Node, ()> {
+    // varname : type = default;
+    let id = token.value.clone();
+    
+    match next.kind {
+        // varname := default;
+        // declaring a variable with implicit type.
+        TokenKind::ColonEquals => parse_implicit_decl(index, tokens, &id, mutable),
+        // declaraing a variable with explicit type.
+        TokenKind::Colon => parse_explicit_decl(index, tokens, token, id, mutable),
+        // assigning a value to an already declared variable.
+        TokenKind::Assignment => {
+            *index += 2;
+            let id = Node::Identifier(token.value.clone());
+            let expression = parse_expression(tokens, index);
+            consume_normal_expr_delimiter(tokens, index);
+            Ok(Node::AssignStmnt {
+                id: Box::new(id),
+                expression: Box::new(expression),
+            })
+        }
+        // function call
+        TokenKind::OpenParenthesis => Ok(parse_expression(tokens, index)),
+
+        _ => {
+            dbg!(token);
+            println!("Expected ':' or '=' token after Identifier,\n instead got : \n current : {:?}\n next : {:?}", token, next);
+            panic!("parser failure : check logs.");
+        }
+    }
+}
 fn parse_fn_call(index: &mut usize, tokens: &Vec<Token>, token: &String) -> Result<Node, ()> {
     let arguments = parse_arguments(tokens, index);
     let node = Node::FunctionCall {
@@ -336,11 +352,16 @@ fn parse_fn_call(index: &mut usize, tokens: &Vec<Token>, token: &String) -> Resu
     };
     Ok(node)
 }
-fn parse_implicit_decl(index: &mut usize, tokens: &Vec<Token>, id: &String) -> Result<Node, ()> {
+fn parse_implicit_decl(
+    index: &mut usize,
+    tokens: &Vec<Token>,
+    id: &String,
+    mutable: bool,
+) -> Result<Node, ()> {
     *index += 2;
     // skip id, := tokens
 
-    if let Some(value) = parse_function_decl_stmnt(tokens, index, id) {
+    if let Some(value) = parse_function_decl_stmnt(tokens, index, id, mutable) {
         return value;
     }
     // implicit variable declaration
@@ -351,12 +372,14 @@ fn parse_implicit_decl(index: &mut usize, tokens: &Vec<Token>, id: &String) -> R
         target_type: String::from("dynamic"),
         id: id.clone(),
         expression: Box::new(value),
+        mutable,
     })
 }
 fn parse_function_decl_stmnt(
     tokens: &Vec<Token>,
     index: &mut usize,
     id: &String,
+    mutable: bool,
 ) -> Option<Result<Node, ()>> {
     if get_current(tokens, index).kind == TokenKind::OpenBrace {
         let body = parse_block(tokens, index);
@@ -366,6 +389,7 @@ fn parse_function_decl_stmnt(
             body: Box::new(body),
             params: Vec::new(),
             return_type: String::from("dynamic"),
+            mutable,
         };
         return Some(Ok(node));
     }
@@ -388,6 +412,7 @@ fn parse_function_decl_stmnt(
                 body: Box::new(body),
                 params,
                 return_type: String::from("dynamic"),
+                mutable,
             };
             return Some(Ok(node));
         }
@@ -400,6 +425,7 @@ fn parse_explicit_decl(
     tokens: &Vec<Token>,
     token: &Token,
     id: String,
+    mutable: bool,
 ) -> Result<Node, ()> {
     *index += 2;
     // varname :^ type = default;
@@ -429,8 +455,10 @@ fn parse_explicit_decl(
         target_type,
         id,
         expression: Box::new(expression),
+        mutable,
     })
 }
+
 fn parse_repeat_stmnt(next: &Token, index: &mut usize, tokens: &Vec<Token>) -> Result<Node, ()> {
     // style::
     // repeat i < 200 {...}
@@ -446,14 +474,14 @@ fn parse_repeat_stmnt(next: &Token, index: &mut usize, tokens: &Vec<Token>) -> R
         };
         return Ok(node);
     }
-    
+
     *index += 1; // skip repeat
-    // style::
-    // repeat {... }
+                 // style::
+                 // repeat {... }
     let block = parse_block(tokens, index);
-    
+
     //*index += 1;
-    
+
     Ok(Node::RepeatStmnt {
         iterator_id: Option::None,
         condition: Option::None,

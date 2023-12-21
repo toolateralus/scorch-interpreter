@@ -1,4 +1,4 @@
-use std::{rc::Rc, collections::HashMap};
+use std::{collections::HashMap, rc::Rc};
 
 use crate::{
     frontend::ast::Node,
@@ -32,12 +32,14 @@ fn wait(args: Vec<Value>) -> Value {
     }
     Value::None(())
 }
-fn readln(args : Vec<Value>) -> Value {
+fn readln(args: Vec<Value>) -> Value {
     if args.len() != 0 {
         panic!("readln expected 0 arguments");
     }
     let mut input = String::new();
-    std::io::stdin().read_line(&mut input).expect("failed to read from stdin");
+    std::io::stdin()
+        .read_line(&mut input)
+        .expect("failed to read from stdin");
     Value::String(input.replace("\n", ""))
 }
 
@@ -50,12 +52,9 @@ pub fn get_builtin_functions() -> HashMap<String, BuiltInFunction> {
         ),
         (
             String::from("readln"),
-            BuiltInFunction::new(Box::new(readln))
+            BuiltInFunction::new(Box::new(readln)),
         ),
-        (
-            String::from("wait"),
-            BuiltInFunction::new(Box::new(wait))
-        ),
+        (String::from("wait"), BuiltInFunction::new(Box::new(wait))),
     ])
 }
 // loops
@@ -66,7 +65,6 @@ impl Interpreter {
         condition: &Option<Box<Node>>,
         block: &Box<Node>,
     ) -> Value {
-        
         match self.context.find_variable(&id) {
             Some(_) => {}
             None => {
@@ -79,9 +77,9 @@ impl Interpreter {
                 self.context.insert_variable(&id, var);
             }
         }
-        
+
         let mut iter: f64 = 0.0;
-        
+
         loop {
             let condition_result = match condition.as_ref() {
                 Some(expression) => {
@@ -93,14 +91,11 @@ impl Interpreter {
                 }
                 None => panic!("Expected condition in conditional repeat statement"),
             };
-            
+
             if condition_result {
                 let result = block.accept(self);
                 match result {
-                    Value::Float(..) |
-                    Value::Bool(_) |
-                    Value::Function(_) |
-                    Value::String(_) => {
+                    Value::Float(..) | Value::Bool(_) | Value::Function(_) | Value::String(_) => {
                         return result
                     }
                     Value::Return(value) => {
@@ -108,9 +103,7 @@ impl Interpreter {
                             return *val;
                         }
                     }
-                    _ => {
-                        
-                    }
+                    _ => {}
                 }
             } else {
                 return Value::None(());
@@ -118,21 +111,21 @@ impl Interpreter {
             self.context.variables.remove(id);
 
             iter += 1.0;
-            
+
             let value = Value::Float(iter.floor());
-            
+
             let typename = "float".to_string();
-            
+
             // todo: fix this terrible variable stuff.
             // should we floor this here?
-            self.context
-                .insert_variable(&id, Rc::new( 
-                    Variable {
-                        value,
-                        typename,
-                        mutable: true,
-                    }
-            ));
+            self.context.insert_variable(
+                &id,
+                Rc::new(Variable {
+                    value,
+                    typename,
+                    mutable: true,
+                }),
+            );
         }
     }
     pub fn visit_conditionless_repeat_stmnt(&mut self, block: &Box<Node>) -> Value {
@@ -141,7 +134,7 @@ impl Interpreter {
             match _result {
                 Value::None(_) => {
                     return _result;
-                },
+                }
                 Value::Return(value) => {
                     if let Some(val) = value {
                         return *val;
@@ -149,16 +142,16 @@ impl Interpreter {
                 }
                 Value::Float(..) => {
                     return _result;
-                },
+                }
                 Value::Bool(_) => {
                     return _result;
-                },
+                }
                 Value::String(_) => {
                     return _result;
-                },
+                }
                 Value::Function(_) => {
                     return _result;
-                },
+                }
             }
         }
     }

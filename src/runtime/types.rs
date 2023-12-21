@@ -36,13 +36,12 @@ impl Value {
     }
 }
 
-
 // technically this isn't always variable, it's just a declared field.
 #[derive(Debug, Clone)]
 pub struct Variable {
-    pub typename : String,
-    pub mutable : bool,
-    pub value : Value,
+    pub typename: String,
+    pub mutable: bool,
+    pub value: Value,
 }
 
 #[derive(Debug, Clone)]
@@ -97,6 +96,7 @@ pub struct Function {
     pub params: Vec<Parameter>,
     pub body: Box<Node>,
     pub return_type: String,
+    pub mutable : bool,
 }
 pub struct BuiltInFunction {
     func: Box<dyn FnMut(Vec<Value>) -> Value>,

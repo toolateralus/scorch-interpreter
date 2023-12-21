@@ -32,6 +32,8 @@ pub fn create_tokenizer() -> Tokenizer {
     ]);
 
     let keywords = HashMap::from([
+        (String::from("const"), TokenKind::Const),
+        (String::from("var"), TokenKind::Var),
         (String::from("repeat"), TokenKind::Repeat),
         (String::from("return"), TokenKind::Return),
         (String::from("break"), TokenKind::Break),
@@ -113,7 +115,9 @@ pub enum TokenKind {
     ColonEquals,
     Assignment,
     Bool,
-    Break, // ::
+    Break,
+    Const,
+    Var, // ::
 }
 #[derive(Debug, Clone)]
 pub struct Token {
