@@ -1,5 +1,5 @@
 password : String
-passy : Float
+passy : Array
 Booly : Bool
 
 println('default value for String')

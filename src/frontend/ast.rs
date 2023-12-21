@@ -26,7 +26,7 @@ pub trait Visitor<T> {
     fn visit_string(&mut self, node: &Node) -> T;
     fn visit_identifier(&mut self, node: &Node) -> T;
     fn visit_bool(&mut self, node: &Node) -> T;
-
+    fn visit_array(&mut self, node: &Node) -> T;
     fn visit_if_stmnt(&mut self, node: &Node) -> T;
     fn visit_else_stmnt(&mut self, node: &Node) -> T;
 }
@@ -41,7 +41,7 @@ pub enum Node {
     String(String),
     Identifier(String),
     Bool(bool),
-
+    
     // Expressions
     LogicalExpression {
         lhs: Box<Node>,
@@ -120,6 +120,13 @@ pub enum Node {
         typename: Box<Node>,
     },
     BreakStmnt(Option<Box<Node>>),
+    Array {
+        typename : String,
+        elements: Vec<Box<Node>>,
+        init_capacity : Option<usize>,
+        mutability : bool,
+        elements_mutable : bool,
+    },
 }
 impl Node {
     pub fn accept<T>(&self, visitor: &mut dyn Visitor<T>) -> T {
@@ -150,6 +157,7 @@ impl Node {
             Node::Program(..) => visitor.visit_program(self),
             Node::RepeatStmnt { .. } => visitor.visit_repeat_stmnt(self),
             Node::BreakStmnt(_) => visitor.visit_break_stmnt(self),
+            Node::Array{..} => visitor.visit_array(self),
         }
     }
 }
@@ -481,9 +489,19 @@ fn parse_explicit_decl(
             "String" => {
                 Node::Expression(Box::new(Node::String(String::from(""))))
             },
-           "Bool" => {
-            Node::Expression(Box::new(Node::Bool(false)))
+            "Bool" => {
+                Node::Expression(Box::new(Node::Bool(false)))
             },
+            
+            "Array" => {
+                Node::Expression(Box::new(Node::Array {
+                    typename : String::from("Dynamic"),
+                    init_capacity : Option::None,
+                    elements : Vec::new(),
+                    mutability : mutable,
+                    elements_mutable : mutable, // todo: how do we want to qualify this?
+                }))
+            }
             _=> {
                  Node::Expression(Box::new(Node::Undefined()))
             }

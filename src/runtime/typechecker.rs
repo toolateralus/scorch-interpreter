@@ -44,6 +44,14 @@ impl TypeChecker {
                         _ => false,
                     }),
                 }),
+                (String::from("Array"), Type {
+                    name: String::from("Array"),
+                    validator: Box::new(|v| match v {
+                        Value::Array(..) => true,
+                        Value::List(..) => true,
+                        _ => false,
+                    }),
+                }),
             ]),
         }
     }
@@ -63,8 +71,8 @@ impl TypeChecker {
             Value::Bool(_) => typename == "Bool",
             Value::String(_) => typename == "String",
             Value::Function(_) => typename == "function",
-            Value::Array(_) => typename == "array",
-            Value::List(_) => typename == "list",
+            Value::Array(..) => typename == "Array",
+            Value::List(_) => typename == "List",
             Value::Struct { name, .. } => *typename == *name,
             Value::None(_) => typename == "none",
             _ => false,

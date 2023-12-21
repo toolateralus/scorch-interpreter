@@ -1,4 +1,4 @@
-use std::{collections::HashMap, rc::Rc};
+use std::{collections::HashMap, rc::Rc, cell::RefCell};
 
 use super::{types::*, typechecker::TypeChecker};
 use crate::frontend::{
@@ -532,6 +532,22 @@ impl Visitor<Value> for Interpreter {
             return Value::Return(Some(Box::new(value.clone())));
         } else {
             panic!("Expected BreakStmnt node");
+        }
+    }
+    
+    fn visit_array(&mut self, node: &Node) -> Value {
+          if let Node::Array {typename, init_capacity, elements, mutability, elements_mutable} = node {
+            let mut values = Vec::new();
+            for value in elements {
+                let val = value.accept(self);
+                let var = Variable::from(typename.clone(), *elements_mutable, val,self.type_checker.clone());
+                values.push(var);
+            }
+           
+            return Value::Array(*mutability, values);
+            
+        } else {
+            panic!("Expected List node");
         }
     }
 }
