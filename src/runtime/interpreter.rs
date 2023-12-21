@@ -1,4 +1,4 @@
-use std::{collections::HashMap, rc::Rc, cell::RefCell};
+use std::{collections::HashMap, rc::Rc, cell::RefCell, thread::panicking};
 
 use super::{types::*, typechecker::TypeChecker};
 use crate::frontend::{
@@ -224,7 +224,7 @@ impl Visitor<Value> for Interpreter {
             }
         }
         match self.context.find_variable(id) {
-            Some(value) => (*value).value.clone(), // todo: fix cloning all values.
+            Some(value) => (*value).value.clone(), 
             None => {
                 dbg!(node);
                 panic!("Variable not found");
@@ -552,6 +552,43 @@ impl Visitor<Value> for Interpreter {
             
         } else {
             panic!("Expected List node");
+        }
+    }
+
+    fn visit_array_access(&mut self, node: &Node) -> Value {
+        if let Node::ArrayAccessExpr { id, index_expr: index, expression, assignment } = node {
+            if let Some(var) = self.context.find_variable(id) {
+                if let Value::Array(mutable, elements) = var.value.clone() {
+                    let value_node = index.accept(self);
+                    
+                    if !mutable && *assignment {
+                        panic!("Cannot assign to immutable array");
+                    }
+                    
+                    
+                    
+                    let index_value = value_node.as_float().unwrap();
+                    
+                    if elements.len() < *index_value as usize {
+                        panic!("Array index out of bounds :: {}[{}]", id, *index_value as usize);
+                    }
+                     
+                    let variable = &elements[*index_value as usize];
+                     
+                    variable.value.clone()
+                }
+                else {
+                    panic!("Expected Array node");
+                }
+                
+                
+            } else {
+                panic!("Expected ArrayAccessExpr node");
+            }
+            
+        }
+        else {
+            panic!("Expected ArrayAccessExpr node");
         }
     }
 }

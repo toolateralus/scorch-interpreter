@@ -27,6 +27,7 @@ pub trait Visitor<T> {
     fn visit_identifier(&mut self, node: &Node) -> T;
     fn visit_bool(&mut self, node: &Node) -> T;
     fn visit_array(&mut self, node: &Node) -> T;
+    fn visit_array_access(&mut self, node: &Node) -> T;
     fn visit_if_stmnt(&mut self, node: &Node) -> T;
     fn visit_else_stmnt(&mut self, node: &Node) -> T;
 }
@@ -127,6 +128,8 @@ pub enum Node {
         mutable : bool,
         elements_mutable : bool,
     },
+    ArrayAccessExpr { id: String, index_expr: Box<Node>, expression : Option<Box<Node>>,
+    assignment: bool },
 }
 impl Node {
     pub fn accept<T>(&self, visitor: &mut dyn Visitor<T>) -> T {
@@ -158,6 +161,7 @@ impl Node {
             Node::RepeatStmnt { .. } => visitor.visit_repeat_stmnt(self),
             Node::BreakStmnt(_) => visitor.visit_break_stmnt(self),
             Node::Array{..} => visitor.visit_array(self),
+            Node::ArrayAccessExpr { id, index_expr: index, expression, assignment } => visitor.visit_array_access(self),
         }
     }
 }
@@ -360,6 +364,10 @@ fn parse_decl(token: &Token, index: &mut usize, tokens: &Vec<Token>, mutable: bo
                 expression: Box::new(expression),
             })
         }
+        TokenKind::OpenBracket => {
+            Ok(parse_array_access(index, tokens, token.value.as_str()).unwrap())
+        }
+        
         // function call
         TokenKind::OpenParenthesis => {
             // silly mode. extracting functions results in these super stupid types like Result<Node, ()>
@@ -391,7 +399,7 @@ fn parse_implicit_decl(
     id: &String,
     mutable: bool,
 ) -> Result<Node, ()> {
-    *index += 1;
+    *index += 1; 
     
     if let Some(value) = parse_function_decl_stmnt(tokens, index, id, mutable) {
         return value;
@@ -596,7 +604,23 @@ fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Node {
                     panic!("Expected identifier token");
                 }
             }
-
+            TokenKind::OpenBracket => {
+                if let Node::Identifier(id) = left {
+                    *index += 1;
+                    match parse_array_access(index, tokens, &id) {
+                        Ok(node) => {
+                            left = node;
+                            continue;
+                        }
+                        Err(_) => {
+                            dbg!(token);
+                            panic!("Expected function call node");
+                        }
+                    }
+                } else {
+                    panic!("Expected identifier token");
+                }
+            }
             // these 5 token kinds are expression delimiters, but
             // the tokens are expected to be consumed by the caller of this function.
             TokenKind::CloseParenthesis
@@ -617,6 +641,47 @@ fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Node {
         }
     }
     Node::Expression(Box::new(left))
+}
+
+fn parse_array_access(index: &mut usize, tokens: &Vec<Token>, id: &str) -> Result<Node, ()> {
+    let accessor = parse_expression(tokens, index);
+ 
+    if get_current(tokens, index).kind != TokenKind::CloseBracket {
+        dbg!(get_current(tokens, index));
+        panic!("Expected close bracket token");
+    }
+    *index += 1;
+    
+    let token = get_current(tokens, index);
+     
+    let mut node = Node::ArrayAccessExpr {
+        id: id.to_string(),
+        index_expr: Box::new(accessor),
+        expression: None,
+        assignment: false,
+    };
+      
+    if token.kind != TokenKind::Assignment {
+        return Ok(node);
+    }
+      
+    match token.kind {
+        TokenKind::Assignment => {
+            if let Node::ArrayAccessExpr { id, index_expr, expression : _ , assignment : _ } = node {
+                node = Node::ArrayAccessExpr {
+                    id,
+                    index_expr,
+                    expression: Option::Some(Box::new(parse_expression(tokens, index))),
+                    assignment: true,
+                };
+            }
+            Ok(node)
+        }
+        _ => {
+           Err(())
+        }
+    }
+    
 }
 fn parse_logical_expr(tokens: &Vec<Token>, index: &mut usize) -> Node {
     let mut left = parse_relational_expr(tokens, index);
@@ -701,12 +766,15 @@ fn parse_factor(tokens: &Vec<Token>, index: &mut usize) -> Node {
     if let Some(token) = tokens.get(*index) {
         *index += 1;
         let node = match token.kind {
-            TokenKind::Number => Node::Number(token.value.parse::<f64>().unwrap()),
-            // array literal
             TokenKind::OpenBracket => {
                 let init = parse_array_initializer(tokens, index);
-                new_array("Dynamic".to_string(), init.len(), init.clone(), false, false)
+                new_array("Dynamic".to_string(), init.len(), init.clone(), true, false)
             }
+            TokenKind::Number => Node::Number(token.value.parse::<f64>().unwrap()),
+            // array literal.. one problem
+            // we cant know much about mutability at this point here, and the way this is intended to be used,
+            // i don't see how it could _not_ be a factor.
+            // do we just make all array literals mutable by default?
             TokenKind::Identifier => {
                 let id = Node::Identifier(token.value.clone());
                 id

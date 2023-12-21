@@ -18,7 +18,16 @@ fn print_ln(args: Vec<Value>) -> Value {
             Value::String(val) => print!("{}\n", val),
             Value::None(_) => print!("{:?}", Value::None(())),
             Value::Function(_) => print!("{:?}", arg),
-            Value::Array(_, elements) => {
+            Value::Array(mutable, elements) => {
+                
+                let mutable_str = if mutable {
+                    "mutable"
+                } else {
+                    "immutable"
+                };
+                 
+                println!("{} array, length {}", mutable_str, elements.len());
+                
                 for element in elements.iter() {
                     print_ln(Vec::from([element.value.clone()]));
                 }
