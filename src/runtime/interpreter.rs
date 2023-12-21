@@ -26,8 +26,8 @@ fn print_ln(args: Vec<Value>) -> Value {
             Value::Float(val) => print!("{}\n", val),
             Value::Bool(val) => print!("{}\n", val),
             Value::String(val) => print!("{}\n", val),
-            Value::None(_) => print!("none"),
-            Value::Function(_) => todo!(),
+            Value::None(_) => print!("{:?}", Value::None(())),
+            Value::Function(_) => print!("{:?}", arg),
             _ => panic!("print : invalid argument type"),
         }
     }
