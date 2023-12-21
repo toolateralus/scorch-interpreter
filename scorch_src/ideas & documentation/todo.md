@@ -59,3 +59,69 @@ repeat {
     println('hi')
 }
 ```
+
+
+### struct declaration
+
+since implicit functions occupy the syntax
+
+```
+identifier := { body.. }
+```
+
+and since struct bodies are non executable, meaning
+they don't get called like a function for side effect or result,
+and they just represent the structure of the object,
+we could use a clearer and moer distinctive syntax for struct declarations.
+
+```
+vector : struct = |
+    x : float = 0
+    y : float = 1
+|
+
+vector := |
+    x := 1.0
+    y := 2.0
+|
+```
+### array syntax
+
+```cpp
+    
+col := [] // implicit type
+
+col := [](250) // array length 200
+
+col := float[] // specify type
+
+col := float[](200) // hash table
+
+col := float[struct] // hash table
+
+col := float[struct](200) // hash with init len
+
+col := [0, 1, 2, 3, 4] // initializers
+
+col ~= element // push or add an element to the end.
+
+value := col~~   // pop or remove and return an element from the end
+
+// for each item in collection, call print with the value(s) as arguments.
+col => print
+
+// foreach item in collection, call this anonymous function.
+col => (i : float) {
+    //.. do something
+}
+
+// basically a  'for (float i = 0; i < 200; ++i)' with this syntax
+[200] => (i : float) {
+    
+}
+
+
+
+
+
+```

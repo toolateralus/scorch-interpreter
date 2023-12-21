@@ -148,7 +148,13 @@ impl Visitor<Value> for Interpreter {
                     panic!("redefinition of variable");
                 }
                 None => {
-                    self.context.insert_variable(&id, Rc::new(value));
+                    self.context.insert_variable(&id, Rc::new(
+                        Variable {
+                            typename: target_type.clone(),
+                            mutable: false,
+                            value: value,
+                        }
+                    ));
                 }
             }
         } else {
@@ -170,7 +176,11 @@ impl Visitor<Value> for Interpreter {
                 };
                 match self.context.variables.get_mut(&str_id) {
                     Some(value) => {
-                        *value = Rc::new(val.clone());
+                        *value = Rc::new(Variable {
+                            typename: "dynamic".to_string(),
+                            mutable: true,
+                            value: val,
+                        });
                     }
                     None => {
                         dbg!(node);
@@ -203,7 +213,7 @@ impl Visitor<Value> for Interpreter {
             }
         }
         match self.context.find_variable(id) {
-            Some(value) => (*value).clone(), // todo: fix cloning all values.
+            Some(value) => (*value).value.clone(), // todo: fix cloning all values.
             None => {
                 dbg!(node);
                 panic!("Variable not found");
@@ -403,7 +413,7 @@ impl Visitor<Value> for Interpreter {
                 }
                 // function pointer
                 else if let Some(fn_ptr) = self.context.find_variable(id) {
-                    if let Value::Function(func) = &*fn_ptr.clone() {
+                    if let Value::Function(func) = fn_ptr.value.clone() {
                         function = func.clone()
                     } else {
                         panic!("Expected function");
@@ -433,7 +443,13 @@ impl Visitor<Value> for Interpreter {
                 } else {
                     // copying param values into a context
                     self.context
-                        .insert_variable(&param.name, Rc::new(arg.clone()));
+                        .insert_variable(&param.name, Rc::new(
+                            Variable {
+                                typename: param.typename.clone(),
+                                mutable: false,
+                                value: arg.clone()
+                            }
+                        ));
                 }
             }
 

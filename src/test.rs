@@ -27,7 +27,7 @@ fn test_fields_vars_literal() {
 fn test_functions() {
     let ctx = super::execute_from_file(String::from("scorch_src/unit_tests/test_functions.scorch"));
     let status = ctx.variables["status"].clone();
-    if let Value::String(str_status) = &*status {
+    if let Value::String(str_status) = status.value.clone() {
         assert!(str_status == "passed", "test failed: {}", str_status);
     }
 }
@@ -57,9 +57,9 @@ fn test_rel_expr() {
         let variable = variables[i];
         let expected_result = expected_results[i];
         let value = &*ctx.variables[*&variable].clone();
-
-        if let super::runtime::types::Value::Bool(v) = value {
-            assert_eq!(v, &expected_result, "test failed: {}", &variable);
+        
+        if let super::runtime::types::Value::Bool(v) = value.value {
+            assert_eq!(v, expected_result, "test failed: {}", &variable);
         }
     }
 }

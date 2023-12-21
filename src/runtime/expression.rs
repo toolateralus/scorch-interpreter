@@ -6,7 +6,7 @@ use crate::{
     runtime::types::{Parameter, Value},
 };
 
-use super::types::BuiltInFunction;
+use super::types::{BuiltInFunction, Variable};
 
 fn print_ln(args: Vec<Value>) -> Value {
     for arg in args {
@@ -66,17 +66,22 @@ impl Interpreter {
         condition: &Option<Box<Node>>,
         block: &Box<Node>,
     ) -> Value {
+        
         match self.context.find_variable(&id) {
             Some(_) => {}
             None => {
-                self.context
-                    .insert_variable(&id, Rc::new(Value::Float(0.0)));
+                let val = Value::Float(0.0);
+                let var = Rc::new(Variable {
+                    value: val,
+                    typename: "num".to_string(),
+                    mutable: true,
+                });
+                self.context.insert_variable(&id, var);
             }
         }
-        self.context
-            .insert_variable(&id, Rc::new(Value::Float(0.0)));
-
+        
         let mut iter: f64 = 0.0;
+        
         loop {
             let condition_result = match condition.as_ref() {
                 Some(expression) => {
@@ -92,16 +97,10 @@ impl Interpreter {
             if condition_result {
                 let result = block.accept(self);
                 match result {
-                    Value::Float(..) => {
-                        return result
-                    }
-                    Value::Bool(_) => {
-                        return result
-                    }
+                    Value::Float(..) |
+                    Value::Bool(_) |
+                    Value::Function(_) |
                     Value::String(_) => {
-                        return result
-                    }
-                    Value::Function(_) => {
                         return result
                     }
                     Value::Return(value) => {
@@ -119,10 +118,21 @@ impl Interpreter {
             self.context.variables.remove(id);
 
             iter += 1.0;
-
+            
+            let value = Value::Float(iter.floor());
+            
+            let typename = "float".to_string();
+            
+            // todo: fix this terrible variable stuff.
             // should we floor this here?
             self.context
-                .insert_variable(&id, Rc::new(Value::Float(iter.floor())));
+                .insert_variable(&id, Rc::new( 
+                    Variable {
+                        value,
+                        typename,
+                        mutable: true,
+                    }
+            ));
         }
     }
     pub fn visit_conditionless_repeat_stmnt(&mut self, block: &Box<Node>) -> Value {

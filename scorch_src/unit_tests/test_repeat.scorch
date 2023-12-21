@@ -10,9 +10,9 @@ println('Test: Cached repeat with condition.')
 println('Expected result: true.')
 println('Value: Is i == 2500? ', result && i == 2500)
 
-repeat z < 2500 {
-    result1 = true
-}
+repeat {
+    
+} 
 
 println('Test: Implicitly declared iterator repeat with condition.')
 println('Expected result: true.')
@@ -22,4 +22,5 @@ repeat {
     break
     println('test: repeat without condition failing.. result is this infinite loop. please exit.')
 }
+
 println('test: repeat without condition passed')

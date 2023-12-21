@@ -36,6 +36,15 @@ impl Value {
     }
 }
 
+
+// technically this isn't always variable, it's just a declared field.
+#[derive(Debug, Clone)]
+pub struct Variable {
+    pub typename : String,
+    pub mutable : bool,
+    pub value : Value,
+}
+
 #[derive(Debug, Clone)]
 pub struct Context {
     pub parent: Option<Rc<RefCell<Context>>>,
@@ -43,11 +52,11 @@ pub struct Context {
     // todo: add return values
     pub functions: HashMap<String, Rc<Function>>,
     // todo: implement a Variable struct that can store more data about the var/const etc.
-    pub variables: HashMap<String, Rc<Value>>,
+    pub variables: HashMap<String, Rc<Variable>>,
 }
 
 impl Context {
-    pub fn find_variable(&self, name: &str) -> Option<Rc<Value>> {
+    pub fn find_variable(&self, name: &str) -> Option<Rc<Variable>> {
         match self.variables.get(name) {
             Some(var) => Some(var.clone()),
             None => match &self.parent {
@@ -65,7 +74,7 @@ impl Context {
             },
         }
     }
-    pub fn insert_variable(&mut self, name: &str, value: Rc<Value>) -> () {
+    pub fn insert_variable(&mut self, name: &str, value: Rc<Variable>) -> () {
         let name_str = name.to_string();
         self.variables.insert(name_str, value);
     }
