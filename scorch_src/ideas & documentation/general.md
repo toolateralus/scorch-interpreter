@@ -20,3 +20,23 @@ if true {
 - func_name := {} is a paramless fn
 - func_name := (a: String, b: String) {}  is a parameterized fn
 
+accum := ''
+
+print_lines := (str : string, x : float, y : float, z : float) {
+	loop := {
+		repeat i < x {
+accum = accum + '
+[this is a line]' + '
+' + str
+		}
+		repeat i < y {
+			println(accum)
+		}
+	}
+	
+	repeat v < z {
+		loop()
+	}
+}
+
+print_lines("hello world", 100, 100, 50)

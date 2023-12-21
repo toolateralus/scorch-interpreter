@@ -1,5 +1,14 @@
-delay := 50
-
-MAIN = (argc : float, argv : string) {
-	i := 0
+repl := {
+	input := 'no input.'
+	repeat i < 2500 {
+		input = readln()
+		
+		if input == 'exit' {
+			break
+		}
+		
+		println(input)
+	}
 }
+
+repl()

@@ -12,7 +12,7 @@ pub struct Interpreter {
 }
 impl Interpreter {
     pub fn new() -> Interpreter {
-        let builtins = get_builtin_functions();
+        let builtins = super::expression::get_builtin_functions();
         Interpreter {
             context: Context::new(),
             builtin: builtins,
@@ -20,41 +20,6 @@ impl Interpreter {
     }
 }
 
-fn print_ln(args: Vec<Value>) -> Value {
-    for arg in args {
-        match arg {
-            Value::Float(val) => print!("{}\n", val),
-            Value::Bool(val) => print!("{}\n", val),
-            Value::String(val) => print!("{}\n", val),
-            Value::None(_) => print!("{:?}", Value::None(())),
-            Value::Function(_) => print!("{:?}", arg),
-            _ => panic!("print : invalid argument type"),
-        }
-    }
-    Value::None(())
-}
-fn wait(args: Vec<Value>) -> Value {
-    if args.len() != 1 {
-        panic!("sleep expected 1 argument :: ms sleep duration");
-    }
-    if let Value::Float(val) = args[0] {
-        std::thread::sleep(std::time::Duration::from_millis(val as u64));
-    } else {
-        panic!("sleep expected a <num>");
-    }
-    Value::None(())
-}
-
-// todo: move this somewhere more appropriate, and organize the definitions of these
-fn get_builtin_functions() -> HashMap<String, BuiltInFunction> {
-    HashMap::from([
-        (
-            String::from("println"),
-            BuiltInFunction::new(Box::new(print_ln)),
-        ),
-        (String::from("wait"), BuiltInFunction::new(Box::new(wait))),
-    ])
-}
 
 impl Visitor<Value> for Interpreter {
     // top level nodes

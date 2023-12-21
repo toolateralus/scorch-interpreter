@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::{rc::Rc, collections::HashMap};
 
 use crate::{
     frontend::ast::Node,
@@ -6,6 +6,58 @@ use crate::{
     runtime::types::{Parameter, Value},
 };
 
+use super::types::BuiltInFunction;
+
+fn print_ln(args: Vec<Value>) -> Value {
+    for arg in args {
+        match arg {
+            Value::Float(val) => print!("{}\n", val),
+            Value::Bool(val) => print!("{}\n", val),
+            Value::String(val) => print!("{}\n", val),
+            Value::None(_) => print!("{:?}", Value::None(())),
+            Value::Function(_) => print!("{:?}", arg),
+            _ => panic!("print : invalid argument type"),
+        }
+    }
+    Value::None(())
+}
+fn wait(args: Vec<Value>) -> Value {
+    if args.len() != 1 {
+        panic!("sleep expected 1 argument :: ms sleep duration");
+    }
+    if let Value::Float(val) = args[0] {
+        std::thread::sleep(std::time::Duration::from_millis(val as u64));
+    } else {
+        panic!("sleep expected a <num>");
+    }
+    Value::None(())
+}
+fn readln(args : Vec<Value>) -> Value {
+    if args.len() != 0 {
+        panic!("readln expected 0 arguments");
+    }
+    let mut input = String::new();
+    std::io::stdin().read_line(&mut input).expect("failed to read from stdin");
+    Value::String(input)
+}
+
+// todo: move this somewhere more appropriate, and organize the definitions of these
+pub fn get_builtin_functions() -> HashMap<String, BuiltInFunction> {
+    HashMap::from([
+        (
+            String::from("println"),
+            BuiltInFunction::new(Box::new(print_ln)),
+        ),
+        (
+            String::from("readln"),
+            BuiltInFunction::new(Box::new(readln))
+        ),
+        (
+            String::from("wait"),
+            BuiltInFunction::new(Box::new(wait))
+        ),
+    ])
+}
 // loops
 impl Interpreter {
     pub fn visit_conditional_repeat_stmnt(
