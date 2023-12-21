@@ -16,7 +16,7 @@ fn print_ln(args: Vec<Value>) -> Value {
             Value::Float(val) => print!("{}\n", val),
             Value::Bool(val) => print!("{}\n", val),
             Value::String(val) => print!("{}\n", val),
-            Value::None(_) => print!("{:?}", Value::None(())),
+            Value::None() => print!("{:?}", Value::None()),
             Value::Function(_) => print!("{:?}", arg),
             Value::Array(mutable, elements) => {
                 
@@ -42,7 +42,7 @@ fn print_ln(args: Vec<Value>) -> Value {
             
         }
     }
-    Value::None(())
+    Value::None()
 }
 fn wait(args: Vec<Value>) -> Value {
     if args.len() != 1 {
@@ -53,7 +53,7 @@ fn wait(args: Vec<Value>) -> Value {
     } else {
         panic!("sleep expected a <num>");
     }
-    Value::None(())
+    Value::None()
 }
 fn readln(args: Vec<Value>) -> Value {
     if args.len() != 0 {
@@ -126,12 +126,14 @@ impl Interpreter {
                     Value::Return(value) => {
                         if let Some(val) = value {
                             return *val;
+                        } else {
+                            return Value::None();
                         }
                     }
                     _ => {}
                 }
             } else {
-                return Value::None(());
+                return Value::None();
             }
             self.context.variables.remove(id);
 
@@ -160,10 +162,13 @@ impl Interpreter {
                 Value::Return(value) => {
                     if let Some(val) = value {
                         return *val;
+                    } else
+                    {
+                        return Value::None();
                     }
                 }
                 _ => {
-                    return _result;
+                    continue;
                 }
             }
         }

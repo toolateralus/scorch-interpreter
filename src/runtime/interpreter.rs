@@ -32,14 +32,14 @@ impl Visitor<Value> for Interpreter {
                     if let Some(return_value) = ret_val {
                         return *return_value;
                     } else {
-                        return Value::None(());
+                        return Value::None();
                     }
                 }
             }
         } else {
             panic!("expected program node");
         };
-        Value::None(())
+        Value::None()
         // this is unused since it uses a different return type. see impl Interpeter.
     }
     fn visit_block(&mut self, node: &Node) -> Value {
@@ -57,7 +57,7 @@ impl Visitor<Value> for Interpreter {
         } else {
             panic!("Expected Block node");
         }
-        return Value::None(());
+        return Value::None();
     }
 
     // statements
@@ -89,7 +89,7 @@ impl Visitor<Value> for Interpreter {
         } else {
             panic!("Expected WhereStmnt node");
         }
-        return Value::None(());
+        return Value::None();
     }
     fn visit_else_stmnt(&mut self, node: &Node) -> Value {
         match node {
@@ -119,7 +119,7 @@ impl Visitor<Value> for Interpreter {
             _ => panic!("Expected OrStmnt node"),
         }
 
-        Value::None(())
+        Value::None()
     }
     fn visit_declaration(&mut self, node: &Node) -> Value {
         if let Node::DeclStmt {
@@ -158,7 +158,7 @@ impl Visitor<Value> for Interpreter {
         } else {
             panic!("Expected Declaration node");
         }
-        Value::None(())
+        Value::None()
     }
     fn visit_assignment(&mut self, node: &Node) -> Value {
         match node {
@@ -198,7 +198,7 @@ impl Visitor<Value> for Interpreter {
                         panic!("Variable not found");
                     }
                 }
-                return Value::None(());
+                return Value::None();
             }
             _ => {
                 dbg!(node);
@@ -253,7 +253,7 @@ impl Visitor<Value> for Interpreter {
         }
     }
     fn visit_eof(&mut self, _node: &Node) -> Value {
-        Value::None(()) // do nothing.
+        Value::None() // do nothing.
     }
 
     // unary operations
@@ -389,7 +389,7 @@ impl Visitor<Value> for Interpreter {
         }
     }
     fn visit_term(&mut self, _node: &Node) -> Value {
-        return Value::None(());
+        return Value::None();
     }
     fn visit_factor(&mut self, node: &Node) -> Value {
         match node {
@@ -446,7 +446,7 @@ impl Visitor<Value> for Interpreter {
             }
 
             for (arg, param) in args.iter().zip(function.params.iter()) {
-                let arg_type_name = get_type_name(arg);
+                let arg_type_name = super::typechecker::get_type_name(arg);
 
                 // typecheck args. very basic.
                 if arg_type_name.to_string() != param.typename {
@@ -476,7 +476,7 @@ impl Visitor<Value> for Interpreter {
             // right now - side effects are undone on context leave.
             self.context = old;
         }
-        Value::None(())
+        Value::None()
     }
     fn visit_function_decl(&mut self, node: &Node) -> Value {
         if let Node::FnDeclStmnt {
@@ -500,7 +500,7 @@ impl Visitor<Value> for Interpreter {
         } else {
             panic!("Expected FunctionDecl node");
         };
-        Value::None(())
+        Value::None()
     }
 
     fn visit_repeat_stmnt(&mut self, node: &Node) -> Value {
@@ -556,56 +556,61 @@ impl Visitor<Value> for Interpreter {
     }
 
     fn visit_array_access(&mut self, node: &Node) -> Value {
-        if let Node::ArrayAccessExpr { id, index_expr: index, expression: _, assignment } = node {
-            if let Some(var) = self.context.find_variable(id) {
-                if let Value::Array(mutable, elements) = var.value.clone() {
-                    let value_node = index.accept(self);
-                    
-                    if !mutable && *assignment {
-                        panic!("Cannot assign to immutable array");
-                    }
-                    
-                    let Value::Float(index_value) = value_node else {
-                        panic!("Expected numerical index value, got {:?}", value_node);
-                    };
-                    
-                    if elements.len() < index_value as usize {
-                        panic!("Array index out of bounds :: {}[{}]", id, index_value as usize);
-                    }
-                     
-                    let variable = &elements[index_value as usize];
-                     
-                    //dbg!(variable);
-                    
-                    variable.value.clone()
-                }
-                else {
-                    panic!("Expected Array node");
-                }
-                
-                
-            } else {
-                panic!("Expected ArrayAccessExpr node");
+        let (id, index, expression, assignment) = match node {
+            Node::ArrayAccessExpr { id, index_expr: index, expression, assignment } => (id, index, expression, assignment),
+            _ => panic!("Expected ArrayAccessExpr node"),
+        };
+
+        let var = match self.context.find_variable(id) {
+            Some(var) => var,
+            None => panic!("Expected ArrayAccessExpr node"),
+        };
+
+        let (mutable, elements) = match var.value.clone() {
+            Value::Array(mutable, elements) => (mutable, elements),
+            _ => {
+                dbg!(node);
+                panic!("Expected Array node");
             }
+        };
+
+        let value_node = index.accept(self);
+
+        if !mutable && *assignment {
+            panic!("Cannot assign to immutable array");
+        }
+
+        let index_value = match value_node {
+            Value::Float(index_value) => index_value,
+            _ => panic!("Expected numerical index value, got {:?}", value_node),
+        };
+
+        if elements.len() < index_value as usize {
+            panic!("Array index out of bounds :: {}[{}]", id, index_value as usize);
+        }
+
+        let variable = &elements[index_value as usize];
+
+        // read
+        if !*assignment {
+            return variable.value.clone();
+        }
+
+        // assignment
+        if let Some(expr) = expression {
+            let value = self.visit_expression(&expr.clone());
+            let mut var = variable.clone();
+            var.value = value;
             
+            let new_val = var.clone().value.clone();
+
+            self.context.insert_variable(id, Rc::new(var));
+
+            return new_val;
         }
-        else {
-            panic!("Expected ArrayAccessExpr node");
-        }
+        
+        panic!("Expected expression in array assignment");
     }
 }
 
-fn get_type_name<'a>(arg: &'a Value) -> &'a str {
-    let arg_type_name = match arg {
-        Value::Float(_) => "Float",
-        Value::Bool(_) => "Bool",
-        Value::String(_) => "String",
-        Value::None(_) => "undefined",
-        Value::Function(_func) => "function",
-        _ => {
-            dbg!(arg);
-            panic!("invalid argument type")
-        }
-    };
-    arg_type_name
-}
+

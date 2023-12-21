@@ -52,6 +52,13 @@ impl TypeChecker {
                         _ => false,
                     }),
                 }),
+                (String::from("Fn"), Type {
+                    name: String::from("Fn"),
+                    validator: Box::new(|v| match v {
+                        Value::Function(..) => true,
+                        _ => false,
+                    }),
+                }),
             ]),
         }
     }
@@ -69,17 +76,7 @@ impl TypeChecker {
         let t = val.type_.clone();
         let type_valid = (t.try_borrow().unwrap().validator)(val.value.clone());
         
-        type_valid && match &val.value {
-            Value::Float(_) => typename == "Float",
-            Value::Bool(_) => typename == "Bool",
-            Value::String(_) => typename == "String",
-            Value::Function(_) => typename == "function",
-            Value::Array(..) => typename == "Array",
-            Value::List(_) => typename == "List",
-            Value::Struct { name, .. } => *typename == *name,
-            Value::None(_) => typename == "none",
-            _ => false,
-        }
+        type_valid && typename == get_type_name(&val.value)
     }
     pub fn set(&mut self, name: &String, type_ : Type) -> () {
         self.types.insert(name.clone(), type_);
@@ -90,4 +87,18 @@ impl TypeChecker {
             None => None,
         }
     }
+}
+pub fn get_type_name<'a>(arg: &'a Value) -> &'a str {
+    let arg_type_name = match arg {
+        Value::Float(_) => "Float",
+        Value::Bool(_) => "Bool",
+        Value::String(_) => "String",
+        Value::None() => "None",
+        Value::Function(_func) => "Fn",
+        _ => {
+            dbg!(arg);
+            panic!("invalid argument type")
+        }
+    };
+    arg_type_name
 }

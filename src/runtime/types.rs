@@ -19,7 +19,7 @@ pub enum Value {
         name: String,
         context : Rc<RefCell<Context>>,
     },
-    None(()),
+    None(),
 }
 
 impl Value {
