@@ -246,78 +246,96 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
         return Err(());
     }
 
-    let token = consume_newlines(index, tokens);
+    let first = consume_newlines(index, tokens);
 
     if *index + 1 >= tokens.len() {
         return Err(()); // probably a newline
     }
 
-    let next = tokens.get(*index + 1).unwrap();
-
+    let second = tokens.get(*index + 1).unwrap();
+    
     // NOTE:: next is ahead one and must be discarded.
     // NOTE:: token is the current, but must also be discarded.
     // any branch of this must move the index forward at least once.
-    match token.family {
-        TokenFamily::Keyword => match token.kind {
+    match first.family {
+        TokenFamily::Keyword => match first.kind {
             TokenKind::Const => {
                 // consume 'const' 
                 *index += 1;
-                parse_implicit_decl(index, tokens, &next.value, true)
+                let varname = second;
+                match parse_decl(varname, index, tokens, false) {
+                    Ok(node) => Ok(node),
+                    Err(_) => {
+                        dbg!(first);
+                        panic!("Expected declaration statement");
+                    }
+                }
             }
             TokenKind::Var => {
                 // consume 'const' 
                 *index += 1;
-                parse_implicit_decl(index, tokens, &next.value, true)
+                let varname = second;
+                match parse_decl(varname, index, tokens, true) {
+                    Ok(node) => Ok(node),
+                    Err(_) => {
+                        dbg!(first);
+                        panic!("Expected declaration statement");
+                    }
+                }
             }
             TokenKind::Break => {
                 *index += 1; // discard break
-                if next.kind == TokenKind::Newline {
+                if second.kind == TokenKind::Newline {
                     Ok(Node::BreakStmnt(Option::None))
-                } else if next.kind != TokenKind::CloseBrace {
+                } else if second.kind != TokenKind::CloseBrace {
                     let value = parse_expression(tokens, index);
                     Ok(Node::BreakStmnt(Option::Some(Box::new(value))))
                 } else {
                     panic!("break statements must be followed by a newline or a return value.");
                 }
             }
-            TokenKind::Repeat => parse_repeat_stmnt(next, index, tokens),
+            TokenKind::Repeat => parse_repeat_stmnt(second, index, tokens),
             TokenKind::If => {
                 let statement = parse_if_else(tokens, index);
                 Ok(statement)
             }
             TokenKind::Else => {
-                dbg!(token);
+                dbg!(first);
                 panic!("else statements must follow an if.");
             }
             _ => {
-                dbg!(token);
+                dbg!(first);
                 panic!("keyword is likely not yet implemented.");
             }
         },
         TokenFamily::Identifier => {
-            parse_decl(token, next, index, tokens, false) // default immutability
+            parse_decl(first, index, tokens, false) // default immutability
         }
         TokenFamily::Operator => {
-            if token.kind == TokenKind::OpenBrace {
+            if first.kind == TokenKind::OpenBrace {
                 let block = parse_block(tokens, index);
                 Ok(block)
             } else {
-                dbg!(token);
+                dbg!(first);
                 panic!("Expected brace token");
             }
         }
         _ => {
-            dbg!(token);
+            dbg!(first);
             panic!("Expected keyword, identifier or operator token");
         }
     }
 }
 
-fn parse_decl(token: &Token, next: &Token, index: &mut usize, tokens: &Vec<Token>, mutable: bool) -> Result<Node, ()> {
+fn parse_decl(token: &Token, index: &mut usize, tokens: &Vec<Token>, mutable: bool) -> Result<Node, ()> {
     // varname : type = default;
     let id = token.value.clone();
     
-    match next.kind {
+    *index += 1;
+    
+    let operator = get_current(tokens, index);
+    
+    match operator.kind {
         // varname := default;
         // declaring a variable with implicit type.
         TokenKind::ColonEquals => parse_implicit_decl(index, tokens, &id, mutable),
@@ -325,7 +343,7 @@ fn parse_decl(token: &Token, next: &Token, index: &mut usize, tokens: &Vec<Token
         TokenKind::Colon => parse_explicit_decl(index, tokens, token, id, mutable),
         // assigning a value to an already declared variable.
         TokenKind::Assignment => {
-            *index += 2;
+            *index += 1;
             let id = Node::Identifier(token.value.clone());
             let expression = parse_expression(tokens, index);
             consume_normal_expr_delimiter(tokens, index);
@@ -335,11 +353,18 @@ fn parse_decl(token: &Token, next: &Token, index: &mut usize, tokens: &Vec<Token
             })
         }
         // function call
-        TokenKind::OpenParenthesis => Ok(parse_expression(tokens, index)),
-
+        TokenKind::OpenParenthesis => {
+            // silly mode. extracting functions results in these super stupid types like Result<Node, ()>
+            // instead of using an Option. why.
+            let Ok(node) = parse_fn_call(index, tokens, &token.value.clone()) else {
+                panic!("Expected function call node");
+            };
+            Ok(node)
+        },
+        
         _ => {
             dbg!(token);
-            println!("Expected ':' or '=' token after Identifier,\n instead got : \n current : {:?}\n next : {:?}", token, next);
+            println!("failed to parse declaration statement. expected ':', ':=', '=', or '('. \n instead got : \n current : {:?}\n next : {:?}", token, operator);
             panic!("parser failure : check logs.");
         }
     }
@@ -358,12 +383,19 @@ fn parse_implicit_decl(
     id: &String,
     mutable: bool,
 ) -> Result<Node, ()> {
-    *index += 2;
-    // skip id, := tokens
-
+    *index += 1;
+    
     if let Some(value) = parse_function_decl_stmnt(tokens, index, id, mutable) {
         return value;
     }
+    
+    if get_current(tokens, index).kind == TokenKind::Newline {
+        let token = consume_newlines(index, tokens);
+        
+        let v  = token;
+        
+    }
+    
     // implicit variable declaration
     let value = parse_expression(tokens, index);
     consume_normal_expr_delimiter(tokens, index);
@@ -427,13 +459,15 @@ fn parse_explicit_decl(
     id: String,
     mutable: bool,
 ) -> Result<Node, ()> {
-    *index += 2;
+    // skip id token
+    *index += 1;
+    
     // varname :^ type = default;
     // todo: check for valid type / builtins
     let target_type_tkn = get_current(tokens, index);
     let target_type = target_type_tkn.value.clone();
     *index += 1;
-
+    
     // varname : type^ = default;
 
     if let Some(token) = tokens.get(*index) {

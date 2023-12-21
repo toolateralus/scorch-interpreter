@@ -30,6 +30,13 @@ impl TypeChecker {
                         _ => true, // :D
                     })),
                 }),
+                (String::from("string"), Type {
+                    name: String::from("string"),
+                    validator: Some(Box::new(|v| match v {
+                        Value::String(_) => true,
+                        _ => false,
+                    })),
+                }),
             ]),
         }
     }

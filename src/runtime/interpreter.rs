@@ -427,7 +427,7 @@ impl Visitor<Value> for Interpreter {
                     panic!("Function not found");
                 }
             }
-
+            
             // parameterless invocation.
             if function.params.len() + args.len() == 0 {
                 return function.body.accept(self);
