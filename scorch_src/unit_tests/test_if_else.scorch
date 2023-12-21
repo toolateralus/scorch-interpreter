@@ -1,4 +1,4 @@
-status := 'failed'
+var status := 'failed'
 
 fail_status := 'failed'
 pass_status := 'passed'
