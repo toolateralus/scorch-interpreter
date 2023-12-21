@@ -1,0 +1,5 @@
+var xaryu : float = 0
+
+repeat i < 250 {
+	xaryu = xaryu + 1	
+}
