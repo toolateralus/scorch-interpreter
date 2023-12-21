@@ -3,7 +3,7 @@ const str := 'hello'
 
 repeat i < 250 {
 	xaryu = i
-	println('hi! ' + 'xaryu')
+	println('hi! ' + 'xaryu' + hello)
 }
 
 println(xaryu, str)
