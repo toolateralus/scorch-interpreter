@@ -1,6 +1,6 @@
 use std::{collections::HashMap, rc::Rc};
 
-use super::types::*;
+use super::{types::*, typechecker::TypeChecker};
 use crate::frontend::{
     ast::{Node, Visitor},
     tokens::TokenKind,
@@ -9,6 +9,7 @@ use crate::frontend::{
 pub struct Interpreter {
     pub context: Context, // initally the root context, but this is a kinda tree like structure.
     pub builtin: HashMap<String, BuiltInFunction>,
+    pub type_checker : TypeChecker,
 }
 impl Interpreter {
     pub fn new() -> Interpreter {
@@ -16,6 +17,7 @@ impl Interpreter {
         Interpreter {
             context: Context::new(),
             builtin: builtins,
+            type_checker : TypeChecker::new(),
         }
     }
 }
@@ -149,11 +151,7 @@ impl Visitor<Value> for Interpreter {
                     let mutability = *mutable;
                     self.context.insert_variable(
                         &id,
-                        Rc::new(Variable {
-                            typename: target_type.clone(),
-                            mutable : mutability,
-                            value,
-                        }),
+                        Rc::new(Variable::from(target_type.clone(), mutability, value, self.type_checker.clone())),
                     );
                 }
             }
@@ -181,11 +179,12 @@ impl Visitor<Value> for Interpreter {
                             panic!("Cannot assign to immutable variable");
                         }
                         
-                        *value = Rc::new(Variable {
-                            typename: value.typename.clone(),
-                            mutable: value.mutable,
-                            value: val,
-                        });
+                        *value = Rc::new(Variable::from(
+                            value.typename.clone(),
+                            value.mutable,
+                            val,
+                            self.type_checker.clone(),
+                        ));
                     }
                     None => {
                         dbg!(node);
@@ -449,11 +448,12 @@ impl Visitor<Value> for Interpreter {
                     // copying param values into a context
                     self.context.insert_variable(
                         &param.name,
-                        Rc::new(Variable {
-                            typename: param.typename.clone(),
-                            mutable: false,
-                            value: arg.clone(),
-                        }),
+                        Rc::new(Variable::from(
+                            param.typename.clone(),
+                            false,
+                            arg.clone(),
+                            self.type_checker.clone(),
+                        )),
                     );
                 }
             }

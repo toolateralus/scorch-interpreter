@@ -1,6 +1,8 @@
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
-use crate::{frontend::ast::Node, runtime::interpreter::Interpreter};
+use crate::{frontend::ast::{Node, Visitor}, runtime::interpreter::Interpreter};
+
+use super::typechecker::{Type, TypeChecker};
 
 #[derive(Debug, Clone)]
 pub enum Value {
@@ -9,6 +11,12 @@ pub enum Value {
     String(String),
     Return(Option<Box<Value>>),
     Function(Rc<Function>),
+    Array(Vec<Variable>),
+    List(Rc<RefCell<Vec<Variable>>>),
+    Struct {
+        name: String,
+        context : Rc<RefCell<Context>>,
+    },
     None(()),
 }
 
@@ -39,9 +47,26 @@ impl Value {
 // technically this isn't always variable, it's just a declared field.
 #[derive(Debug, Clone)]
 pub struct Variable {
-    pub typename: String,
-    pub mutable: bool,
-    pub value: Value,
+    pub typename: String, // the string type name.
+    pub mutable: bool, // is_mutable?
+    pub value: Value, // this could be a function, a struct, a list, an array, a float, a bool, a string, etc.
+    pub type_ : Rc<RefCell<Type>>,
+}
+impl Variable {
+    pub fn from(tname : String, mutable : bool, value: Value, checker : TypeChecker) -> Self {
+        let t = checker.get(tname.as_str());
+        
+        if t.is_none() {
+            panic!("Type {} does not exist", tname);
+        }
+        
+        Variable {
+            typename : tname,
+            mutable,
+            value,
+            type_ : Rc::new(RefCell::new(t.unwrap())),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -97,6 +122,14 @@ pub struct Function {
     pub body: Box<Node>,
     pub return_type: String,
     pub mutable : bool,
+}
+
+impl Function {
+    // todo: replace manual calls with this in interpreter. can also add more 
+    // procedure here, like injecting args, context swaps.
+    pub fn call(&mut self, i : &mut dyn Visitor<Value>) -> Value {
+        return self.body.accept(i);
+    }
 }
 pub struct BuiltInFunction {
     func: Box<dyn FnMut(Vec<Value>) -> Value>,

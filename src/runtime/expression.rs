@@ -6,7 +6,7 @@ use crate::{
     runtime::types::{Parameter, Value},
 };
 
-use super::types::{BuiltInFunction, Variable};
+use super::{types::{BuiltInFunction, Variable}};
 
 fn print_ln(args: Vec<Value>) -> Value {
     for arg in args {
@@ -66,14 +66,16 @@ impl Interpreter {
         block: &Box<Node>,
     ) -> Value {
         match self.context.find_variable(&id) {
-            Some(_) => {}
+            Some(var) => {
+                if var.mutable == false {
+                    panic!("Cannot mutate immutable variable {} in a repeat loop", id);
+                }
+            }
             None => {
                 let val = Value::Float(0.0);
-                let var = Rc::new(Variable {
-                    value: val,
-                    typename: "num".to_string(),
-                    mutable: true,
-                });
+                    
+                let var = Rc::new(Variable::from("float".to_string(), true, val, self.type_checker.clone()));
+                
                 self.context.insert_variable(&id, var);
             }
         }
@@ -118,38 +120,26 @@ impl Interpreter {
 
             // todo: fix this terrible variable stuff.
             // should we floor this here?
-            self.context.insert_variable(
-                &id,
-                Rc::new(Variable {
-                    value,
-                    typename,
-                    mutable: true,
-                }),
-            );
+            let variable = Rc::new(Variable::from(
+                typename,
+                true,
+                value,
+                self.type_checker.clone()
+            ));
+            
+            self.context.insert_variable( &id, variable);
         }
     }
     pub fn visit_conditionless_repeat_stmnt(&mut self, block: &Box<Node>) -> Value {
         loop {
             let _result = block.accept(self);
             match _result {
-                Value::None(_) => {
-                    return _result;
-                }
                 Value::Return(value) => {
                     if let Some(val) = value {
                         return *val;
                     }
                 }
-                Value::Float(..) => {
-                    return _result;
-                }
-                Value::Bool(_) => {
-                    return _result;
-                }
-                Value::String(_) => {
-                    return _result;
-                }
-                Value::Function(_) => {
+                _ => {
                     return _result;
                 }
             }
