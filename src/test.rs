@@ -1,5 +1,5 @@
-use std::{collections::HashMap, borrow::Borrow};
 use crate::runtime::types::Value;
+use std::{borrow::Borrow, collections::HashMap};
 
 #[test]
 fn if_else_statements() {
@@ -49,7 +49,7 @@ fn relationals() {
         let variable = variables[i];
         let expected_result = expected_results[i];
         let value = &*ctx.variables[*&variable].clone();
-        
+
         if let super::runtime::types::Value::Bool(v) = value.value {
             assert_eq!(v, expected_result, "test failed: {}", &variable);
         }
@@ -60,7 +60,7 @@ fn relationals() {
 fn arithmetic() {
     let ctx = super::execute_from_file(String::from("scorch_src/unit_tests/arithmetic.scorch"));
     let expected_results = HashMap::from([
-		("ff_addition", 5.3 + 6.2),
+        ("ff_addition", 5.3 + 6.2),
         ("ff_subtraction", 5.3 - 6.2),
         ("ff_multiplcation", 5.3 * 6.2),
         ("ff_division", 5.3 / 6.2),
@@ -114,7 +114,10 @@ fn arrays() {
         Value::Array(_, elements) => {
             assert_eq!(elements.len(), 1, "test failed: single_float_implicit");
             if let Value::Float(inner_val) = &elements[0].value {
-                assert_eq!(*inner_val, 1.0, "test failed: single_float_implicit inner value");
+                assert_eq!(
+                    *inner_val, 1.0,
+                    "test failed: single_float_implicit inner value"
+                );
             } else {
                 panic!("test failed: single_float_implicit inner value");
             }
@@ -127,7 +130,10 @@ fn arrays() {
         Value::Array(_, elements) => {
             assert_eq!(elements.len(), 1, "test failed: single_float_explicit");
             if let Value::Float(inner_val) = &elements[0].value {
-                assert_eq!(*inner_val, 1.0, "test failed: single_float_explicit inner value");
+                assert_eq!(
+                    *inner_val, 1.0,
+                    "test failed: single_float_explicit inner value"
+                );
             } else {
                 panic!("test failed: single_float_explicit inner value");
             }
@@ -140,12 +146,18 @@ fn arrays() {
         Value::Array(_, elements) => {
             assert_eq!(elements.len(), 2, "test failed: plural_float_implicit");
             if let Value::Float(inner_val) = &elements[0].value {
-                assert_eq!(*inner_val, 1.0, "test failed: plural_float_implicit inner value");
+                assert_eq!(
+                    *inner_val, 1.0,
+                    "test failed: plural_float_implicit inner value"
+                );
             } else {
                 panic!("test failed: plural_float_implicit inner value");
             }
             if let Value::Float(inner_val) = &elements[1].value {
-                assert_eq!(*inner_val, 2.0, "test failed: plural_float_implicit inner value");
+                assert_eq!(
+                    *inner_val, 2.0,
+                    "test failed: plural_float_implicit inner value"
+                );
             } else {
                 panic!("test failed: plural_float_implicit inner value");
             }
@@ -158,12 +170,18 @@ fn arrays() {
         Value::Array(_, elements) => {
             assert_eq!(elements.len(), 2, "test failed: plural_float_explicit");
             if let Value::Float(inner_val) = &elements[0].value {
-                assert_eq!(*inner_val, 1.0, "test failed: plural_float_explicit inner value");
+                assert_eq!(
+                    *inner_val, 1.0,
+                    "test failed: plural_float_explicit inner value"
+                );
             } else {
                 panic!("test failed: plural_float_explicit inner value");
             }
             if let Value::Float(inner_val) = &elements[1].value {
-                assert_eq!(*inner_val, 2.0, "test failed: plural_float_explicit inner value");
+                assert_eq!(
+                    *inner_val, 2.0,
+                    "test failed: plural_float_explicit inner value"
+                );
             } else {
                 panic!("test failed: plural_float_explicit inner value");
             }
@@ -189,17 +207,22 @@ fn arrays() {
         Value::Array(_, elements) => {
             assert_eq!(elements.len(), 2, "test failed: accessor_assignment");
             if let Value::Float(inner_val) = &elements[0].value {
-                assert_eq!(*inner_val, 3.0, "test failed: accessor_assignment inner value");
+                assert_eq!(
+                    *inner_val, 3.0,
+                    "test failed: accessor_assignment inner value"
+                );
             } else {
                 panic!("test failed: accessor_assignment inner value");
             }
             if let Value::Float(inner_val) = &elements[1].value {
-                assert_eq!(*inner_val, 2.0, "test failed: accessor_assignment inner value");
+                assert_eq!(
+                    *inner_val, 2.0,
+                    "test failed: accessor_assignment inner value"
+                );
             } else {
                 panic!("test failed: accessor_assignment inner value");
             }
         }
         _ => panic!("test failed: accessor_assignment"),
     }
-
 }

@@ -9,7 +9,6 @@ use crate::{
 
 use super::types::{BuiltInFunction, Variable};
 
-
 fn print_ln(args: Vec<Value>) -> Value {
     for arg in args {
         match arg {
@@ -22,15 +21,10 @@ fn print_ln(args: Vec<Value>) -> Value {
                 return tostr(newargs);
             }
             Value::Array(mutable, elements) => {
-                
-                let mutable_str = if mutable {
-                    "mutable"
-                } else {
-                    "immutable"
-                };
-                 
+                let mutable_str = if mutable { "mutable" } else { "immutable" };
+
                 println!("{} array, length {}", mutable_str, elements.len());
-                
+
                 for element in elements.iter() {
                     print_ln(Vec::from([element.value.clone()]));
                 }
@@ -40,9 +34,11 @@ fn print_ln(args: Vec<Value>) -> Value {
                     print_ln(Vec::from([element.value.clone()]));
                 }
             }
-            Value::Struct { name: _, context: _ } => todo!(),
+            Value::Struct {
+                name: _,
+                context: _,
+            } => todo!(),
             Value::Return(_) => panic!("Cannot print return value"),
-            
         }
     }
     Value::None()
@@ -85,16 +81,17 @@ fn tostr(args: Vec<Value>) -> Value {
                 .iter()
                 .map(|param| format!("{}: {}", param.name, param.typename))
                 .collect();
-            let stri = String::from(format!("{}({}) -> {}", func.name, params.join(", "), func.return_type));
+            let stri = String::from(format!(
+                "{}({}) -> {}",
+                func.name,
+                params.join(", "),
+                func.return_type
+            ));
             println!("{}", stri);
             stri
         }
         Value::Array(mutable, elements) => {
-            let mutable_str = if *mutable {
-                "mutable"
-            } else {
-                "immutable"
-            };
+            let mutable_str = if *mutable { "mutable" } else { "immutable" };
             format!("array : {} , length : {}", mutable_str, elements.len())
         }
         _ => {
@@ -103,8 +100,6 @@ fn tostr(args: Vec<Value>) -> Value {
     };
     Value::String(result)
 }
-
-
 
 // todo: move this somewhere more appropriate, and organize the definitions of these
 pub fn get_builtin_functions() -> HashMap<String, BuiltInFunction> {
@@ -136,9 +131,14 @@ impl Interpreter {
             }
             None => {
                 let val = Value::Float(0.0);
-                    
-                let var = Rc::new(Variable::from("Float".to_string(), true, val, self.type_checker.clone()));
-                
+
+                let var = Rc::new(Variable::from(
+                    "Float".to_string(),
+                    true,
+                    val,
+                    self.type_checker.clone(),
+                ));
+
                 self.context.insert_variable(&id, var);
             }
         }
@@ -176,23 +176,23 @@ impl Interpreter {
                 return Value::None();
             }
             self.context.variables.remove(id);
-            
+
             iter += 1.0;
 
             let value = Value::Float(iter.floor());
-            
+
             let typename = "Float".to_string();
-            
+
             // todo: fix this terrible variable stuff.
             // should we floor this here?
             let variable = Rc::new(Variable::from(
                 typename,
                 true,
                 value,
-                self.type_checker.clone()
+                self.type_checker.clone(),
             ));
-            
-            self.context.insert_variable( &id, variable);
+
+            self.context.insert_variable(&id, variable);
         }
     }
     pub fn visit_conditionless_repeat_stmnt(&mut self, block: &Box<Node>) -> Value {
@@ -202,8 +202,7 @@ impl Interpreter {
                 Value::Return(value) => {
                     if let Some(val) = value {
                         return *val;
-                    } else
-                    {
+                    } else {
                         return Value::None();
                     }
                 }

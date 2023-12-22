@@ -96,7 +96,7 @@ pub enum TokenKind {
 
     OpenCurly,
     CloseCurly,
-    
+
     OpenBracket,
     CloseBracket,
 

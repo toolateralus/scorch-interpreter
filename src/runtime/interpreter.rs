@@ -1,6 +1,6 @@
-use std::{collections::HashMap, rc::Rc, cell::RefCell};
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
-use super::{types::*, typechecker::TypeChecker};
+use super::{typechecker::TypeChecker, types::*};
 use crate::frontend::{
     ast::{Node, Visitor},
     tokens::TokenKind,
@@ -9,7 +9,7 @@ use crate::frontend::{
 pub struct Interpreter {
     pub context: Context, // initally the root context, but this is a kinda tree like structure.
     pub builtin: HashMap<String, BuiltInFunction>,
-    pub type_checker : TypeChecker,
+    pub type_checker: TypeChecker,
 }
 impl Interpreter {
     pub fn new() -> Interpreter {
@@ -17,18 +17,23 @@ impl Interpreter {
         Interpreter {
             context: Context::new(),
             builtin: builtins,
-            type_checker : TypeChecker::new(),
+            type_checker: TypeChecker::new(),
         }
     }
-    
-    fn try_find_and_execute_fn(&mut self, arguments: &Option<Vec<Node>>, id: &String, node: &Node) -> Value {
+
+    fn try_find_and_execute_fn(
+        &mut self,
+        arguments: &Option<Vec<Node>>,
+        id: &String,
+        node: &Node,
+    ) -> Value {
         let args = Function::extract_args(self, arguments, &self.context.clone());
-        
-        // builtin functions 
+
+        // builtin functions
         let function = if self.builtin.contains_key(id) {
             let builtin = self.builtin.get_mut(id).unwrap();
-            return builtin.call(args.clone()); 
-        // free functions 
+            return builtin.call(args.clone());
+        // free functions
         } else if let Some(func) = self.context.find_function(id) {
             func
         // function pointer
@@ -41,15 +46,15 @@ impl Interpreter {
             dbg!(node);
             panic!("Function not found");
         };
-        
+
         if function.params.len() + args.len() == 0 {
             return function.body.accept(self);
         }
-        
+
         if args.len() != function.params.len() {
             panic!("Number of arguments does not match the number of parameters");
         }
-        
+
         for (arg, param) in args.iter().zip(function.params.iter()) {
             let arg_type_name = super::typechecker::get_type_name(arg);
             if arg_type_name.to_string() != param.typename {
@@ -66,28 +71,28 @@ impl Interpreter {
                 );
             }
         }
-        
+
         let ret = function.body.accept(self);
         if let Value::Return(Some(return_value)) = ret {
             return *return_value;
         }
-        
+
         Value::None()
     }
 
     fn push_new_ctx(&mut self, old: &mut Context) {
         self.context = self.context.clone();
-        
-        let ctx : &mut Context = &mut self.context;
-        
+
+        let ctx: &mut Context = &mut self.context;
+
         old.parent = Some(Rc::new(RefCell::new(ctx.clone())));
-        
+
         ctx.children.push(Rc::new(RefCell::new(old.clone())));
     }
-    
+
     fn pop_ctx(&mut self, old: &mut Context) -> () {
         let dirty = self.context.clone();
-        
+
         self.context = old.merge(dirty);
     }
 }
@@ -99,7 +104,7 @@ impl Visitor<Value> for Interpreter {
             Node::Program(statements) => statements,
             _ => panic!("expected program node"),
         };
-    
+
         for stmnt in statements {
             let result = stmnt.accept(self);
             match result {
@@ -108,18 +113,18 @@ impl Visitor<Value> for Interpreter {
                 _ => continue,
             }
         }
-    
+
         Value::None()
     }
     fn visit_block(&mut self, node: &Node) -> Value {
-        let old : &mut Context = &mut self.context.clone();
+        let old: &mut Context = &mut self.context.clone();
         self.push_new_ctx(old);
-        
+
         let statements = match node {
             Node::Block(statements) => statements,
             _ => panic!("Expected Block node"),
         };
-        
+
         for statement in statements {
             let value = statement.accept(self);
             match value {
@@ -128,9 +133,9 @@ impl Visitor<Value> for Interpreter {
                 _ => continue,
             }
         }
-        
-        self.pop_ctx(&mut old.clone()); 
-        
+
+        self.pop_ctx(&mut old.clone());
+
         Value::None()
     }
     // statements
@@ -143,7 +148,7 @@ impl Visitor<Value> for Interpreter {
             } => (condition, true_block, else_block),
             _ => panic!("Expected WhereStmnt node"),
         };
-        
+
         let condition_result = match condition.accept(self) {
             Value::Bool(condition_result) => condition_result,
             _ => panic!("Expected boolean condition"),
@@ -176,7 +181,7 @@ impl Visitor<Value> for Interpreter {
             } => (condition, true_block, else_stmnt),
             _ => panic!("Expected OrStmnt node"),
         };
-        
+
         let condition_result = match condition.as_ref() {
             Some(expression) => match expression.accept(self) {
                 Value::Bool(val) => val,
@@ -223,7 +228,12 @@ impl Visitor<Value> for Interpreter {
                     let mutability = *mutable;
                     self.context.insert_variable(
                         &id,
-                        Rc::new(Variable::from(target_type.clone(), mutability, value, self.type_checker.clone())),
+                        Rc::new(Variable::from(
+                            target_type.clone(),
+                            mutability,
+                            value,
+                            self.type_checker.clone(),
+                        )),
                     );
                 }
             }
@@ -246,18 +256,16 @@ impl Visitor<Value> for Interpreter {
                 };
                 match self.context.variables.get_mut(&str_id) {
                     Some(value) => {
-                        
                         if TypeChecker::validate(value, None) == false {
                             dbg!(node);
                             panic!("Type mismatch");
                         }
-                        
-                        
+
                         if value.mutable == false {
                             dbg!(node);
                             panic!("Cannot assign to immutable variable");
                         }
-                        
+
                         *value = Rc::new(Variable::from(
                             value.typename.clone(),
                             value.mutable,
@@ -296,7 +304,7 @@ impl Visitor<Value> for Interpreter {
             }
         }
         match self.context.find_variable(id) {
-            Some(value) => (*value).value.clone(), 
+            Some(value) => (*value).value.clone(),
             None => {
                 dbg!(node);
                 panic!("Variable not found");
@@ -490,7 +498,7 @@ impl Visitor<Value> for Interpreter {
             params,
             body,
             return_type,
-            mutable
+            mutable,
         } = node
         {
             let body_cloned = body.clone();
@@ -540,9 +548,16 @@ impl Visitor<Value> for Interpreter {
             panic!("Expected BreakStmnt node");
         }
     }
-    
+
     fn visit_array(&mut self, node: &Node) -> Value {
-          if let Node::Array {typename, init_capacity, elements, mutable: mutability, elements_mutable} = node {
+        if let Node::Array {
+            typename,
+            init_capacity,
+            elements,
+            mutable: mutability,
+            elements_mutable,
+        } = node
+        {
             let len = *init_capacity;
             if len < elements.len() {
                 panic!("Array length is less than the number of elements");
@@ -550,12 +565,16 @@ impl Visitor<Value> for Interpreter {
             let mut values = Vec::with_capacity(len);
             for value in elements {
                 let val = value.accept(self);
-                let var = Variable::from(typename.clone(), *elements_mutable, val,self.type_checker.clone());
+                let var = Variable::from(
+                    typename.clone(),
+                    *elements_mutable,
+                    val,
+                    self.type_checker.clone(),
+                );
                 values.push(var);
             }
-           
+
             return Value::Array(*mutability, values);
-            
         } else {
             panic!("Expected List node");
         }
@@ -563,7 +582,12 @@ impl Visitor<Value> for Interpreter {
 
     fn visit_array_access(&mut self, node: &Node) -> Value {
         let (id, index, expression, assignment) = match node {
-            Node::ArrayAccessExpr { id, index_expr: index, expression, assignment } => (id, index, expression, assignment),
+            Node::ArrayAccessExpr {
+                id,
+                index_expr: index,
+                expression,
+                assignment,
+            } => (id, index, expression, assignment),
             _ => panic!("Expected ArrayAccessExpr node"),
         };
 
@@ -581,42 +605,48 @@ impl Visitor<Value> for Interpreter {
         };
 
         let value_node = index.accept(self);
-        
+
         if !mutable && *assignment {
             panic!("Cannot assign to immutable array");
         }
-        
+
         let index_value = match value_node {
             Value::Float(index_value) => index_value,
             _ => panic!("Expected numerical index value, got {:?}", value_node),
         };
-        
+
         if elements.len() < index_value as usize {
-            panic!("Array index out of bounds :: {}[{}]", id, index_value as usize);
+            panic!(
+                "Array index out of bounds :: {}[{}]",
+                id, index_value as usize
+            );
         }
-        
+
         let element = &mut elements[index_value as usize];
-        
+
         // read
         if !*assignment {
             return element.value.clone();
         }
-        
+
         // assignment
         if let Some(expr) = expression {
             let expr_result = expr.accept(self);
             element.value = expr_result;
-			if !TypeChecker::validate(&element, None) {
-				dbg!(&element);
-				panic!("invalid type");
-			}
-			let var2 = Variable::from(var.typename.clone(), var.mutable, Value::Array(mutable, elements), self.type_checker.clone());
-			self.context.insert_variable(id, Rc::new(var2));
+            if !TypeChecker::validate(&element, None) {
+                dbg!(&element);
+                panic!("invalid type");
+            }
+            let var2 = Variable::from(
+                var.typename.clone(),
+                var.mutable,
+                Value::Array(mutable, elements),
+                self.type_checker.clone(),
+            );
+            self.context.insert_variable(id, Rc::new(var2));
             return Value::None();
         }
-        
+
         panic!("Expected expression in array assignment");
     }
 }
-
-

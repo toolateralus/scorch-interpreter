@@ -53,7 +53,7 @@ pub fn run_cli() {
 
         tokenizer.tokenize(&input.as_str());
         let tokens = &tokenizer.tokens;
-        
+
         let ast_root = parser::parse_program(&tokens);
         ast_root.accept(&mut interpreter);
         input.clear();

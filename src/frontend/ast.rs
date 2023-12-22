@@ -1,8 +1,4 @@
-use core::panic;
-use std::borrow::Borrow;
-
-use super::tokens::{Token, TokenFamily, TokenKind};
-
+use super::tokens::TokenKind;
 pub trait Visitor<T> {
     fn visit_number(&mut self, node: &Node) -> T;
     fn visit_term(&mut self, node: &Node) -> T;
@@ -43,7 +39,7 @@ pub enum Node {
     String(String),
     Identifier(String),
     Bool(bool),
-    
+
     // Expressions
     LogicalExpression {
         lhs: Box<Node>,
@@ -60,7 +56,7 @@ pub enum Node {
         op: TokenKind,
         rhs: Box<Node>,
     },
-    
+
     // todo: implement remainder operator.
     // todo: remove the individual binary operations
     // and use the BinaryOperation node with the TokenKind
@@ -123,14 +119,18 @@ pub enum Node {
     },
     BreakStmnt(Option<Box<Node>>),
     Array {
-        typename : String,
+        typename: String,
         elements: Vec<Box<Node>>,
-        init_capacity : usize,
-        mutable : bool,
-        elements_mutable : bool,
+        init_capacity: usize,
+        mutable: bool,
+        elements_mutable: bool,
     },
-    ArrayAccessExpr { id: String, index_expr: Box<Node>, expression : Option<Box<Node>>,
-    assignment: bool },
+    ArrayAccessExpr {
+        id: String,
+        index_expr: Box<Node>,
+        expression: Option<Box<Node>>,
+        assignment: bool,
+    },
 }
 impl Node {
     pub fn accept<T>(&self, visitor: &mut dyn Visitor<T>) -> T {
@@ -161,8 +161,13 @@ impl Node {
             Node::Program(..) => visitor.visit_program(self),
             Node::RepeatStmnt { .. } => visitor.visit_repeat_stmnt(self),
             Node::BreakStmnt(_) => visitor.visit_break_stmnt(self),
-            Node::Array{..} => visitor.visit_array(self),
-            Node::ArrayAccessExpr { id: _, index_expr: _index, expression: _, assignment: _ } => visitor.visit_array_access(self),
+            Node::Array { .. } => visitor.visit_array(self),
+            Node::ArrayAccessExpr {
+                id: _,
+                index_expr: _index,
+                expression: _,
+                assignment: _,
+            } => visitor.visit_array_access(self),
         }
     }
 }

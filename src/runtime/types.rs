@@ -1,6 +1,9 @@
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
-use crate::{frontend::ast::{Node, Visitor}, runtime::interpreter::Interpreter};
+use crate::{
+    frontend::ast::{Node, Visitor},
+    runtime::interpreter::Interpreter,
+};
 
 use super::typechecker::{Type, TypeChecker};
 
@@ -16,7 +19,7 @@ pub enum Value {
     List(Rc<RefCell<Vec<Variable>>>),
     Struct {
         name: String,
-        context : Rc<RefCell<Context>>,
+        context: Rc<RefCell<Context>>,
     },
 }
 
@@ -48,23 +51,23 @@ impl Value {
 #[derive(Debug, Clone)]
 pub struct Variable {
     pub typename: String, // the string type name.
-    pub mutable: bool, // is_mutable?
+    pub mutable: bool,    // is_mutable?
     pub value: Value, // this could be a function, a struct, a list, an array, a float, a bool, a string, etc.
-    pub type_ : Rc<RefCell<Type>>,
+    pub type_: Rc<RefCell<Type>>,
 }
 impl Variable {
-    pub fn from(tname : String, mutable : bool, value: Value, checker : TypeChecker) -> Self {
+    pub fn from(tname: String, mutable: bool, value: Value, checker: TypeChecker) -> Self {
         let t = checker.get(tname.as_str());
-        
+
         if t.is_none() {
             panic!("Type {} does not exist", tname);
         }
-        
+
         Variable {
-            typename : tname,
+            typename: tname,
             mutable,
             value,
-            type_ : Rc::new(RefCell::new(t.unwrap())),
+            type_: Rc::new(RefCell::new(t.unwrap())),
         }
     }
 }
@@ -109,7 +112,7 @@ impl Context {
         let name_str = name.to_string();
         self.functions.insert(name_str, value);
     }
-    
+
     pub(crate) fn merge(&mut self, context: Context) -> Context {
         for (name, variable) in &context.variables {
             if self.find_variable(name).is_some() {
@@ -121,7 +124,7 @@ impl Context {
                 self.insert_function(name, function.clone());
             }
         }
-        return self.clone()
+        return self.clone();
     }
 }
 #[derive(Debug, Clone)]
@@ -135,13 +138,13 @@ pub struct Function {
     pub params: Vec<Parameter>,
     pub body: Box<Node>,
     pub return_type: String,
-    pub mutable : bool,
+    pub mutable: bool,
 }
 
 impl Function {
-    // todo: replace manual calls with this in interpreter. can also add more 
+    // todo: replace manual calls with this in interpreter. can also add more
     // procedure here, like injecting args, context swaps.
-    pub fn call(&mut self, i : &mut dyn Visitor<Value>) -> Value {
+    pub fn call(&mut self, i: &mut dyn Visitor<Value>) -> Value {
         return self.body.accept(i);
     }
 }
