@@ -17,7 +17,10 @@ fn print_ln(args: Vec<Value>) -> Value {
             Value::Bool(val) => print!("{}\n", val),
             Value::String(val) => print!("{}\n", val),
             Value::None() => print!("{:?}", Value::None()),
-            Value::Function(_) => print!("{:?}", arg),
+            Value::Function(_) => {
+                let newargs = Vec::from([arg.clone()]);
+                return tostr(newargs);
+            }
             Value::Array(mutable, elements) => {
                 
                 let mutable_str = if mutable {
@@ -65,6 +68,43 @@ fn readln(args: Vec<Value>) -> Value {
         .expect("failed to read from stdin");
     Value::String(input.replace("\n", ""))
 }
+
+fn tostr(args: Vec<Value>) -> Value {
+    if args.len() != 1 {
+        panic!("tostr expected 1 argument");
+    }
+    let arg = &args[0];
+    let result = match arg {
+        Value::Float(val) => val.to_string(),
+        Value::Bool(val) => val.to_string(),
+        Value::String(val) => val.clone(),
+        Value::None() => String::from("None"),
+        Value::Function(func) => {
+            let params: Vec<String> = func
+                .params
+                .iter()
+                .map(|param| format!("{}: {}", param.name, param.typename))
+                .collect();
+            let stri = String::from(format!("{}({}) -> {}", func.name, params.join(", "), func.return_type));
+            println!("{}", stri);
+            stri
+        }
+        Value::Array(mutable, elements) => {
+            let mutable_str = if *mutable {
+                "mutable"
+            } else {
+                "immutable"
+            };
+            format!("array : {} , length : {}", mutable_str, elements.len())
+        }
+        _ => {
+            panic!("Cannot convert value to string");
+        }
+    };
+    Value::String(result)
+}
+
+
 
 // todo: move this somewhere more appropriate, and organize the definitions of these
 pub fn get_builtin_functions() -> HashMap<String, BuiltInFunction> {

@@ -534,6 +534,19 @@ fn parse_explicit_decl(
     *index += 1;
     
     // varname : type = ^default;
+    
+    if get_current(tokens, index).kind == TokenKind::OpenCurly {
+        let body = parse_block(tokens, index);
+        let node = Node::FnDeclStmnt {
+            id: id.clone(),
+            body: Box::new(body),
+            params: Vec::new(),
+            return_type: "Dynamic".to_string(),
+            mutable,
+        };
+        return Ok(node);
+    }
+    
     let expression = parse_expression(tokens, index);
     consume_normal_expr_delimiter(tokens, index);
     Ok(Node::DeclStmt {
