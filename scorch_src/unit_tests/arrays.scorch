@@ -8,5 +8,5 @@ assignment 				:= single_float_implicit
 single_element_access 	:= single_float_implicit[0]
 first_element_access 	:= plural_float_implicit[0]
 second_element_access 	:= plural_float_implicit[1]
-accessor_assignmet		:= [1.0, 2.0]
-accessor_assignmet[0]	= 3.0
+accessor_assignment		:= [1.0, 2.0]
+accessor_assignment[0]	= 3.0
