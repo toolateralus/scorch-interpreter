@@ -16,6 +16,29 @@ fn fields_vars_literals() {
 }
 
 #[test]
+fn loops() {
+    let ctx = super::execute_from_file(String::from(
+        "scorch_src/unit_tests/loops.scorch",
+    ));
+    
+    let value = ctx.variables["result"].clone();
+    if let super::runtime::types::Value::Bool(v) = value.value {
+        assert_eq!(v, true, "test failed: {}", "loop one");
+    }
+    
+    let value = ctx.variables["result1"].clone();
+    if let super::runtime::types::Value::Bool(v) = value.value {
+        assert_eq!(v, true, "test failed: {}", "loop two");
+    }
+    
+    let value = ctx.variables["result2"].clone();
+    if let super::runtime::types::Value::Bool(v) = value.value {
+        assert_eq!(v, true, "test failed: {}", "loop two");
+    }
+    
+}
+
+#[test]
 fn functions() {
     let ctx = super::execute_from_file(String::from("scorch_src/unit_tests/functions.scorch"));
     let status = ctx.variables["status"].clone();
@@ -49,7 +72,7 @@ fn relationals() {
         let variable = variables[i];
         let expected_result = expected_results[i];
         let value = &*ctx.variables[*&variable].clone();
-
+        
         if let super::runtime::types::Value::Bool(v) = value.value {
             assert_eq!(v, expected_result, "test failed: {}", &variable);
         }

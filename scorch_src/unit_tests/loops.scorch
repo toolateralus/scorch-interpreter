@@ -1,6 +1,7 @@
-result := false
-result1 := false
-i := 0
+var result := false
+var result1 := false
+var result2 := false
+var i := 0
 
 repeat i < 2500 {
     result = true
@@ -10,17 +11,20 @@ println('Test: Cached repeat with condition.')
 println('Expected result: true.')
 println('Value: Is i == 2500? ', result && i == 2500)
 
-repeat {
-    
+repeat z < 2500 {
+    if z == 2499 {
+        result1 = true
+        break
+    }
 } 
 
 println('Test: Implicitly declared iterator repeat with condition.')
 println('Expected result: true.')
-println('Value: Is z == 2500? ', result1 && z == 2500)
 
 repeat {
     break
     println('test: repeat without condition failing.. result is this infinite loop. please exit.')
 }
 
+result2 = true
 println('test: repeat without condition passed')
