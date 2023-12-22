@@ -11,10 +11,8 @@ pub enum Value {
     String(String),
     Return(Option<Box<Value>>),
     Function(Rc<Function>),
-    
     Array(bool, Vec<Variable>),
     List(Rc<RefCell<Vec<Variable>>>),
-    
     Struct {
         name: String,
         context : Rc<RefCell<Context>>,

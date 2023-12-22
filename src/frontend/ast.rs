@@ -238,7 +238,7 @@ fn parse_block(tokens: &Vec<Token>, index: &mut usize) -> Node {
             break;
         }
         let statement = parse_statement(tokens, index);
-
+        
         match statement {
             Ok(node) => statements.push(Box::new(node)),
             Err(_) => {
@@ -321,10 +321,15 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
             }
         },
         TokenFamily::Identifier => {
-            if second.kind == TokenKind::OpenBracket {
-                *index += 2; // discard id[
-                let node = parse_array_access(index, tokens, &first.value).unwrap();
-                return Ok(node);
+            match second.kind {
+                TokenKind::OpenBracket => {
+                    *index += 2; // discard id[
+                    let node = parse_array_access(index, tokens, &first.value).unwrap();
+                    return Ok(node);
+                }
+                _ => {
+                    
+                }
             }
             parse_decl(first, index, tokens, false) // default immutability
         }
@@ -432,6 +437,7 @@ fn parse_function_decl_stmnt(
     id: &String,
     mutable: bool,
 ) -> Option<Result<Node, ()>> {
+    
     if get_current(tokens, index).kind == TokenKind::OpenCurly {
         let body = parse_block(tokens, index);
         //dbg!(&body);
@@ -452,10 +458,8 @@ fn parse_function_decl_stmnt(
     if get_current(tokens, index).kind == TokenKind::OpenParenthesis {
         // skip ahead the possible identifier & get to a colon,
         // if this is a function definition
-        *index += 2;
-        if get_current(tokens, index).kind == TokenKind::Colon {
-            *index -= 2; // go back to the a :
-            
+        let mut temp_index = *index + 2;
+        if get_current(tokens, &mut temp_index).kind == TokenKind::Colon {
             let params = parse_parameters(tokens, index);
             let body = parse_block(tokens, index);
             let node = Node::FnDeclStmnt {
@@ -467,7 +471,6 @@ fn parse_function_decl_stmnt(
             };
             return Some(Ok(node));
         }
-        *index -= 1;
     }
     None
 }
@@ -610,6 +613,7 @@ fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Node {
                     panic!("Expected identifier token");
                 }
             }
+            
             TokenKind::OpenBracket => {
                 if let Node::Identifier(id) = left {
                     *index += 1; // move past [
