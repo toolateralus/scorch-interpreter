@@ -63,20 +63,25 @@ array[1] = 205
 
 ### const / var 
 everything is const by default, adding var to a declaration will make a reference mutable.
+you can still specify const optionally.
 
 for example: 
 ```
+
+const x := [] // is the same as
+x := [] // this
+
 // declares a const Fn() -> None
 main := {
 	//...
 }
-// error : redefinition of a immutable.
+// error : redefinition of an immutable.
 main := { 
 	return 'hi'
 }
 ```
 
-instead, 
+instead, to re-assign
 ```
 var main := {
 	//...
@@ -91,7 +96,21 @@ println(main())
 else does not currently require an if following it to do a comparison.
 this is not a planned feature.
 
+also, you MUST put the { on the same line as the if and the condition, and the else MUST be on the same line as the } and {
+this is not permanent
 ```
+if something{
+	...
+}
+
+
+if other_thing {
+	...
+} else this_other_thing {
+	...
+}
+
+
 if true {
    ... 
 } else false {
@@ -126,3 +145,36 @@ _ = discard_value_keep_side_effect()
 - you can obtain a reference to a function simply by using the identifier.
 they behave just like functions themselves, although theres no way to check type / parameter types right now.
 it will just fail at runtime if provided the wrong types/ parameter count.
+
+
+### repeat loop 
+
+
+just using repeat on a block will start an infinite loop.
+break will stop and return control to the call site.
+``` 
+i := 0
+repeat  {
+	i = i + 1
+	if i > 2500
+}
+```
+
+alternatively, for a kind of implicit additive for loop, you can use this syntax, 
+
+```
+repeat i < 250 {
+
+}
+```
+
+which looks for a variable named `i` (or whatever was provided on the lhs, must be an identifer), and if not found, creates one with the value of 0.
+then, it will iterate as long as the provided expression is true.
+
+optionally, you can return a value from a repeat loop with break.
+
+```
+my_result := repeat {
+	break 0
+}
+```
