@@ -13,7 +13,7 @@ pub struct Interpreter {
 }
 impl Interpreter {
     pub fn new() -> Interpreter {
-        let builtins = super::expression::get_builtin_functions();
+        let builtins = super::std_builtins::get_builtin_functions();
         Interpreter {
             context: Context::new(),
             builtin: builtins,
