@@ -109,6 +109,20 @@ impl Context {
         let name_str = name.to_string();
         self.functions.insert(name_str, value);
     }
+    
+    pub(crate) fn merge(&mut self, context: Context) -> Context {
+        for (name, variable) in &context.variables {
+            if self.find_variable(name).is_some() {
+                self.insert_variable(name, variable.clone());
+            }
+        }
+        for (name, function) in &context.functions {
+            if self.find_function(name).is_some() {
+                self.insert_function(name, function.clone());
+            }
+        }
+        return self.clone()
+    }
 }
 #[derive(Debug, Clone)]
 pub struct Parameter {
@@ -175,11 +189,5 @@ impl Context {
             functions: HashMap::new(),
             variables: HashMap::new(),
         }
-    }
-}
-
-impl ContextHelpers for Context {
-    fn add_range(&self, _args: &HashMap<String, Value>) -> () {
-        todo!()
     }
 }

@@ -1,4 +1,4 @@
-use std::{collections::HashMap, rc::Rc};
+use std::{collections::HashMap, rc::Rc, cell::RefCell};
 
 use super::{types::*, typechecker::TypeChecker};
 use crate::frontend::{
@@ -19,6 +19,76 @@ impl Interpreter {
             builtin: builtins,
             type_checker : TypeChecker::new(),
         }
+    }
+    
+    fn try_find_and_execute_fn(&mut self, arguments: &Option<Vec<Node>>, id: &String, node: &Node) -> Value {
+        let args = Function::extract_args(self, arguments, &self.context.clone());
+        
+        // builtin functions 
+        let function = if self.builtin.contains_key(id) {
+            let builtin = self.builtin.get_mut(id).unwrap();
+            return builtin.call(args.clone()); 
+        // free functions 
+        } else if let Some(func) = self.context.find_function(id) {
+            func
+        // function pointer
+        } else if let Some(fn_ptr) = self.context.find_variable(id) {
+            match fn_ptr.value.clone() {
+                Value::Function(func) => func.clone(),
+                _ => panic!("Expected function"),
+            }
+        } else {
+            dbg!(node);
+            panic!("Function not found");
+        };
+        
+        if function.params.len() + args.len() == 0 {
+            return function.body.accept(self);
+        }
+        
+        if args.len() != function.params.len() {
+            panic!("Number of arguments does not match the number of parameters");
+        }
+        
+        for (arg, param) in args.iter().zip(function.params.iter()) {
+            let arg_type_name = super::typechecker::get_type_name(arg);
+            if arg_type_name.to_string() != param.typename {
+                panic!("Argument type does not match parameter type.\n provided argument: {:?} expected parameter : {:?}", arg, param)
+            } else {
+                self.context.insert_variable(
+                    &param.name,
+                    Rc::new(Variable::from(
+                        param.typename.clone(),
+                        false,
+                        arg.clone(),
+                        self.type_checker.clone(),
+                    )),
+                );
+            }
+        }
+        
+        let ret = function.body.accept(self);
+        if let Value::Return(Some(return_value)) = ret {
+            return *return_value;
+        }
+        
+        Value::None()
+    }
+
+    fn push_new_ctx(&mut self, old: &mut Context) {
+        self.context = self.context.clone();
+        
+        let ctx : &mut Context = &mut self.context;
+        
+        old.parent = Some(Rc::new(RefCell::new(ctx.clone())));
+        
+        ctx.children.push(Rc::new(RefCell::new(old.clone())));
+    }
+    
+    fn pop_ctx(&mut self, old: &mut Context) -> () {
+        let dirty = self.context.clone();
+        
+        self.context = old.merge(dirty);
     }
 }
 
@@ -42,11 +112,14 @@ impl Visitor<Value> for Interpreter {
         Value::None()
     }
     fn visit_block(&mut self, node: &Node) -> Value {
+        let old : &mut Context = &mut self.context.clone();
+        self.push_new_ctx(old);
+        
         let statements = match node {
             Node::Block(statements) => statements,
             _ => panic!("Expected Block node"),
         };
-
+        
         for statement in statements {
             let value = statement.accept(self);
             match value {
@@ -55,7 +128,9 @@ impl Visitor<Value> for Interpreter {
                 _ => continue,
             }
         }
-
+        
+        self.pop_ctx(&mut old.clone()); 
+        
         Value::None()
     }
     // statements
@@ -403,60 +478,11 @@ impl Visitor<Value> for Interpreter {
         todo!()
     }
     fn visit_function_call(&mut self, node: &Node) -> Value {
-        let old = self.context.clone();
         let (id, arguments) = match node {
             Node::FunctionCall { id, arguments } => (id, arguments),
             _ => return Value::None(),
         };
-
-        let args = Function::extract_args(self, arguments, &old);
-        let function = if self.builtin.contains_key(id) {
-            let builtin = self.builtin.get_mut(id).unwrap();
-            return builtin.call(args.clone());
-        } else if let Some(fn_ptr) = self.context.find_function(id) {
-            fn_ptr
-        } else if let Some(fn_ptr) = self.context.find_variable(id) {
-            match fn_ptr.value.clone() {
-                Value::Function(func) => func.clone(),
-                _ => panic!("Expected function"),
-            }
-        } else {
-            dbg!(node);
-            panic!("Function not found");
-        };
-
-        if function.params.len() + args.len() == 0 {
-            return function.body.accept(self);
-        }
-
-        if args.len() != function.params.len() {
-            panic!("Number of arguments does not match the number of parameters");
-        }
-
-        for (arg, param) in args.iter().zip(function.params.iter()) {
-            let arg_type_name = super::typechecker::get_type_name(arg);
-            if arg_type_name.to_string() != param.typename {
-                panic!("Argument type does not match parameter type.\n provided argument: {:?} expected parameter : {:?}", arg, param)
-            } else {
-                self.context.insert_variable(
-                    &param.name,
-                    Rc::new(Variable::from(
-                        param.typename.clone(),
-                        false,
-                        arg.clone(),
-                        self.type_checker.clone(),
-                    )),
-                );
-            }
-        }
-
-        let ret = function.body.accept(self);
-        if let Value::Return(Some(return_value)) = ret {
-            return *return_value;
-        }
-
-        self.context = old;
-        Value::None()
+        self.try_find_and_execute_fn(arguments, id, node)
     }
     fn visit_function_decl(&mut self, node: &Node) -> Value {
         if let Node::FnDeclStmnt {

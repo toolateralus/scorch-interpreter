@@ -59,7 +59,7 @@ pub enum Node {
         op: TokenKind,
         rhs: Box<Node>,
     },
-
+    
     // todo: implement remainder operator.
     // todo: remove the individual binary operations
     // and use the BinaryOperation node with the TokenKind
