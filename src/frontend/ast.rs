@@ -1016,7 +1016,7 @@ fn parse_else(tokens: &Vec<Token>, index: &mut usize) -> Node {
     else {
         let else_condition = parse_expression(tokens, index);
         let cur = get_current(tokens, index);
-
+        
         match cur.kind {
             TokenKind::OpenCurly | TokenKind::CloseParenthesis => {
                 *index += 1; // skip open brace

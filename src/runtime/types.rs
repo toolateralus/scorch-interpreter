@@ -6,6 +6,7 @@ use super::typechecker::{Type, TypeChecker};
 
 #[derive(Debug, Clone)]
 pub enum Value {
+    None(),
     Float(f64),
     Bool(bool),
     String(String),
@@ -17,7 +18,6 @@ pub enum Value {
         name: String,
         context : Rc<RefCell<Context>>,
     },
-    None(),
 }
 
 impl Value {

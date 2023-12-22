@@ -74,6 +74,8 @@ impl TypeChecker {
         }
         
         let t = val.type_.clone();
+        
+        // invoke type validation function
         let type_valid = (t.try_borrow().unwrap().validator)(val.value.clone());
         
         type_valid && typename == get_type_name(&val.value)
@@ -94,6 +96,7 @@ pub fn get_type_name<'a>(arg: &'a Value) -> &'a str {
         Value::Bool(_) => "Bool",
         Value::String(_) => "String",
         Value::None() => "None",
+        Value::Array(..) | Value::List(..) => "Array",
         Value::Function(_func) => "Fn",
         _ => {
             dbg!(arg);

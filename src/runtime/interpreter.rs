@@ -25,98 +25,95 @@ impl Interpreter {
 impl Visitor<Value> for Interpreter {
     // top level nodes
     fn visit_program(&mut self, node: &Node) -> Value {
-        if let Node::Program(statements) = node {
-            for stmnt in statements {
-                let result = stmnt.accept(self);
-                if let Value::Return(ret_val) = result {
-                    if let Some(return_value) = ret_val {
-                        return *return_value;
-                    } else {
-                        return Value::None();
-                    }
-                }
-            }
-        } else {
-            panic!("expected program node");
+        let statements = match node {
+            Node::Program(statements) => statements,
+            _ => panic!("expected program node"),
         };
+    
+        for stmnt in statements {
+            let result = stmnt.accept(self);
+            match result {
+                Value::Return(Some(return_value)) => return *return_value,
+                Value::Return(None) => return Value::None(),
+                _ => continue,
+            }
+        }
+    
         Value::None()
-        // this is unused since it uses a different return type. see impl Interpeter.
     }
     fn visit_block(&mut self, node: &Node) -> Value {
-        if let Node::Block(statements) = node {
-            for statement in statements {
-                let value = statement.accept(self);
-                if let Value::Return(ret_val) = value {
-                    if let Some(return_value) = ret_val {
-                        return *return_value;
-                    } else {
-                        return Value::Return(None);
-                    }
-                }
-            }
-        } else {
-            panic!("Expected Block node");
-        }
-        return Value::None();
-    }
+        let statements = match node {
+            Node::Block(statements) => statements,
+            _ => panic!("Expected Block node"),
+        };
 
+        for statement in statements {
+            let value = statement.accept(self);
+            match value {
+                Value::Return(Some(return_value)) => return *return_value,
+                Value::Return(None) => return Value::Return(None),
+                _ => continue,
+            }
+        }
+
+        Value::None()
+    }
     // statements
     fn visit_if_stmnt(&mut self, node: &Node) -> Value {
-        if let Node::IfStmnt {
-            condition,
-            block: true_block,
-            else_stmnt: else_block,
-        } = node
-        {
-            if let Value::Bool(condition_result) = condition.accept(self) {
-                if condition_result {
-                    if let Node::Block(stmnts) = &**true_block {
-                        for stmnt in stmnts {
-                            let value = stmnt.accept(self);
-                            if let Value::Return(_) = value {
-                                return value;
-                            }
-                        }
-                    }
-                } else {
-                    if let Some(else_stmnt) = else_block {
-                        else_stmnt.accept(self);
-                    }
+        let (condition, true_block, else_block) = match node {
+            Node::IfStmnt {
+                condition,
+                block: true_block,
+                else_stmnt: else_block,
+            } => (condition, true_block, else_block),
+            _ => panic!("Expected WhereStmnt node"),
+        };
+        
+        let condition_result = match condition.accept(self) {
+            Value::Bool(condition_result) => condition_result,
+            _ => panic!("Expected boolean condition"),
+        };
+
+        if condition_result {
+            let stmnts = match &**true_block {
+                Node::Block(stmnts) => stmnts,
+                _ => panic!("Expected Block node"),
+            };
+
+            for stmnt in stmnts {
+                let value = stmnt.accept(self);
+                if let Value::Return(_) = value {
+                    return value;
                 }
-            } else {
-                panic!("Expected boolean condition");
             }
-        } else {
-            panic!("Expected WhereStmnt node");
+        } else if let Some(else_stmnt) = else_block {
+            else_stmnt.accept(self);
         }
-        return Value::None();
+
+        Value::None()
     }
     fn visit_else_stmnt(&mut self, node: &Node) -> Value {
-        match node {
+        let (condition, true_block, else_stmnt) = match node {
             Node::ElseStmnt {
                 condition,
                 block: true_block,
                 else_stmnt,
-            } => {
-                let condition_result = match condition.as_ref() {
-                    Some(expression) => {
-                        if let Value::Bool(val) = expression.accept(self) {
-                            val
-                        } else {
-                            panic!("Expected boolean condition");
-                        }
-                    }
-                    None => true,
-                };
-
-                if condition_result {
-                    true_block.accept(self);
-                } else if let Some(else_statement) = else_stmnt {
-                    else_statement.accept(self);
-                } else {
-                }
-            }
+            } => (condition, true_block, else_stmnt),
             _ => panic!("Expected OrStmnt node"),
+        };
+        
+        let condition_result = match condition.as_ref() {
+            Some(expression) => match expression.accept(self) {
+                Value::Bool(val) => val,
+                _ => panic!("Expected boolean condition"),
+            },
+            None => true,
+        };
+
+        if condition_result {
+            true_block.accept(self);
+        } else if let Some(else_statement) = else_stmnt {
+            else_statement.accept(self);
         }
 
         Value::None()
@@ -407,75 +404,58 @@ impl Visitor<Value> for Interpreter {
     }
     fn visit_function_call(&mut self, node: &Node) -> Value {
         let old = self.context.clone();
-        if let Node::FunctionCall { id, arguments } = node {
-            let args;
-            let function;
-            {
-                args = Function::extract_args(self, arguments, &old);
+        let (id, arguments) = match node {
+            Node::FunctionCall { id, arguments } => (id, arguments),
+            _ => return Value::None(),
+        };
 
-                // builtin, written in Rust
-                if self.builtin.contains_key(id) {
-                    let builtin = self.builtin.get_mut(id).unwrap();
-                    return builtin.call(args.clone());
-                }
-                // native function, written in Scorch.
-                else if let Some(fn_ptr) = self.context.find_function(id) {
-                    function = fn_ptr
-                }
-                // function pointer
-                else if let Some(fn_ptr) = self.context.find_variable(id) {
-                    if let Value::Function(func) = fn_ptr.value.clone() {
-                        function = func.clone()
-                    } else {
-                        panic!("Expected function");
-                    }
-                } else {
-                    dbg!(node);
-                    panic!("Function not found");
-                }
+        let args = Function::extract_args(self, arguments, &old);
+        let function = if self.builtin.contains_key(id) {
+            let builtin = self.builtin.get_mut(id).unwrap();
+            return builtin.call(args.clone());
+        } else if let Some(fn_ptr) = self.context.find_function(id) {
+            fn_ptr
+        } else if let Some(fn_ptr) = self.context.find_variable(id) {
+            match fn_ptr.value.clone() {
+                Value::Function(func) => func.clone(),
+                _ => panic!("Expected function"),
             }
-            
-            // parameterless invocation.
-            if function.params.len() + args.len() == 0 {
-                return function.body.accept(self);
-            }
+        } else {
+            dbg!(node);
+            panic!("Function not found");
+        };
 
-            // todo; varargs
-            if args.len() != function.params.len() {
-                panic!("Number of arguments does not match the number of parameters");
-            }
-
-            for (arg, param) in args.iter().zip(function.params.iter()) {
-                let arg_type_name = super::typechecker::get_type_name(arg);
-
-                // typecheck args. very basic.
-                if arg_type_name.to_string() != param.typename {
-                    panic!("Argument type does not match parameter type.\n provided argument: {:?} expected parameter : {:?}", arg, param)
-                } else {
-                    // copying param values into a context
-                    self.context.insert_variable(
-                        &param.name,
-                        Rc::new(Variable::from(
-                            param.typename.clone(),
-                            false,
-                            arg.clone(),
-                            self.type_checker.clone(),
-                        )),
-                    );
-                }
-            }
-
-            let ret = function.body.accept(self);
-
-            if let Value::Return(ret_val) = ret {
-                if let Some(return_value) = ret_val {
-                    return *return_value;
-                }
-            };
-            // todo: don't discard changes made by functions
-            // right now - side effects are undone on context leave.
-            self.context = old;
+        if function.params.len() + args.len() == 0 {
+            return function.body.accept(self);
         }
+
+        if args.len() != function.params.len() {
+            panic!("Number of arguments does not match the number of parameters");
+        }
+
+        for (arg, param) in args.iter().zip(function.params.iter()) {
+            let arg_type_name = super::typechecker::get_type_name(arg);
+            if arg_type_name.to_string() != param.typename {
+                panic!("Argument type does not match parameter type.\n provided argument: {:?} expected parameter : {:?}", arg, param)
+            } else {
+                self.context.insert_variable(
+                    &param.name,
+                    Rc::new(Variable::from(
+                        param.typename.clone(),
+                        false,
+                        arg.clone(),
+                        self.type_checker.clone(),
+                    )),
+                );
+            }
+        }
+
+        let ret = function.body.accept(self);
+        if let Value::Return(Some(return_value)) = ret {
+            return *return_value;
+        }
+
+        self.context = old;
         Value::None()
     }
     fn visit_function_decl(&mut self, node: &Node) -> Value {
@@ -563,7 +543,7 @@ impl Visitor<Value> for Interpreter {
 
         let var = match self.context.find_variable(id) {
             Some(var) => var,
-            None => panic!("Expected ArrayAccessExpr node"),
+            None => panic!("variable {:?} not found", id),
         };
 
         let (mutable, elements) = match var.value.clone() {
