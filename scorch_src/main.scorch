@@ -1,13 +1,13 @@
 state := -100
 
-invoke_and_print := (i : Float) {
+invoke_and_print := (Y : Float) {
     println(main)
     println('main evaluated to :')
-    if i == 0 {
+    if Y == 0 {
         println(main('hi'))
-    } else i == 1 {
+    } else Y == 1 {
         println(main('hiyo'))
-    } else i == 2 {
+    } else Y == 2 {
         println(main())
     } else {
         println('error : out of bounds!')
@@ -43,3 +43,8 @@ main := {
 
 
 invoke_and_print(2)
+
+repeat i < 250 {
+    println((tostr(i)) + ' farting cows')
+}
+        

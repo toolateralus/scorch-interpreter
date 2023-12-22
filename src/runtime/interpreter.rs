@@ -1,4 +1,4 @@
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, rc::Rc, borrow::BorrowMut};
 
 use super::{typechecker::TypeChecker, types::*};
 use crate::frontend::{
@@ -54,7 +54,9 @@ impl Interpreter {
         if args.len() != function.params.len() {
             panic!("Number of arguments does not match the number of parameters");
         }
-
+        
+        
+        
         for (arg, param) in args.iter().zip(function.params.iter()) {
             let arg_type_name = super::typechecker::get_type_name(arg);
             if arg_type_name.to_string() != param.typename {
@@ -71,28 +73,27 @@ impl Interpreter {
                 );
             }
         }
-
+        
         let ret = function.body.accept(self);
         if let Value::Return(Some(return_value)) = ret {
             return *return_value;
         }
-
+                
         Value::None()
     }
-
+    
     fn push_new_ctx(&mut self, old: &mut Context) {
         self.context = self.context.clone();
-
+        
         let ctx: &mut Context = &mut self.context;
-
+        
         old.parent = Some(Rc::new(RefCell::new(ctx.clone())));
-
+        
         ctx.children.push(Rc::new(RefCell::new(old.clone())));
     }
-
+    
     fn pop_ctx(&mut self, old: &mut Context) -> () {
         let dirty = self.context.clone();
-
         self.context = old.merge(dirty);
     }
 }
@@ -124,7 +125,7 @@ impl Visitor<Value> for Interpreter {
             Node::Block(statements) => statements,
             _ => panic!("Expected Block node"),
         };
-
+        
         for statement in statements {
             let value = statement.accept(self);
             match value {
@@ -134,7 +135,7 @@ impl Visitor<Value> for Interpreter {
             }
         }
 
-        self.pop_ctx(&mut old.clone());
+        self.pop_ctx(old);
 
         Value::None()
     }

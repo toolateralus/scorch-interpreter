@@ -93,6 +93,7 @@ pub fn tostr(args: Vec<Value>) -> Value {
     };
     Value::String(result)
 }
+
 pub fn get_builtin_functions() -> HashMap<String, BuiltInFunction> {
     HashMap::from([
         (
@@ -103,6 +104,13 @@ pub fn get_builtin_functions() -> HashMap<String, BuiltInFunction> {
             String::from("readln"),
             BuiltInFunction::new(Box::new(readln)),
         ),
-        (String::from("wait"), BuiltInFunction::new(Box::new(wait))),
+        (   
+            String::from("wait"), 
+            BuiltInFunction::new(Box::new(wait))
+        ),
+        (   
+            String::from("tostr"), 
+            BuiltInFunction::new(Box::new(tostr))
+        ),
     ])
 }

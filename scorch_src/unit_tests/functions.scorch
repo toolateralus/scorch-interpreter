@@ -14,3 +14,4 @@ implicit_fn_test_params('my argument')
 
 
 implicit_fn_test_no_params()
+
