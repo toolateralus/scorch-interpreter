@@ -257,7 +257,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
     if *index >= tokens.len() {
         return Err(());
     }
-
+    
     let first = consume_newlines(index, tokens);
 
     if *index + 1 >= tokens.len() {
@@ -455,7 +455,7 @@ fn parse_function_decl_stmnt(
         *index += 2;
         if get_current(tokens, index).kind == TokenKind::Colon {
             *index -= 2; // go back to the a :
-
+            
             let params = parse_parameters(tokens, index);
             let body = parse_block(tokens, index);
             let node = Node::FnDeclStmnt {
@@ -781,10 +781,6 @@ fn parse_factor(tokens: &Vec<Token>, index: &mut usize) -> Node {
         let node = match token.kind {
            
             TokenKind::Number => Node::Number(token.value.parse::<f64>().unwrap()),
-            // array literal.. one problem
-            // we cant know much about mutability at this point here, and the way this is intended to be used,
-            // i don't see how it could _not_ be a factor.
-            // do we just make all array literals mutable by default?
             TokenKind::Identifier => {
                 let id = Node::Identifier(token.value.clone());
                 id
