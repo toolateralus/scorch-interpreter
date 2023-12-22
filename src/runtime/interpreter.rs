@@ -566,7 +566,7 @@ impl Visitor<Value> for Interpreter {
             None => panic!("Expected ArrayAccessExpr node"),
         };
 
-        let (mutable, elements) = match var.value.clone() {
+        let (mutable, mut elements) = match var.value.clone() {
             Value::Array(mutable, elements) => (mutable, elements),
             _ => {
                 dbg!(node);
@@ -575,38 +575,38 @@ impl Visitor<Value> for Interpreter {
         };
 
         let value_node = index.accept(self);
-
+        
         if !mutable && *assignment {
             panic!("Cannot assign to immutable array");
         }
-
+        
         let index_value = match value_node {
             Value::Float(index_value) => index_value,
             _ => panic!("Expected numerical index value, got {:?}", value_node),
         };
-
+        
         if elements.len() < index_value as usize {
             panic!("Array index out of bounds :: {}[{}]", id, index_value as usize);
         }
-
-        let variable = &elements[index_value as usize];
-
+        
+        let element = &mut elements[index_value as usize];
+        
         // read
         if !*assignment {
-            return variable.value.clone();
+            return element.value.clone();
         }
-
+        
         // assignment
         if let Some(expr) = expression {
-            let value = self.visit_expression(&expr.clone());
-            let mut var = variable.clone();
-            var.value = value;
-            
-            let new_val = var.clone().value.clone();
-
-            self.context.insert_variable(id, Rc::new(var));
-
-            return new_val;
+            let expr_result = expr.accept(self);
+            element.value = expr_result;
+			if !TypeChecker::validate(&element, None) {
+				dbg!(&element);
+				panic!("invalid type");
+			}
+			let var2 = Variable::from(var.typename.clone(), var.mutable, Value::Array(mutable, elements), self.type_checker.clone());
+			self.context.insert_variable(id, Rc::new(var2));
+            return Value::None();
         }
         
         panic!("Expected expression in array assignment");

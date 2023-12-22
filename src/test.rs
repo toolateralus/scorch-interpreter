@@ -69,17 +69,43 @@ fn test_rel_expr() {
 fn test_arithmetic() {
     let ctx = super::execute_from_file(String::from("scorch_src/unit_tests/test_arithmetic.scorch"));
     let expected_results = HashMap::from([
-        ("f_arith_t02", 5.3 - 6.2),
-        ("f_arith_t03", 5.3 * 6.2),
-        ("f_arith_t04", 5.3 / 6.2),
-        ("f_arith_t05", (5.3 + 6.2) * 2.5),
-        ("f_arith_t06", 5.3 - (6.2 * 3.1)),
-        ("f_arith_t07", (5.3 + 6.2) / (3.1 - 2.0)),
-        ("f_arith_t08", 5.3 + (6.2 * 3.1) / 2.5),
-        ("f_arith_t09", (5.3 - 6.2) * 2.5 / 3.1),
-        ("f_arith_t10", 5.3 / (6.2 + 3.1) * 2.5),
-        ("f_arith_t11", 5.3 + 6.2 - 3.1 * 2.0 / 1.5),
-        ("f_arith_t12", ((5.3 * 2.5) - 6.2) / 3.1 + 1.0),
+		("ff_addition", 5.3 + 6.2),
+        ("ff_subtraction", 5.3 - 6.2),
+        ("ff_multiplcation", 5.3 * 6.2),
+        ("ff_division", 5.3 / 6.2),
+        ("ff_parenthesis_1", (5.3 + 6.2) * 2.5),
+        ("ff_parenthesis_2", 5.3 - (6.2 * 3.1)),
+        ("ff_complex_1", (5.3 + 6.2) / (3.1 - 2.0)),
+        ("ff_complex_2", 5.3 + (6.2 * 3.1) / 2.5),
+        ("ff_complex_3", (5.3 - 6.2) * 2.5 / 3.1),
+        ("ff_complex_4", 5.3 / (6.2 + 3.1) * 2.5),
+        ("ff_complex_5", 5.3 + 6.2 - 3.1 * 2.0 / 1.5),
+        ("ff_complex_6", ((5.3 * 2.5) - 6.2) / 3.1 + 1.0),
+    ]);
+    for (name, expected_val) in expected_results {
+        let value = ctx.variables[name].clone();
+        if let super::runtime::types::Value::Float(v) = value.value {
+            assert_eq!(v, expected_val, "test failed: {}", &name);
+        }
+    }
+}
+//#[test]
+// TODO: implemet this
+fn test_arrays() {
+    let ctx = super::execute_from_file(String::from("scorch_src/unit_tests/arrays.scorch"));
+    let expected_results = HashMap::from([
+		("ff_addition", 5.3 + 6.2),
+        ("ff_subtraction", 5.3 - 6.2),
+        ("ff_multiplcation", 5.3 * 6.2),
+        ("ff_division", 5.3 / 6.2),
+        ("ff_parenthesis_1", (5.3 + 6.2) * 2.5),
+        ("ff_parenthesis_2", 5.3 - (6.2 * 3.1)),
+        ("ff_complex_1", (5.3 + 6.2) / (3.1 - 2.0)),
+        ("ff_complex_2", 5.3 + (6.2 * 3.1) / 2.5),
+        ("ff_complex_3", (5.3 - 6.2) * 2.5 / 3.1),
+        ("ff_complex_4", 5.3 / (6.2 + 3.1) * 2.5),
+        ("ff_complex_5", 5.3 + 6.2 - 3.1 * 2.0 / 1.5),
+        ("ff_complex_6", ((5.3 * 2.5) - 6.2) / 3.1 + 1.0),
     ]);
     for (name, expected_val) in expected_results {
         let value = ctx.variables[name].clone();
