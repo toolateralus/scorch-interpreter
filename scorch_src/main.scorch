@@ -1,23 +1,24 @@
-var array : Array = [println('xaryu
+arr : Array = [] 
 
-'), 'cdew', 'venruki']
+State : class = |
+    current : String,
+    index : UInt,
+    error: Bool, 
+|
 
-var input := ''
+state := new State()
 
-run := (fn : Fn) {
-    break fn()
+iter := (arr : Array, str : String) {
+    if state.error {
+        return state.get_error()
+    }
+    if state.current >= state.length {
+        state.complete = true
+        return state.get()
+    }
+    return state.get()
 }
 
-repeat {
-    inner := {
-        input = readln()
-        break input;    
-    }
+func := (str : String) {
     
-    if (inner()) == 'exit' {
-        break;
-    }
 }
-
-
-
