@@ -1,4 +1,5 @@
 use core::panic;
+use std::borrow::Borrow;
 
 use super::tokens::{Token, TokenFamily, TokenKind};
 
@@ -488,6 +489,48 @@ fn parse_explicit_decl(
     // todo: check for valid type / builtins
     let target_type_tkn = get_current(tokens, index);
     let target_type = target_type_tkn.value.clone();
+    
+    if target_type == "Fn" {
+        *index += 1;
+        let params = parse_parameters(tokens, index);
+        
+        // function explict return type function, explicit args.
+        // foo : (a : String) -> String = {}
+        if get_current(tokens, index).kind == TokenKind::Arrow {
+            *index += 1;
+            
+            if get_current(tokens, index).kind != TokenKind::Identifier {
+                dbg!(get_current(tokens, index));
+                panic!("Expected type identifier");
+            }
+            
+            let cur = get_current(tokens, index);
+            
+            if cur.kind != TokenKind::Identifier {
+                dbg!(get_current(tokens, index));
+                panic!("Expected type identifier");
+            }
+            
+            let return_type = cur.value.clone();
+            
+            *index += 1;
+            
+            let Some(val) = prs_fn_decl(&params, tokens, index, &id, return_type.to_string(), mutable) else {
+                dbg!(get_current(tokens, index));
+                panic!("Expected function body");
+            };
+            
+            let Ok(fn_def) = &val else {
+                panic!("Expected function body");
+            };
+            
+            *index += 1;
+            
+            return Ok(fn_def.clone());
+        }
+        
+    }
+    
     *index += 1;
     
     // varname : type^ = default;
@@ -535,17 +578,11 @@ fn parse_explicit_decl(
     
     // varname : type = ^default;
     
-    if get_current(tokens, index).kind == TokenKind::OpenCurly {
-        let body = parse_block(tokens, index);
-        let node = Node::FnDeclStmnt {
-            id: id.clone(),
-            body: Box::new(body),
-            params: Vec::new(),
-            return_type: "Dynamic".to_string(),
-            mutable,
-        };
-        return Ok(node);
-    }
+    
+   
+    
+    
+    
     
     let expression = parse_expression(tokens, index);
     consume_normal_expr_delimiter(tokens, index);
@@ -555,6 +592,23 @@ fn parse_explicit_decl(
         expression: Box::new(expression),
         mutable,
     })
+}
+
+fn prs_fn_decl(params : &Vec<Node>, tokens: &Vec<Token>, index: &mut usize, id: &String, return_type: String, mutable: bool) -> Option<Result<Node, ()>> {
+    let token = get_current(tokens, index);
+    let kind = token.kind;
+    if kind == TokenKind::OpenCurly {
+        let body = parse_block(tokens, index);
+        let node = Node::FnDeclStmnt {
+            id: id.clone(),
+            body: Box::new(body),
+            params: params.clone(),
+            return_type,
+            mutable,
+        };
+        return Some(Ok(node));
+    }
+    None
 }
 
 fn new_array(typename: String, init_capacity: usize, elements: Vec<Box<Node>>, mutable: bool, elements_mutable: bool) -> Node {
@@ -642,7 +696,7 @@ fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Node {
                     }
                 } else {
                     let init = parse_array_initializer(tokens, index);
-                    return new_array("Dynamic".to_string(), init.len(), init.clone(), true, false);
+                    return new_array("Array".to_string(), init.len(), init.clone(), true, false);
                 }
             }
             // these 5 token kinds are expression delimiters, but

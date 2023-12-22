@@ -1,18 +1,45 @@
-var array := [0,1,2,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32]
+state := -100
 
-var main := (str:String, i:Float) {
-    println("Hello, World!")
-    wait(500)
-    println("wanna see my array?")
-    
-    
-    input := readln()
-    
-    if input == "yes" {
-        
+invoke_and_print := (i : Float) {
+    println(main)
+    println('main evaluated to :')
+    if i == 0 {
+        println(main('hi'))
+    } else i == 1 {
+        println(main('hiyo'))
+    } else i == 2 {
+        println(main())
     } else {
-        println("too bad")
+        println('error : out of bounds!')
     }
+    println('')
 }
 
-println(main)
+//# explicitly define a var fn that takes a string and returns a bool
+var main : Fn(str: String) -> bool {
+    break state > 250
+}
+
+invoke_and_print(0)
+
+//# this is not allowed. functions that specify their return type
+//# should follow the explicit Fn(..) -> return_type syntax
+ 
+//# main := (str: String) -> bool {
+//#    break state
+//#}
+
+//# however, parameterized functions can have implicit return type
+main := (str: String) {
+    break state > 250
+}
+
+invoke_and_print(1)
+
+//# parameterless void return functions can be shorthanded as such : 
+main := {
+    break -25000 * state
+}
+
+
+invoke_and_print(2)

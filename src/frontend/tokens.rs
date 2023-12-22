@@ -12,6 +12,7 @@ pub fn create_tokenizer() -> Tokenizer {
         (String::from(","), TokenKind::Comma),
         (String::from("::"), TokenKind::DubColon),
         (String::from(":"), TokenKind::Colon),
+        (String::from("->"), TokenKind::Arrow),
         (String::from(":="), TokenKind::ColonEquals),
         (String::from("="), TokenKind::Assignment),
         (String::from("=="), TokenKind::Equals),
@@ -117,7 +118,8 @@ pub enum TokenKind {
     Bool,
     Break,
     Const,
-    Var, // ::
+    Var,
+    Arrow, // ::
 }
 #[derive(Debug, Clone)]
 pub struct Token {
