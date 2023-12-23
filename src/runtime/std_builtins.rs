@@ -84,13 +84,13 @@ pub fn tostr(args: Vec<Value>) -> Value {
             let params: Vec<String> = func
                 .params
                 .iter()
-                .map(|param| format!("{}: {}", param.name, param.typename))
+                .map(|param| format!("{}: {}", param.name, param.m_type.name))
                 .collect();
             let stri = String::from(format!(
                 "{}({}) -> {}",
                 func.name,
                 params.join(", "),
-                func.return_type
+                func.return_type.name
             ));
             println!("{}", stri);
             stri

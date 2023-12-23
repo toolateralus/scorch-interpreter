@@ -2,7 +2,7 @@ var i : Int = 0
 
 time := time()
 
-repeat i < 25000000 {
+repeat i < 250000 {
    
 }
 

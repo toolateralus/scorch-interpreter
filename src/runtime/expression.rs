@@ -25,15 +25,12 @@ impl Interpreter {
             }
             None => {
                 let val = Value::Double(0.0);
+                let Some(m_type) = self.type_checker.get("Double") else {
+                    panic!("Double isnt a type")
+                };
+                let var = Variable::new(true, val, m_type);
 
-                let var = Rc::new(Variable::from(
-                    "Double".to_string(),
-                    true,
-                    val,
-                    self.type_checker.clone(),
-                ));
-
-                self.context.insert_variable(&id, var);
+                self.context.insert_variable(&id, Rc::new(var));
             }
         }
 
@@ -79,14 +76,10 @@ impl Interpreter {
 
             let typename = "Int".to_string();
 
-            // todo: fix this terrible variable stuff.
-            // should we floor this here?
-            let variable = Rc::new(Variable::from(
-                typename,
-                true,
-                value,
-                self.type_checker.clone(),
-            ));
+            let Some(m_type) = self.type_checker.get(typename.as_str()) else {
+                panic!("{} isnt a type", typename)
+            };
+            let variable = Rc::new(Variable::new(true, value, m_type));
 
             self.context.insert_variable(&id, variable);
         }
@@ -132,9 +125,13 @@ impl Interpreter {
                     }
                 };
 
+                let Some(m_type) = self.type_checker.get(type_name.as_str()) else {
+                    panic!("{} isnt a type", type_name)
+                };
+
                 let parameter = Parameter {
                     name: param_name,
-                    typename: type_name,
+                    m_type,
                 };
 
                 params.push(parameter);

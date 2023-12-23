@@ -28,24 +28,22 @@ impl Interpreter {
         id: &String,
         node: &Node,
     ) -> Value {
-        let args = Function::extract_args(self, arguments, &self.context.clone());
+        let args = Function::extract_args(self, arguments);
 
         // builtin functions
-        let function = if self.builtin.contains_key(id) {
+        if self.builtin.contains_key(id) {
             let builtin = self.builtin.get_mut(id).unwrap();
             return builtin.call(args.clone());
-        // free functions
-        } else if let Some(func) = self.context.find_function(id) {
-            func
+        }
+
         // function pointer
-        } else if let Some(fn_ptr) = self.context.find_variable(id) {
-            match fn_ptr.value.clone() {
-                Value::Function(func) => func.clone(),
-                _ => panic!("Expected function"),
-            }
-        } else {
+        let Some(fn_ptr) = self.context.find_variable(id) else {
             dbg!(node);
             panic!("Function not found");
+        };
+        let function = match fn_ptr.value.clone() {
+            Value::Function(func) => func.clone(),
+            _ => panic!("Expected function"),
         };
 
         if function.params.len() + args.len() == 0 {
@@ -57,18 +55,12 @@ impl Interpreter {
         }
 
         for (arg, param) in args.iter().zip(function.params.iter()) {
-            let arg_type_name = super::typechecker::get_type_name(arg);
-            if arg_type_name.to_string() != param.typename {
+            if !param.m_type.validate(arg) {
                 panic!("Argument type does not match parameter type.\n provided argument: {:?} expected parameter : {:?}", arg, param)
             } else {
                 self.context.insert_variable(
                     &param.name,
-                    Rc::new(Variable::from(
-                        param.typename.clone(),
-                        false,
-                        arg.clone(),
-                        self.type_checker.clone(),
-                    )),
+                    Rc::new(Variable::new(false, arg.clone(), Rc::clone(&param.m_type))),
                 );
             }
         }
@@ -102,8 +94,6 @@ impl Visitor<Value> for Interpreter {
         Value::None()
     }
     fn visit_block(&mut self, node: &Node) -> Value {
-        let _old: &mut Context = &mut self.context.clone();
-
         let statements = match node {
             Node::Block(statements) => statements,
             _ => panic!("Expected Block node"),
@@ -192,16 +182,11 @@ impl Visitor<Value> for Interpreter {
             let var: Variable;
             let mutability = *mutable;
 
-            match target_type.as_str() {
-                "Dynamic" | "Double" | "Int" | "String" | "Bool" | "Struct" | "Array" => {
+            match self.type_checker.get(target_type.as_str()) {
+                Some(m_type) => {
                     value = expression.accept(self);
-                    var = Variable::from(
-                        target_type.clone(),
-                        mutability,
-                        value,
-                        self.type_checker.clone(),
-                    );
-                    if !TypeChecker::validate(&var, None) {
+                    var = Variable::new(mutability, value, m_type);
+                    if !TypeChecker::validate(&var) {
                         dbg!(&var);
                         panic!("invalid type");
                     }
@@ -240,22 +225,16 @@ impl Visitor<Value> for Interpreter {
                 };
                 match self.context.variables.get_mut(&str_id) {
                     Some(value) => {
-                        if TypeChecker::validate(value, None) == false {
-                            dbg!(node);
-                            panic!("Type mismatch");
-                        }
-
                         if value.mutable == false {
                             dbg!(node);
                             panic!("Cannot assign to immutable variable");
                         }
-
-                        *value = Rc::new(Variable::from(
-                            value.typename.clone(),
-                            value.mutable,
-                            val,
-                            self.type_checker.clone(),
-                        ));
+                        *value =
+                            Rc::new(Variable::new(value.mutable, val, Rc::clone(&value.m_type)));
+                        if TypeChecker::validate(value) == false {
+                            dbg!(node);
+                            panic!("Type mismatch");
+                        }
                     }
                     None => {
                         dbg!(node);
@@ -280,15 +259,8 @@ impl Visitor<Value> for Interpreter {
             dbg!(node);
             panic!("Expected Identifier");
         };
-        match self.context.find_function(id) {
-            // create function pointer basically
-            Some(func) => return Value::Function(func),
-            None => {
-                // to be consumed elsewhere.
-            }
-        }
         match self.context.find_variable(id) {
-            Some(value) => (*value).value.clone(),
+            Some(value) => value.value.clone(),
             None => {
                 dbg!(node);
                 panic!("Variable not found");
@@ -527,15 +499,26 @@ impl Visitor<Value> for Interpreter {
         } = node
         {
             let body_cloned = body.clone();
+            let Some(r_type) = self.type_checker.get(return_type) else {
+                panic!("FnDecl: {} not a valid return type", return_type);
+            };
             let func = Function {
-                name: id.clone(),
+                name: id.to_string(),
                 params: self.get_params_list(params),
                 body: body_cloned,
-                return_type: return_type.clone(),
+                return_type: r_type,
                 mutable: *mutable,
             };
-            let function = Rc::new(func);
-            self.context.insert_function(&id, function);
+            // Todo: we might want to have a better way to do this than just getting it by string
+            let Some(m_type) = self.type_checker.get("Fn") else {
+                panic!("Fn isn't a type");
+            };
+            let function = Variable {
+                mutable: *mutable,
+                value: Value::Function(Rc::new(func)),
+                m_type,
+            };
+            self.context.insert_variable(&id, Rc::new(function));
         } else {
             panic!("Expected FunctionDecl node");
         };
@@ -590,12 +573,10 @@ impl Visitor<Value> for Interpreter {
             let mut values = Vec::with_capacity(len);
             for value in elements {
                 let val = value.accept(self);
-                let var = Variable::from(
-                    typename.clone(),
-                    *elements_mutable,
-                    val,
-                    self.type_checker.clone(),
-                );
+                let Some(m_type) = self.type_checker.get(typename) else {
+                    panic!("{} not a valid type", typename);
+                };
+                let var = Variable::new(*elements_mutable, val, m_type);
                 values.push(var);
             }
 
@@ -659,15 +640,14 @@ impl Visitor<Value> for Interpreter {
         if let Some(expr) = expression {
             let expr_result = expr.accept(self);
             element.value = expr_result;
-            if !TypeChecker::validate(&element, None) {
+            if !TypeChecker::validate(&element) {
                 dbg!(&element);
                 panic!("invalid type");
             }
-            let var2 = Variable::from(
-                var.typename.clone(),
+            let var2 = Variable::new(
                 var.mutable,
                 Value::Array(mutable, elements),
-                self.type_checker.clone(),
+                Rc::clone(&var.m_type),
             );
             self.context.insert_variable(id, Rc::new(var2));
             return Value::None();
