@@ -171,7 +171,7 @@ impl Node {
             } => visitor.visit_array_access(self),
             Node::Int(_) => visitor.visit_number(self),
             Node::Double(_) => visitor.visit_number(self),
-            Node::DotOp { lhs, op, rhs } => visitor.visit_binary_op(self),
+            Node::DotOp { .. } => visitor.visit_binary_op(self),
         }
     }
 }

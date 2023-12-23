@@ -1,6 +1,4 @@
-use std::borrow::Borrow;
 use std::collections::HashMap;
-use std::ops::Deref;
 use std::rc::Rc;
 
 use crate::frontend::ast::*;
@@ -471,7 +469,7 @@ impl Visitor<Value> for Interpreter {
 
     fn visit_binary_op(&mut self, node: &Node) -> Value {
         match node {
-            Node::DotOp { lhs, op, rhs } => {
+            Node::DotOp { lhs, op: _, rhs } => {
                 self.dot_op(lhs, rhs)
             },
             Node::AddOp(lhs, rhs)
