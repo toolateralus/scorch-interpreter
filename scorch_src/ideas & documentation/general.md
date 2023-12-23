@@ -26,7 +26,7 @@ x := i * 100
 
 #### explicit
 `identifier : TypeName = value` declares an explicitly typed field with the provided value.
-`identifier : TypeName` declares an implicitly typed field with the default value for that type. ie 0, "", false
+`identifier : TypeName` declares an explicitly typed field with the default value for that type. ie 0, "", false
 
 
 #### assignment 
