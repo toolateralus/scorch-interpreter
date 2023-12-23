@@ -21,7 +21,7 @@ impl Interpreter {
             type_checker: TypeChecker::new(),
         }
     }
-
+    
     fn try_find_and_execute_fn(
         &mut self,
         arguments: &Option<Vec<Node>>,
@@ -98,7 +98,7 @@ impl Visitor<Value> for Interpreter {
             Node::Block(statements) => statements,
             _ => panic!("Expected Block node"),
         };
-
+        
         for statement in statements {
             let value = statement.accept(self);
             match value {
@@ -229,8 +229,12 @@ impl Visitor<Value> for Interpreter {
                             dbg!(node);
                             panic!("Cannot assign to immutable variable");
                         }
-                        *value =
-                            Rc::new(Variable::new(value.mutable, val, Rc::clone(&value.m_type)));
+                        
+                        *value = Rc::new(Variable::new(
+							value.mutable,
+							val,
+							Rc::clone(&value.m_type)
+						));
                         if TypeChecker::validate(value) == false {
                             dbg!(node);
                             panic!("Type mismatch");

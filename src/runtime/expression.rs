@@ -80,7 +80,7 @@ impl Interpreter {
                 panic!("{} isnt a type", typename)
             };
             let variable = Rc::new(Variable::new(true, value, m_type));
-
+            
             self.context.insert_variable(&id, variable);
         }
     }
