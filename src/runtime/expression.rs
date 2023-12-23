@@ -1,5 +1,5 @@
 use core::panic;
-use std::{collections::HashMap, rc::Rc};
+use std::rc::Rc;
 
 use crate::{
     frontend::ast::Node,
@@ -7,7 +7,7 @@ use crate::{
     runtime::types::{Parameter, Value},
 };
 
-use super::types::{BuiltInFunction, Variable};
+use super::types::Variable;
 
 // loops
 impl Interpreter {
@@ -36,9 +36,9 @@ impl Interpreter {
                 self.context.insert_variable(&id, var);
             }
         }
-
-        let mut iter: f64 = 0.0;
-
+        
+        let mut iter: usize = 0;
+        
         loop {
             let condition_result = match condition.as_ref() {
                 Some(expression) => {
@@ -50,11 +50,11 @@ impl Interpreter {
                 }
                 None => panic!("Expected condition in conditional repeat statement"),
             };
-
+            
             if condition_result {
                 let result = block.accept(self);
                 match result {
-                    Value::Float(..) | Value::Bool(_) | Value::Function(_) | Value::String(_) => {
+                    Value::Int(..) | Value::Float(..) | Value::Bool(_) | Value::Function(_) | Value::String(_) => {
                         return result
                     }
                     Value::Return(value) => {
@@ -64,19 +64,22 @@ impl Interpreter {
                             return Value::None();
                         }
                     }
-                    _ => {}
+                    _ => {
+                        
+                    }
                 }
+                
             } else {
                 return Value::None();
             }
             self.context.variables.remove(id);
-
-            iter += 1.0;
-
-            let value = Value::Float(iter.floor());
-
-            let typename = "Float".to_string();
-
+            
+            iter += 1;
+            
+            let value = Value::Int(iter as i32);
+            
+            let typename = "Int".to_string();
+            
             // todo: fix this terrible variable stuff.
             // should we floor this here?
             let variable = Rc::new(Variable::from(
@@ -85,7 +88,7 @@ impl Interpreter {
                 value,
                 self.type_checker.clone(),
             ));
-
+            
             self.context.insert_variable(&id, variable);
         }
     }

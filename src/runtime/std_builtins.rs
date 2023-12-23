@@ -6,6 +6,7 @@ use super::types::{Value, BuiltInFunction};
 pub fn print_ln(args: Vec<Value>) -> Value {
     for arg in args {
         match arg {
+            Value::Int(val) => print!("{}\n", val),
             Value::Float(val) => print!("{}\n", val),
             Value::Bool(val) => print!("{}\n", val),
             Value::String(val) => print!("{}\n", val),

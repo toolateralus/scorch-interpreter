@@ -119,8 +119,7 @@ impl Visitor<Value> for Interpreter {
     }
     fn visit_block(&mut self, node: &Node) -> Value {
         let old: &mut Context = &mut self.context.clone();
-        self.push_new_ctx(old);
-
+        
         let statements = match node {
             Node::Block(statements) => statements,
             _ => panic!("Expected Block node"),
@@ -134,9 +133,7 @@ impl Visitor<Value> for Interpreter {
                 _ => continue,
             }
         }
-
-        self.pop_ctx(old);
-
+        
         Value::None()
     }
     // statements
@@ -208,33 +205,38 @@ impl Visitor<Value> for Interpreter {
         } = node
         {
             let value: Value;
-
+            let var : Variable;
+            let mutability = *mutable;
+            
             match target_type.as_str() {
-                "Dynamic" | "Float" | "String" | "Bool" | "Struct" | "Array" => {
-                    // todo: add an actual type system.
+                "Dynamic" | "Float" | "Int" | "String" | "Bool" | "Struct" | "Array" => {
                     value = expression.accept(self);
+                    var = Variable::from(
+                        target_type.clone(),
+                        mutability,
+                        value,
+                        self.type_checker.clone(),
+                    );
+                    if !TypeChecker::validate(&var, None) {
+                        dbg!(&var);
+                        panic!("invalid type");
+                    }
                 }
                 _ => {
                     dbg!(node);
                     panic!("Unsupported type");
                 }
             }
-
+            
             match self.context.find_variable(&id) {
                 Some(_) => {
                     dbg!(node);
                     panic!("redefinition of variable");
                 }
                 None => {
-                    let mutability = *mutable;
                     self.context.insert_variable(
                         &id,
-                        Rc::new(Variable::from(
-                            target_type.clone(),
-                            mutability,
-                            value,
-                            self.type_checker.clone(),
-                        )),
+                        Rc::new(var),
                     );
                 }
             }
@@ -320,11 +322,14 @@ impl Visitor<Value> for Interpreter {
         }
     }
     fn visit_number(&mut self, node: &Node) -> Value {
-        let Node::Number(value) = node else {
+        if let Node::Float(value) = node  {
+            Value::Float(*value)
+        } else if let Node::Int(value) = node {
+            Value::Int(*value)
+        } else {
             dbg!(node);
             panic!("Expected Number");
-        };
-        Value::Float(*value)
+        }
     }
     fn visit_string(&mut self, node: &Node) -> Value {
         if let Node::String(value) = node {
@@ -342,16 +347,7 @@ impl Visitor<Value> for Interpreter {
         if let Node::NotOp(operand) = node {
             match operand.accept(self) {
                 Value::Bool(value) => Value::Bool(!value),
-                Value::Float(mut value) => {
-                    value = 1.0 - value;
-                    if value > 1.0 {
-                        value = 1.0;
-                    } else if value < 0.0 {
-                        value = 0.0;
-                    }
-                    Value::Float(value)
-                }
-                _ => panic!("Expected boolean or numerical operand for not operation"),
+                _ => panic!("Expected boolean operand for unary not (!) operation"),
             }
         } else {
             panic!("Expected NotOp node");
@@ -361,7 +357,8 @@ impl Visitor<Value> for Interpreter {
         if let Node::NegOp(operand) = node {
             match operand.accept(self) {
                 Value::Float(value) => Value::Float(-value),
-                _ => panic!("Expected numeric operand for negation operation"),
+                Value::Int(value) => Value::Int(-value),
+                _ => panic!("Expected numeric operand for unary negation (-) operation"),
             }
         } else {
             panic!("Expected NegOp node");
@@ -373,11 +370,46 @@ impl Visitor<Value> for Interpreter {
         if let Node::RelationalExpression { lhs, op, rhs } = node {
             let lhs_value = lhs.accept(self);
             let rhs_value = rhs.accept(self);
-
             match (lhs_value, rhs_value) {
                 (Value::Bool(lhs_bool), Value::Bool(rhs_bool)) => match op {
                     TokenKind::Equals => return Value::Bool(lhs_bool == rhs_bool),
                     TokenKind::NotEquals => return Value::Bool(lhs_bool != rhs_bool),
+                    _ => {
+                        dbg!(node);
+                        panic!("invalid operator");
+                    }
+                },
+                (Value::Int(lhs_int), Value::Int(lhs_table)) => match op {
+                    TokenKind::LeftAngle => return Value::Bool(lhs_int < lhs_table),
+                    TokenKind::LessThanEquals => return Value::Bool(lhs_int <= lhs_table),
+                    TokenKind::RightAngle => return Value::Bool(lhs_int > lhs_table),
+                    TokenKind::GreaterThanEquals => return Value::Bool(lhs_int >= lhs_table),
+                    TokenKind::Equals => return Value::Bool(lhs_int == lhs_table),
+                    TokenKind::NotEquals => return Value::Bool(lhs_int != lhs_table),
+                    _ => {
+                        dbg!(node);
+                        panic!("invalid operator");
+                    }
+                },
+                (Value::Int(lhs_float), Value::Float(rhs_float)) => match op {
+                    TokenKind::LeftAngle => return Value::Bool((lhs_float as f64) < rhs_float),
+                    TokenKind::LessThanEquals => return Value::Bool((lhs_float as f64) <= rhs_float),
+                    TokenKind::RightAngle => return Value::Bool((lhs_float as f64) > rhs_float),
+                    TokenKind::GreaterThanEquals => return Value::Bool((lhs_float as f64) >= rhs_float),
+                    TokenKind::Equals => return Value::Bool((lhs_float as f64) == rhs_float),
+                    TokenKind::NotEquals => return Value::Bool((lhs_float as f64) != rhs_float),
+                    _ => {
+                        dbg!(node);
+                        panic!("invalid operator");
+                    }
+                },
+                (Value::Float(lhs_float), Value::Int(rhs_float)) => match op {
+                    TokenKind::LeftAngle => return Value::Bool(lhs_float < (rhs_float as f64)),
+                    TokenKind::LessThanEquals => return Value::Bool(lhs_float <= (rhs_float as f64)),
+                    TokenKind::RightAngle => return Value::Bool(lhs_float > (rhs_float as f64)),
+                    TokenKind::GreaterThanEquals => return Value::Bool(lhs_float >= (rhs_float as f64)),
+                    TokenKind::Equals => return Value::Bool(lhs_float == (rhs_float as f64)),
+                    TokenKind::NotEquals => return Value::Bool(lhs_float != (rhs_float as f64)),
                     _ => {
                         dbg!(node);
                         panic!("invalid operator");
@@ -612,7 +644,8 @@ impl Visitor<Value> for Interpreter {
         }
 
         let index_value = match value_node {
-            Value::Float(index_value) => index_value,
+            Value::Float(index_value) => index_value as usize, 
+            Value::Int(index_value) => index_value as usize,
             _ => panic!("Expected numerical index value, got {:?}", value_node),
         };
 
@@ -624,7 +657,7 @@ impl Visitor<Value> for Interpreter {
         }
 
         let element = &mut elements[index_value as usize];
-
+        
         // read
         if !*assignment {
             return element.value.clone();

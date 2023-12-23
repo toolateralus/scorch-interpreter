@@ -18,6 +18,16 @@ impl TypeChecker {
         Self {
             types: HashMap::from([
                 (
+                    String::from("Int"),
+                    Type {
+                        name: String::from("Int"),
+                        validator: Box::new(|v| match v {
+                            Value::Int(..) => true,
+                            _ => false,
+                        }),
+                    },
+                ),
+                (
                     String::from("Float"),
                     Type {
                         name: String::from("Float"),
@@ -77,6 +87,7 @@ impl TypeChecker {
                         }),
                     },
                 ),
+              
             ]),
         }
     }
@@ -95,7 +106,7 @@ impl TypeChecker {
 
         // invoke type validation function
         let type_valid = (t.try_borrow().unwrap().validator)(val.value.clone());
-
+        
         type_valid && typename == get_type_name(&val.value)
     }
     pub fn set(&mut self, name: &String, type_: Type) -> () {
@@ -110,16 +121,16 @@ impl TypeChecker {
 }
 pub fn get_type_name<'a>(arg: &'a Value) -> &'a str {
     let arg_type_name = match arg {
+        Value::Int(..) => "Int",
         Value::Float(_) => "Float",
         Value::Bool(_) => "Bool",
         Value::String(_) => "String",
         Value::None() => "None",
         Value::Array(..) | Value::List(..) => "Array",
         Value::Function(_func) => "Fn",
-        _ => {
-            dbg!(arg);
-            panic!("invalid argument type")
-        }
+        Value::Return(_) => todo!(),
+        // not yet implemented
+        Value::Struct { name, context } => todo!(),
     };
     arg_type_name
 }

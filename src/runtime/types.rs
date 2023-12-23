@@ -10,6 +10,7 @@ use super::typechecker::{Type, TypeChecker};
 #[derive(Debug, Clone)]
 pub enum Value {
     None(),
+    Int(i32),
     Float(f64),
     Bool(bool),
     String(String),
