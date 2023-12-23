@@ -41,7 +41,6 @@ main := {
     break -25000 * state
 }
 
-
 invoke_and_print(2)
 
 repeat i < 250 {

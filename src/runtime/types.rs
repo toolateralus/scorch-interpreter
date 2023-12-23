@@ -11,7 +11,7 @@ use super::typechecker::{Type, TypeChecker};
 pub enum Value {
     None(),
     Int(i32),
-    Float(f64),
+    Double(f64),
     Bool(bool),
     String(String),
     Return(Option<Box<Value>>),
@@ -34,7 +34,7 @@ impl Value {
     }
     pub fn as_float(&self) -> Option<&f64> {
         let value = match self {
-            Value::Float(val) => Some(val),
+            Value::Double(val) => Some(val),
             _ => None,
         };
         value
@@ -112,20 +112,6 @@ impl Context {
         }
         let name_str = name.to_string();
         self.functions.insert(name_str, value);
-    }
-
-    pub(crate) fn merge(&mut self, context: Context) -> Context {
-        for (name, variable) in &context.variables {
-            if self.find_variable(name).is_some() {
-                self.insert_variable(name, variable.clone());
-            }
-        }
-        for (name, function) in &context.functions {
-            if self.find_function(name).is_some() {
-                self.insert_function(name, function.clone());
-            }
-        }
-        return self.clone();
     }
 }
 #[derive(Debug, Clone)]

@@ -1,5 +1,5 @@
 use crate::runtime::types::Value;
-use std::{borrow::Borrow, collections::HashMap};
+use std::collections::HashMap;
 
 #[test]
 fn if_else_statements() {
@@ -17,25 +17,22 @@ fn fields_vars_literals() {
 
 #[test]
 fn loops() {
-    let ctx = super::execute_from_file(String::from(
-        "scorch_src/unit_tests/loops.scorch",
-    ));
-    
+    let ctx = super::execute_from_file(String::from("scorch_src/unit_tests/loops.scorch"));
+
     let value = ctx.variables["result"].clone();
     if let super::runtime::types::Value::Bool(v) = value.value {
         assert_eq!(v, true, "test failed: {}", "loop one");
     }
-    
+
     let value = ctx.variables["result1"].clone();
     if let super::runtime::types::Value::Bool(v) = value.value {
         assert_eq!(v, true, "test failed: {}", "loop two");
     }
-    
+
     let value = ctx.variables["result2"].clone();
     if let super::runtime::types::Value::Bool(v) = value.value {
         assert_eq!(v, true, "test failed: {}", "loop two");
     }
-    
 }
 
 #[test]
@@ -72,7 +69,7 @@ fn relationals() {
         let variable = variables[i];
         let expected_result = expected_results[i];
         let value = &*ctx.variables[*&variable].clone();
-        
+
         if let super::runtime::types::Value::Bool(v) = value.value {
             assert_eq!(v, expected_result, "test failed: {}", &variable);
         }
@@ -98,7 +95,7 @@ fn arithmetic() {
     ]);
     for (name, expected_val) in expected_results {
         let value = ctx.variables[name].clone();
-        if let super::runtime::types::Value::Float(v) = value.value {
+        if let super::runtime::types::Value::Double(v) = value.value {
             assert_eq!(v, expected_val, "test failed: {}", &name);
         }
     }
@@ -107,7 +104,7 @@ fn arithmetic() {
 fn arrays() {
     let ctx = super::execute_from_file(String::from("scorch_src/unit_tests/arrays.scorch"));
 
-    let test_code_string = "empty_implicit 			:= []
+    let _test_code_string = "empty_implicit 			:= []
     empty_explicit 			:= Array = []
     single_float_implicit 	:= [1.0]
     single_float_explicit 	:= Array = [1.0]
@@ -136,7 +133,7 @@ fn arrays() {
     match &t2.value {
         Value::Array(_, elements) => {
             assert_eq!(elements.len(), 1, "test failed: single_float_implicit");
-            if let Value::Float(inner_val) = &elements[0].value {
+            if let Value::Double(inner_val) = &elements[0].value {
                 assert_eq!(
                     *inner_val, 1.0,
                     "test failed: single_float_implicit inner value"
@@ -152,7 +149,7 @@ fn arrays() {
     match &t3.value {
         Value::Array(_, elements) => {
             assert_eq!(elements.len(), 1, "test failed: single_float_explicit");
-            if let Value::Float(inner_val) = &elements[0].value {
+            if let Value::Double(inner_val) = &elements[0].value {
                 assert_eq!(
                     *inner_val, 1.0,
                     "test failed: single_float_explicit inner value"
@@ -168,7 +165,7 @@ fn arrays() {
     match &t4.value {
         Value::Array(_, elements) => {
             assert_eq!(elements.len(), 2, "test failed: plural_float_implicit");
-            if let Value::Float(inner_val) = &elements[0].value {
+            if let Value::Double(inner_val) = &elements[0].value {
                 assert_eq!(
                     *inner_val, 1.0,
                     "test failed: plural_float_implicit inner value"
@@ -176,7 +173,7 @@ fn arrays() {
             } else {
                 panic!("test failed: plural_float_implicit inner value");
             }
-            if let Value::Float(inner_val) = &elements[1].value {
+            if let Value::Double(inner_val) = &elements[1].value {
                 assert_eq!(
                     *inner_val, 2.0,
                     "test failed: plural_float_implicit inner value"
@@ -192,7 +189,7 @@ fn arrays() {
     match &t5.value {
         Value::Array(_, elements) => {
             assert_eq!(elements.len(), 2, "test failed: plural_float_explicit");
-            if let Value::Float(inner_val) = &elements[0].value {
+            if let Value::Double(inner_val) = &elements[0].value {
                 assert_eq!(
                     *inner_val, 1.0,
                     "test failed: plural_float_explicit inner value"
@@ -200,7 +197,7 @@ fn arrays() {
             } else {
                 panic!("test failed: plural_float_explicit inner value");
             }
-            if let Value::Float(inner_val) = &elements[1].value {
+            if let Value::Double(inner_val) = &elements[1].value {
                 assert_eq!(
                     *inner_val, 2.0,
                     "test failed: plural_float_explicit inner value"
@@ -216,7 +213,7 @@ fn arrays() {
     match &t6.value {
         Value::Array(_, elements) => {
             assert_eq!(elements.len(), 1, "test failed: assignment");
-            if let Value::Float(inner_val) = &elements[0].value {
+            if let Value::Double(inner_val) = &elements[0].value {
                 assert_eq!(*inner_val, 1.0, "test failed: assignment inner value");
             } else {
                 panic!("test failed: assignment inner value");
@@ -229,7 +226,7 @@ fn arrays() {
     match &t7.value {
         Value::Array(_, elements) => {
             assert_eq!(elements.len(), 2, "test failed: accessor_assignment");
-            if let Value::Float(inner_val) = &elements[0].value {
+            if let Value::Double(inner_val) = &elements[0].value {
                 assert_eq!(
                     *inner_val, 3.0,
                     "test failed: accessor_assignment inner value"
@@ -237,7 +234,7 @@ fn arrays() {
             } else {
                 panic!("test failed: accessor_assignment inner value");
             }
-            if let Value::Float(inner_val) = &elements[1].value {
+            if let Value::Double(inner_val) = &elements[1].value {
                 assert_eq!(
                     *inner_val, 2.0,
                     "test failed: accessor_assignment inner value"

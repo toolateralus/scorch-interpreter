@@ -28,11 +28,11 @@ impl TypeChecker {
                     },
                 ),
                 (
-                    String::from("Float"),
+                    String::from("Double"),
                     Type {
-                        name: String::from("Float"),
+                        name: String::from("Double"),
                         validator: Box::new(|v| match v {
-                            Value::Float(_) => true,
+                            Value::Double(_) => true,
                             _ => false,
                         }),
                     },
@@ -87,7 +87,6 @@ impl TypeChecker {
                         }),
                     },
                 ),
-              
             ]),
         }
     }
@@ -106,7 +105,7 @@ impl TypeChecker {
 
         // invoke type validation function
         let type_valid = (t.try_borrow().unwrap().validator)(val.value.clone());
-        
+
         type_valid && typename == get_type_name(&val.value)
     }
     pub fn set(&mut self, name: &String, type_: Type) -> () {
@@ -122,7 +121,7 @@ impl TypeChecker {
 pub fn get_type_name<'a>(arg: &'a Value) -> &'a str {
     let arg_type_name = match arg {
         Value::Int(..) => "Int",
-        Value::Float(_) => "Float",
+        Value::Double(_) => "Double",
         Value::Bool(_) => "Bool",
         Value::String(_) => "String",
         Value::None() => "None",
@@ -130,7 +129,10 @@ pub fn get_type_name<'a>(arg: &'a Value) -> &'a str {
         Value::Function(_func) => "Fn",
         Value::Return(_) => todo!(),
         // not yet implemented
-        Value::Struct { name, context } => todo!(),
+        Value::Struct {
+            name: _,
+            context: _,
+        } => todo!(),
     };
     arg_type_name
 }

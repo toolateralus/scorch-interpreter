@@ -1,1 +1,11 @@
-x : Int = 0
+var i : Int = 0
+
+time := time()
+
+repeat i < 25000000 {
+   
+}
+
+end := time()
+println('time elapsed : ' +  (tostr(end - time)))
+println(' i am done. ')

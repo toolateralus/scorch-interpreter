@@ -1,6 +1,6 @@
 
 ### types 
-- types are basic, `Float`, `String`, `Bool`, `None`, `Fn`, are basically the extent of it right now
+- types are basic, `Double`, `String`, `Bool`, `None`, `Fn`, are basically the extent of it right now
 
 - both explicitly & implicitly typed variables retain their mutability & type for the duration of their lifetime, it cannot be reassigned.
 - the `Dynamic` type allows it's value to be excluded from the type system, and reassignment of type is possible.
@@ -128,7 +128,7 @@ parameterized, implicit return type.
 `func_name := (a: String, b: String) {}`  
 
 parameterized, explicit return type.
-`func_name : Fn(a: String, b: Float) -> bool {}`
+`func_name : Fn(a: String, b: Double) -> bool {}`
 
 
 ##### function calls

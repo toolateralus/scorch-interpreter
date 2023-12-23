@@ -1,13 +1,12 @@
 use std::collections::HashMap;
 
-use super::types::{Value, BuiltInFunction};
-
+use super::types::{BuiltInFunction, Value};
 
 pub fn print_ln(args: Vec<Value>) -> Value {
     for arg in args {
         match arg {
             Value::Int(val) => print!("{}\n", val),
-            Value::Float(val) => print!("{}\n", val),
+            Value::Double(val) => print!("{}\n", val),
             Value::Bool(val) => print!("{}\n", val),
             Value::String(val) => print!("{}\n", val),
             Value::None() => print!("{:?}", Value::None()),
@@ -40,15 +39,27 @@ pub fn print_ln(args: Vec<Value>) -> Value {
 }
 pub fn wait(args: Vec<Value>) -> Value {
     if args.len() != 1 {
-        panic!("sleep expected 1 argument :: ms sleep duration");
+        panic!("wait expected 1 argument :: ms wait duration");
     }
-    if let Value::Float(val) = args[0] {
+    if let Value::Double(val) = args[0] {
         std::thread::sleep(std::time::Duration::from_millis(val as u64));
     } else {
-        panic!("sleep expected a <num>");
+        panic!("wait expected a <num>");
     }
     Value::None()
 }
+pub fn time(args: Vec<Value>) -> Value {
+    if args.len() != 0 {
+        panic!("time expected 0 arguments");
+    }
+
+    let time = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .expect("Time went backwards");
+
+    Value::Double(time.as_secs_f64())
+}
+
 pub fn readln(args: Vec<Value>) -> Value {
     if args.len() != 0 {
         panic!("readln expected 0 arguments");
@@ -65,7 +76,7 @@ pub fn tostr(args: Vec<Value>) -> Value {
     }
     let arg = &args[0];
     let result = match arg {
-        Value::Float(val) => val.to_string(),
+        Value::Double(val) => val.to_string(),
         Value::Bool(val) => val.to_string(),
         Value::String(val) => val.clone(),
         Value::None() => String::from("None"),
@@ -105,13 +116,8 @@ pub fn get_builtin_functions() -> HashMap<String, BuiltInFunction> {
             String::from("readln"),
             BuiltInFunction::new(Box::new(readln)),
         ),
-        (   
-            String::from("wait"), 
-            BuiltInFunction::new(Box::new(wait))
-        ),
-        (   
-            String::from("tostr"), 
-            BuiltInFunction::new(Box::new(tostr))
-        ),
+        (String::from("wait"), BuiltInFunction::new(Box::new(wait))),
+        (String::from("tostr"), BuiltInFunction::new(Box::new(tostr))),
+        (String::from("time"), BuiltInFunction::new(Box::new(time))),
     ])
 }

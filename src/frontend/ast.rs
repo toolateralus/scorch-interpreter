@@ -131,7 +131,7 @@ pub enum Node {
         assignment: bool,
     },
     Int(i32),
-    Float(f64),
+    Double(f64),
 }
 impl Node {
     pub fn accept<T>(&self, visitor: &mut dyn Visitor<T>) -> T {
@@ -169,7 +169,7 @@ impl Node {
                 assignment: _,
             } => visitor.visit_array_access(self),
             Node::Int(_) => visitor.visit_number(self),
-            Node::Float(_) => visitor.visit_number(self),
+            Node::Double(_) => visitor.visit_number(self),
         }
     }
 }

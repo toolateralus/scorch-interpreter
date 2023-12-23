@@ -24,10 +24,10 @@ impl Interpreter {
                 }
             }
             None => {
-                let val = Value::Float(0.0);
+                let val = Value::Double(0.0);
 
                 let var = Rc::new(Variable::from(
-                    "Float".to_string(),
+                    "Double".to_string(),
                     true,
                     val,
                     self.type_checker.clone(),
@@ -36,9 +36,9 @@ impl Interpreter {
                 self.context.insert_variable(&id, var);
             }
         }
-        
+
         let mut iter: usize = 0;
-        
+
         loop {
             let condition_result = match condition.as_ref() {
                 Some(expression) => {
@@ -50,13 +50,15 @@ impl Interpreter {
                 }
                 None => panic!("Expected condition in conditional repeat statement"),
             };
-            
+
             if condition_result {
                 let result = block.accept(self);
                 match result {
-                    Value::Int(..) | Value::Float(..) | Value::Bool(_) | Value::Function(_) | Value::String(_) => {
-                        return result
-                    }
+                    Value::Int(..)
+                    | Value::Double(..)
+                    | Value::Bool(_)
+                    | Value::Function(_)
+                    | Value::String(_) => return result,
                     Value::Return(value) => {
                         if let Some(val) = value {
                             return *val;
@@ -64,22 +66,19 @@ impl Interpreter {
                             return Value::None();
                         }
                     }
-                    _ => {
-                        
-                    }
+                    _ => {}
                 }
-                
             } else {
                 return Value::None();
             }
             self.context.variables.remove(id);
-            
+
             iter += 1;
-            
+
             let value = Value::Int(iter as i32);
-            
+
             let typename = "Int".to_string();
-            
+
             // todo: fix this terrible variable stuff.
             // should we floor this here?
             let variable = Rc::new(Variable::from(
@@ -88,7 +87,7 @@ impl Interpreter {
                 value,
                 self.type_checker.clone(),
             ));
-            
+
             self.context.insert_variable(&id, variable);
         }
     }
@@ -155,7 +154,21 @@ impl Interpreter {
                 panic!("Expected binary operation node");
             }
         }
-        Value::Float(result)
+        Value::Double(result)
+    }
+    pub fn bin_op_int(&mut self, node: &Node, lhs: &i32, rhs: &i32) -> Value {
+        let result: i32;
+        match node {
+            Node::AddOp(_, _) => result = lhs + rhs,
+            Node::SubOp(_, _) => result = lhs - rhs,
+            Node::MulOp(_, _) => result = lhs * rhs,
+            Node::DivOp(_, _) => result = lhs / rhs,
+            _ => {
+                dbg!(node);
+                panic!("Expected binary operation node");
+            }
+        }
+        Value::Int(result)
     }
     pub fn bin_op_string(&mut self, node: &Node, lhs: &String, rhs: &String) -> Value {
         let result: String;

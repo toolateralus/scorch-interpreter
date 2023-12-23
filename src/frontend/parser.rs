@@ -108,11 +108,11 @@ pub fn prs_fn_decl(
 }
 pub fn create_default_value_for_type(target_type: &String, mutable: bool) -> Node {
     let default_value_expression = match target_type.as_str() {
-        "Float" => Node::Expression(Box::new(Node::Float(0.0))),
+        "Double" => Node::Expression(Box::new(Node::Double(0.0))),
         "Int" => Node::Expression(Box::new(Node::Int(0))),
         "String" => Node::Expression(Box::new(Node::String(String::from("")))),
         "Bool" => Node::Expression(Box::new(Node::Bool(false))),
-        
+
         "Array" => {
             let elements = Vec::new();
             let init_capacity = elements.len();
@@ -902,11 +902,11 @@ fn parse_factor(tokens: &Vec<Token>, index: &mut usize) -> Node {
             TokenKind::Number => {
                 let int = token.value.parse::<i32>();
                 let float = token.value.parse::<f64>();
-                
+
                 if int.is_ok() {
                     return Node::Int(int.unwrap());
-                } else  if float.is_ok() {
-                    return Node::Float(float.unwrap());
+                } else if float.is_ok() {
+                    return Node::Double(float.unwrap());
                 } else {
                     dbg!(token);
                     panic!("Expected number token");
