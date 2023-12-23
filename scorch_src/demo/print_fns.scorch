@@ -1,0 +1,48 @@
+state := -100
+
+invoke_and_print := (Y : Int) {
+    println(main)
+    println('main evaluated to :')
+    if Y == 0 {
+        println(main('hi'))
+    } else Y == 1 {
+        println(main('hiyo'))
+    } else Y == 2 {
+        println(main())
+    } else {
+        println('error : out of bounds!')
+    }
+    println('')
+}
+
+//# explicitly define a var fn that takes a string and returns a bool
+var main : Fn(str: String) -> bool {
+    break state > 250
+}
+
+invoke_and_print(0)
+
+//# this is not allowed. functions that specify their return type
+//# should follow the explicit Fn(..) -> return_type syntax
+ 
+//# main := (str: String) -> bool {
+//#    break state
+//#}
+
+//# however, parameterized functions can have implicit return type
+main := (str: String) {
+    break state > 250
+}
+
+invoke_and_print(1)
+
+//# parameterless void return functions can be shorthanded as such : 
+main := {
+    break -25000 * state
+}
+
+invoke_and_print(2)
+
+repeat i < 250 {
+    println((tostr(i)) + ' farting cows')
+}

@@ -1,5 +1,5 @@
 use core::panic;
-use std::{collections::HashMap, rc::Rc};
+use std::rc::Rc;
 
 use crate::{
     frontend::ast::Node,
@@ -7,7 +7,7 @@ use crate::{
     runtime::types::{Parameter, Value},
 };
 
-use super::types::{BuiltInFunction, Variable};
+use super::types::Variable;
 
 // loops
 impl Interpreter {
@@ -24,10 +24,10 @@ impl Interpreter {
                 }
             }
             None => {
-                let val = Value::Float(0.0);
+                let val = Value::Double(0.0);
 
                 let var = Rc::new(Variable::from(
-                    "Float".to_string(),
+                    "Double".to_string(),
                     true,
                     val,
                     self.type_checker.clone(),
@@ -37,7 +37,7 @@ impl Interpreter {
             }
         }
 
-        let mut iter: f64 = 0.0;
+        let mut iter: usize = 0;
 
         loop {
             let condition_result = match condition.as_ref() {
@@ -54,9 +54,11 @@ impl Interpreter {
             if condition_result {
                 let result = block.accept(self);
                 match result {
-                    Value::Float(..) | Value::Bool(_) | Value::Function(_) | Value::String(_) => {
-                        return result
-                    }
+                    Value::Int(..)
+                    | Value::Double(..)
+                    | Value::Bool(_)
+                    | Value::Function(_)
+                    | Value::String(_) => return result,
                     Value::Return(value) => {
                         if let Some(val) = value {
                             return *val;
@@ -71,11 +73,11 @@ impl Interpreter {
             }
             self.context.variables.remove(id);
 
-            iter += 1.0;
+            iter += 1;
 
-            let value = Value::Float(iter.floor());
+            let value = Value::Int(iter as i32);
 
-            let typename = "Float".to_string();
+            let typename = "Int".to_string();
 
             // todo: fix this terrible variable stuff.
             // should we floor this here?
@@ -152,7 +154,21 @@ impl Interpreter {
                 panic!("Expected binary operation node");
             }
         }
-        Value::Float(result)
+        Value::Double(result)
+    }
+    pub fn bin_op_int(&mut self, node: &Node, lhs: &i32, rhs: &i32) -> Value {
+        let result: i32;
+        match node {
+            Node::AddOp(_, _) => result = lhs + rhs,
+            Node::SubOp(_, _) => result = lhs - rhs,
+            Node::MulOp(_, _) => result = lhs * rhs,
+            Node::DivOp(_, _) => result = lhs / rhs,
+            _ => {
+                dbg!(node);
+                panic!("Expected binary operation node");
+            }
+        }
+        Value::Int(result)
     }
     pub fn bin_op_string(&mut self, node: &Node, lhs: &String, rhs: &String) -> Value {
         let result: String;

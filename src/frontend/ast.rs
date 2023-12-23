@@ -35,7 +35,6 @@ pub enum Node {
 
     // literal & values
     Undefined(),
-    Number(f64),
     String(String),
     Identifier(String),
     Bool(bool),
@@ -131,13 +130,14 @@ pub enum Node {
         expression: Option<Box<Node>>,
         assignment: bool,
     },
+    Int(i32),
+    Double(f64),
 }
 impl Node {
     pub fn accept<T>(&self, visitor: &mut dyn Visitor<T>) -> T {
         match self {
             Node::Undefined() => visitor.visit_eof(self),
             Node::Identifier(..) => visitor.visit_identifier(self),
-            Node::Number(..) => visitor.visit_number(self),
             Node::AddOp(..) => visitor.visit_binary_op(self),
             Node::SubOp(..) => visitor.visit_binary_op(self),
             Node::MulOp(..) => visitor.visit_binary_op(self),
@@ -168,6 +168,8 @@ impl Node {
                 expression: _,
                 assignment: _,
             } => visitor.visit_array_access(self),
+            Node::Int(_) => visitor.visit_number(self),
+            Node::Double(_) => visitor.visit_number(self),
         }
     }
 }

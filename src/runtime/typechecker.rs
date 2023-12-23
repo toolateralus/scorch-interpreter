@@ -18,11 +18,21 @@ impl TypeChecker {
         Self {
             types: HashMap::from([
                 (
-                    String::from("Float"),
+                    String::from("Int"),
                     Type {
-                        name: String::from("Float"),
+                        name: String::from("Int"),
                         validator: Box::new(|v| match v {
-                            Value::Float(_) => true,
+                            Value::Int(..) => true,
+                            _ => false,
+                        }),
+                    },
+                ),
+                (
+                    String::from("Double"),
+                    Type {
+                        name: String::from("Double"),
+                        validator: Box::new(|v| match v {
+                            Value::Double(_) => true,
                             _ => false,
                         }),
                     },
@@ -110,16 +120,19 @@ impl TypeChecker {
 }
 pub fn get_type_name<'a>(arg: &'a Value) -> &'a str {
     let arg_type_name = match arg {
-        Value::Float(_) => "Float",
+        Value::Int(..) => "Int",
+        Value::Double(_) => "Double",
         Value::Bool(_) => "Bool",
         Value::String(_) => "String",
         Value::None() => "None",
         Value::Array(..) | Value::List(..) => "Array",
         Value::Function(_func) => "Fn",
-        _ => {
-            dbg!(arg);
-            panic!("invalid argument type")
-        }
+        Value::Return(_) => todo!(),
+        // not yet implemented
+        Value::Struct {
+            name: _,
+            context: _,
+        } => todo!(),
     };
     arg_type_name
 }
