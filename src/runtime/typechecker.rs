@@ -1,76 +1,97 @@
 use crate::runtime::types::Value;
-use std::{collections::HashMap, rc::Rc, cell::RefCell};
+use std::{collections::HashMap, rc::Rc};
 
 use super::types::Variable;
 
 #[derive(Debug, Clone)]
 pub struct Type {
     pub name: String,
-    pub validator: Box<fn(Value) -> bool>,
+    pub validator: Box<fn(&Value) -> bool>,
+}
+
+impl Type {
+    pub fn validate(&self, val: &Value) -> bool {
+        (self.validator)(val)
+    }
 }
 
 #[derive(Debug, Clone)]
 pub struct TypeChecker {
-    types: HashMap<String, Rc<RefCell<Type>>>,
+    types: HashMap<String, Rc<Type>>,
 }
 impl TypeChecker {
-    pub fn create(name : String, validator : Box<fn(Value) -> bool>) -> Rc<RefCell<Type>> {
-        Rc::new(RefCell::new(Type {
-            name,
-            validator,
-        }))
-    }
     pub fn new() -> Self {
         Self {
             types: HashMap::from([
                 (
                     String::from("Int"),
-                    Self::create(String::from("Int"), Box::new(|v| match v {
-                        Value::Int(..) => true,
-                        _ => false,
-                    })),
+                    Rc::new(Type {
+                        name: String::from("Int"),
+                        validator: Box::new(|v| match v {
+                            Value::Int(..) => true,
+                            _ => false,
+                        }),
+                    }),
                 ),
                 (
                     String::from("Double"),
-                    Self::create(String::from("Double"), Box::new(|v| match v {
-                        Value::Double(_) => true,
-                        _ => false,
-                    })),
+                    Rc::new(Type {
+                        name: String::from("Double"),
+                        validator: Box::new(|v| match v {
+                            Value::Double(_) => true,
+                            _ => false,
+                        }),
+                    }),
                 ),
                 (
                     String::from("Dynamic"),
-                    Self::create(String::from("Dynamic"), Box::new(|v| match v {
-                        _ => true, // :D
-                    })),
+                    Rc::new(Type {
+                        name: String::from("Dynamic"),
+                        validator: Box::new(|v| match v {
+                            _ => true, // :D
+                        }),
+                    }),
                 ),
                 (
                     String::from("String"),
-                    Self::create(String::from("String"), Box::new(|v| match v {
-                        Value::String(_) => true,
-                        _ => false,
-                    })),
+                    Rc::new(Type {
+                        name: String::from("String"),
+                        validator: Box::new(|v| match v {
+                            Value::String(_) => true,
+                            _ => false,
+                        }),
+                    }),
                 ),
                 (
                     String::from("Bool"),
-                    Self::create(String::from("Bool"), Box::new(|v| match v {
-                        Value::Bool(_) => true,
-                        _ => false,
-                    })),
+                    Rc::new(Type {
+                        name: String::from("Bool"),
+                        validator: Box::new(|v| match v {
+                            Value::Bool(_) => true,
+                            _ => false,
+                        }),
+                    }),
                 ),
                 (
                     String::from("Array"),
-                    Self::create(String::from("Array"), Box::new(|v| match v {
-                        Value::Array(..) => true,
-                        Value::List(..) => true,
-                        _ => false,
-                    })),
+                    Rc::new(Type {
+                        name: String::from("Array"),
+                        validator: Box::new(|v| match v {
+                            Value::Array(..) => true,
+                            Value::List(..) => true,
+                            _ => false,
+                        }),
+                    }),
                 ),
                 (
                     String::from("Fn"),
-                    Self::create(String::from("Fn"), Box::new(|v| match v {
-                        Value::Function(..) => true,
-                        _ => false,
-                    })),
+                    Rc::new(Type {
+                        name: String::from("Fn"),
+                        validator: Box::new(|v| match v {
+                            Value::Function(..) => true,
+                            _ => false,
+                        }),
+                    }),
                 ),
             ]),
         }
@@ -78,32 +99,20 @@ impl TypeChecker {
 }
 
 impl TypeChecker {
-    pub fn validate(val: &Variable, _struct_name: Option<&String>) -> bool {
-        let typename = &val.typename;
-
-        // temporarily, while we have no Dynamic types due to no structs.
-        if typename == "Dynamic" {
-            return true;
-        }
-
-        let t = val.type_.clone();
-
-        // invoke type validation function
-        let type_valid = (t.try_borrow().unwrap().validator)(val.value.clone());
-
-        type_valid && typename == get_type_name(&val.value)
+    pub fn validate(val: &Variable) -> bool {
+        val.m_type.validate(&val.value)
     }
-    pub fn set(&mut self, name: &String, type_: Type) -> () {
-        self.types.insert(name.clone(), Rc::new(RefCell::new(type_)));
+    pub fn _set(&mut self, name: &String, type_: Type) -> () {
+        self.types.insert(name.clone(), Rc::new(type_));
     }
-    pub fn get(&self, name: &str) -> Option<Rc<RefCell<Type>>> {
+    pub fn get(&self, name: &str) -> Option<Rc<Type>> {
         match self.types.get(name) {
-            Some(typeref) => Some(typeref.clone()),
+            Some(t) => Some(Rc::clone(t)),
             None => None,
         }
     }
 }
-pub fn get_type_name<'a>(arg: &'a Value) -> &'a str {
+pub fn _get_type_name<'a>(arg: &'a Value) -> &'a str {
     let arg_type_name = match arg {
         Value::Int(..) => "Int",
         Value::Double(_) => "Double",
