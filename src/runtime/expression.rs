@@ -26,7 +26,7 @@ impl Interpreter {
             None => {
                 let val = Value::Double(0.0);
 
-                let var = Rc::new(Variable::from(
+                let var = Rc::new(Variable::new(
                     "Double".to_string(),
                     true,
                     val,
@@ -81,7 +81,7 @@ impl Interpreter {
 
             // todo: fix this terrible variable stuff.
             // should we floor this here?
-            let variable = Rc::new(Variable::from(
+            let variable = Rc::new(Variable::new(
                 typename,
                 true,
                 value,

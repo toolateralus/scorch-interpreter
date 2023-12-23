@@ -57,18 +57,19 @@ pub struct Variable {
     pub type_: Rc<RefCell<Type>>,
 }
 impl Variable {
-    pub fn from(tname: String, mutable: bool, value: Value, checker: TypeChecker) -> Self {
-        let t = checker.get(tname.as_str());
-
-        if t.is_none() {
-            panic!("Type {} does not exist", tname);
+    pub fn new(typename: String, mutable: bool, value: Value, checker: TypeChecker) -> Self {
+        let type_option = checker.get(typename.as_str());
+        
+        // type checker failed.
+        if type_option.is_none() {
+            panic!("Type {} does not exist", typename);
         }
-
+        
         Variable {
-            typename: tname,
+            typename,
             mutable,
             value,
-            type_: Rc::new(RefCell::new(t.unwrap())),
+            type_: type_option.unwrap(),
         }
     }
 }

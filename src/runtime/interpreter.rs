@@ -21,7 +21,7 @@ impl Interpreter {
             type_checker: TypeChecker::new(),
         }
     }
-
+    
     fn try_find_and_execute_fn(
         &mut self,
         arguments: &Option<Vec<Node>>,
@@ -63,7 +63,7 @@ impl Interpreter {
             } else {
                 self.context.insert_variable(
                     &param.name,
-                    Rc::new(Variable::from(
+                    Rc::new(Variable::new(
                         param.typename.clone(),
                         false,
                         arg.clone(),
@@ -108,7 +108,7 @@ impl Visitor<Value> for Interpreter {
             Node::Block(statements) => statements,
             _ => panic!("Expected Block node"),
         };
-
+        
         for statement in statements {
             let value = statement.accept(self);
             match value {
@@ -195,7 +195,7 @@ impl Visitor<Value> for Interpreter {
             match target_type.as_str() {
                 "Dynamic" | "Double" | "Int" | "String" | "Bool" | "Struct" | "Array" => {
                     value = expression.accept(self);
-                    var = Variable::from(
+                    var = Variable::new(
                         target_type.clone(),
                         mutability,
                         value,
@@ -250,7 +250,7 @@ impl Visitor<Value> for Interpreter {
                             panic!("Cannot assign to immutable variable");
                         }
 
-                        *value = Rc::new(Variable::from(
+                        *value = Rc::new(Variable::new(
                             value.typename.clone(),
                             value.mutable,
                             val,
@@ -590,7 +590,7 @@ impl Visitor<Value> for Interpreter {
             let mut values = Vec::with_capacity(len);
             for value in elements {
                 let val = value.accept(self);
-                let var = Variable::from(
+                let var = Variable::new(
                     typename.clone(),
                     *elements_mutable,
                     val,
@@ -663,7 +663,7 @@ impl Visitor<Value> for Interpreter {
                 dbg!(&element);
                 panic!("invalid type");
             }
-            let var2 = Variable::from(
+            let var2 = Variable::new(
                 var.typename.clone(),
                 var.mutable,
                 Value::Array(mutable, elements),

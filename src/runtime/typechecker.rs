@@ -1,5 +1,5 @@
 use crate::runtime::types::Value;
-use std::collections::HashMap;
+use std::{collections::HashMap, rc::Rc, cell::RefCell};
 
 use super::types::Variable;
 
@@ -11,81 +11,66 @@ pub struct Type {
 
 #[derive(Debug, Clone)]
 pub struct TypeChecker {
-    types: HashMap<String, Type>,
+    types: HashMap<String, Rc<RefCell<Type>>>,
 }
 impl TypeChecker {
+    pub fn create(name : String, validator : Box<fn(Value) -> bool>) -> Rc<RefCell<Type>> {
+        Rc::new(RefCell::new(Type {
+            name,
+            validator,
+        }))
+    }
     pub fn new() -> Self {
         Self {
             types: HashMap::from([
                 (
                     String::from("Int"),
-                    Type {
-                        name: String::from("Int"),
-                        validator: Box::new(|v| match v {
-                            Value::Int(..) => true,
-                            _ => false,
-                        }),
-                    },
+                    Self::create(String::from("Int"), Box::new(|v| match v {
+                        Value::Int(..) => true,
+                        _ => false,
+                    })),
                 ),
                 (
                     String::from("Double"),
-                    Type {
-                        name: String::from("Double"),
-                        validator: Box::new(|v| match v {
-                            Value::Double(_) => true,
-                            _ => false,
-                        }),
-                    },
+                    Self::create(String::from("Double"), Box::new(|v| match v {
+                        Value::Double(_) => true,
+                        _ => false,
+                    })),
                 ),
                 (
                     String::from("Dynamic"),
-                    Type {
-                        name: String::from("Dynamic"),
-                        validator: Box::new(|v| match v {
-                            _ => true, // :D
-                        }),
-                    },
+                    Self::create(String::from("Dynamic"), Box::new(|v| match v {
+                        _ => true, // :D
+                    })),
                 ),
                 (
                     String::from("String"),
-                    Type {
-                        name: String::from("String"),
-                        validator: Box::new(|v| match v {
-                            Value::String(_) => true,
-                            _ => false,
-                        }),
-                    },
+                    Self::create(String::from("String"), Box::new(|v| match v {
+                        Value::String(_) => true,
+                        _ => false,
+                    })),
                 ),
                 (
                     String::from("Bool"),
-                    Type {
-                        name: String::from("Bool"),
-                        validator: Box::new(|v| match v {
-                            Value::Bool(_) => true,
-                            _ => false,
-                        }),
-                    },
+                    Self::create(String::from("Bool"), Box::new(|v| match v {
+                        Value::Bool(_) => true,
+                        _ => false,
+                    })),
                 ),
                 (
                     String::from("Array"),
-                    Type {
-                        name: String::from("Array"),
-                        validator: Box::new(|v| match v {
-                            Value::Array(..) => true,
-                            Value::List(..) => true,
-                            _ => false,
-                        }),
-                    },
+                    Self::create(String::from("Array"), Box::new(|v| match v {
+                        Value::Array(..) => true,
+                        Value::List(..) => true,
+                        _ => false,
+                    })),
                 ),
                 (
                     String::from("Fn"),
-                    Type {
-                        name: String::from("Fn"),
-                        validator: Box::new(|v| match v {
-                            Value::Function(..) => true,
-                            _ => false,
-                        }),
-                    },
+                    Self::create(String::from("Fn"), Box::new(|v| match v {
+                        Value::Function(..) => true,
+                        _ => false,
+                    })),
                 ),
             ]),
         }
@@ -109,11 +94,11 @@ impl TypeChecker {
         type_valid && typename == get_type_name(&val.value)
     }
     pub fn set(&mut self, name: &String, type_: Type) -> () {
-        self.types.insert(name.clone(), type_);
+        self.types.insert(name.clone(), Rc::new(RefCell::new(type_)));
     }
-    pub fn get(&self, name: &str) -> Option<Type> {
+    pub fn get(&self, name: &str) -> Option<Rc<RefCell<Type>>> {
         match self.types.get(name) {
-            Some(t) => Some(t.clone()),
+            Some(typeref) => Some(typeref.clone()),
             None => None,
         }
     }
