@@ -448,7 +448,6 @@ impl Visitor<Value> for Interpreter {
                     panic!("Expected Identifier node");
                 };
                 
-                
                 let Node::Expression(root) = rhs.as_ref() else {
                     dbg!(node);
                     panic!("Expected Expression node");
@@ -619,7 +618,7 @@ impl Visitor<Value> for Interpreter {
             panic!("Expected List node");
         }
     }
-
+    
     fn visit_array_access(&mut self, node: &Node) -> Value {
         let (id, index, expression, assignment) = match node {
             Node::ArrayAccessExpr {
