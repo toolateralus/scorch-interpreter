@@ -23,6 +23,7 @@ pub fn create_tokenizer() -> Tokenizer {
         (String::from(">"), TokenKind::RightAngle),
         (String::from("&&"), TokenKind::LogicalAnd),
         (String::from("||"), TokenKind::LogicalOr),
+        (String::from("."), TokenKind::Dot),
         (String::from("=>"), TokenKind::Lambda),
         (String::from("+"), TokenKind::Add),
         (String::from("-"), TokenKind::Subtract),
@@ -31,7 +32,7 @@ pub fn create_tokenizer() -> Tokenizer {
         (String::from("%"), TokenKind::Modulo),
         (String::from("!"), TokenKind::Not),
     ]);
-
+    
     let keywords = HashMap::from([
         (String::from("const"), TokenKind::Const),
         (String::from("var"), TokenKind::Var),
@@ -119,7 +120,8 @@ pub enum TokenKind {
     Break,
     Const,
     Var,
-    Arrow, // ::
+    Arrow,
+    Dot, // ::
 }
 #[derive(Debug, Clone)]
 pub struct Token {
@@ -168,6 +170,9 @@ impl TokenProcessor for Tokenizer {
             let mut current = self.source.chars().nth(self.index).unwrap();
             let mut size_at_last_newline = 0;
             if current == '\'' || current == '\"' {
+                
+                let start = current;
+                
                 let mut string = String::new();
                 loop {
                     if current == '\n' || current == '\r' {
@@ -178,7 +183,7 @@ impl TokenProcessor for Tokenizer {
                     if !self.consume(&mut current) {
                         panic!("Expected end of string.");
                     }
-                    if current == '\'' || current == '\"' {
+                    if current == start {
                         self.index += 1;
                         self.column += 1;
                         break;
@@ -219,7 +224,7 @@ impl TokenProcessor for Tokenizer {
                 let mut digit: String = String::new();
                 digit.push(current);
                 while self.consume(&mut current) {
-                    if current.is_digit(10) || current == '.' {
+                    if current.is_digit(10) || (self.index + 1 < self.length && current == '.' && self.source.chars().nth(self.index + 1).unwrap().is_digit(10)){
                         digit.push(current);
                     } else {
                         break;

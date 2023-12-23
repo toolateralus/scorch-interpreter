@@ -45,6 +45,7 @@ impl Interpreter {
                     if let Value::Bool(val) = expression.accept(self) {
                         val
                     } else {
+                        dbg!(expression);
                         panic!("Expected boolean condition");
                     }
                 }

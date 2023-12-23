@@ -132,6 +132,7 @@ pub enum Node {
     },
     Int(i32),
     Double(f64),
+    DotOp { lhs: Box<Node>, op: TokenKind, rhs: Box<Node> },
 }
 impl Node {
     pub fn accept<T>(&self, visitor: &mut dyn Visitor<T>) -> T {
@@ -170,6 +171,7 @@ impl Node {
             } => visitor.visit_array_access(self),
             Node::Int(_) => visitor.visit_number(self),
             Node::Double(_) => visitor.visit_number(self),
+            Node::DotOp { lhs, op, rhs } => visitor.visit_binary_op(self),
         }
     }
 }

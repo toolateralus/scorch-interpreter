@@ -725,6 +725,11 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
                     let node = parse_array_access(index, tokens, &first.value).unwrap();
                     return Ok(node);
                 }
+                TokenKind::Dot => {
+                    *index += 2; 
+                    let node = parse_dot_op(index, tokens, &first.value);
+                    return Ok(node);
+                }
                 _ => {}
             }
             parse_decl(first, index, tokens, false) // default immutability
@@ -745,6 +750,14 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
     }
 }
 
+fn parse_dot_op(index: &mut usize, tokens: &Vec<Token>, lhs: &String) -> Node {
+    Node::DotOp {
+        lhs: Box::new(Node::Identifier(lhs.clone())),
+        op: TokenKind::Dot,
+        rhs: Box::new(parse_expression(tokens, index)),
+    }
+}
+
 fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Node {
     let mut left = parse_logical_expr(tokens, index);
     loop {
@@ -760,7 +773,7 @@ fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Node {
                 };
             }
             TokenKind::OpenParenthesis => {
-                if let Node::Identifier(id) = left {
+                if let Node::Identifier(id) = &left {   
                     match parse_fn_call(index, tokens, &id) {
                         Ok(node) => {
                             left = node;
@@ -771,8 +784,6 @@ fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Node {
                             panic!("Expected function call node");
                         }
                     }
-                } else {
-                    panic!("Expected identifier token");
                 }
             }
 

@@ -1,4 +1,6 @@
+use std::borrow::Borrow;
 use std::collections::HashMap;
+use std::ops::Deref;
 use std::rc::Rc;
 
 use crate::frontend::ast::*;
@@ -26,10 +28,9 @@ impl Interpreter {
         &mut self,
         arguments: &Option<Vec<Node>>,
         id: &String,
-        node: &Node,
     ) -> Value {
         let args = Function::extract_args(self, arguments, &self.context.clone());
-
+        
         // builtin functions
         let function = if self.builtin.contains_key(id) {
             let builtin = self.builtin.get_mut(id).unwrap();
@@ -44,10 +45,9 @@ impl Interpreter {
                 _ => panic!("Expected function"),
             }
         } else {
-            dbg!(node);
             panic!("Function not found");
         };
-
+        
         if function.params.len() + args.len() == 0 {
             return function.body.accept(self);
         }
@@ -465,6 +465,36 @@ impl Visitor<Value> for Interpreter {
 
     fn visit_binary_op(&mut self, node: &Node) -> Value {
         match node {
+            Node::DotOp { lhs, op, rhs } => {
+                let mut result = Value::None();
+                let Node::Identifier(id) = lhs.as_ref() else {
+                    dbg!(node);
+                    panic!("Expected Identifier node");
+                };
+                
+                
+                let Node::Expression(root) = rhs.as_ref() else {
+                    dbg!(node);
+                    panic!("Expected Expression node");
+                };
+                
+                let Node::FunctionCall { id: func_id, arguments } = root.as_ref() else {
+                    dbg!(node);
+                    panic!("Expected FunctionCall node");
+                };
+                
+                let Some(argus) = arguments else {
+                    dbg!(node);
+                    panic!("Expected arguments");
+                };
+                
+                let mut argus = argus.clone();
+                argus.insert(0, Node::Identifier(id.clone()));
+                
+                self.try_find_and_execute_fn(&Some(argus), func_id);
+                
+                result
+            },
             Node::AddOp(lhs, rhs)
             | Node::SubOp(lhs, rhs)
             | Node::MulOp(lhs, rhs)
@@ -515,7 +545,7 @@ impl Visitor<Value> for Interpreter {
             Node::FunctionCall { id, arguments } => (id, arguments),
             _ => return Value::None(),
         };
-        self.try_find_and_execute_fn(arguments, id, node)
+        self.try_find_and_execute_fn(arguments, id)
     }
     fn visit_function_decl(&mut self, node: &Node) -> Value {
         if let Node::FnDeclStmnt {

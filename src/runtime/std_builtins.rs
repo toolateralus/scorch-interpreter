@@ -48,18 +48,60 @@ pub fn wait(args: Vec<Value>) -> Value {
     }
     Value::None()
 }
+pub fn length(args: Vec<Value>) -> Value {
+    if args.len() != 1 {
+        panic!("length takes one array argument");
+    }
+    let arg = &args[0];
+    
+    match arg {
+        Value::Array(_, elements) => {
+            return Value::Int(elements.len() as i32);
+        }
+        _ => {
+            panic!("Cannot get length of value");
+        }
+    }
+}
 pub fn time(args: Vec<Value>) -> Value {
     if args.len() != 0 {
         panic!("time expected 0 arguments");
     }
-
+    
     let time = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .expect("Time went backwards");
-
+    
     Value::Double(time.as_secs_f64())
 }
-
+pub fn assert_eq(args: Vec<Value>) -> Value {
+    if args.len() != 3 {
+        panic!("assert expected 3 arguments");
+    }
+    let message = args[2].as_string().unwrap();
+    
+    let are_equal = match (&args[0], &args[1]) {
+        (Value::None(), Value::None()) => true,
+        (Value::Int(lhs_val), Value::Int(rhs_val)) => lhs_val == rhs_val,
+        (Value::Double(lhs_val), Value::Double(rhs_val)) => lhs_val == rhs_val,
+        (Value::Bool(lhs_val), Value::Bool(rhs_val)) => lhs_val == rhs_val,
+        (Value::String(lhs_val), Value::String(rhs_val)) => lhs_val == rhs_val,
+        _ => {
+            false
+        }
+    };
+    assert!(are_equal, "{}", message);
+    Value::None()
+}
+pub fn assert(args: Vec<Value>) -> Value {
+    if args.len() != 2 {
+        panic!("assert expected 2 or 3 arguments");
+    }
+    let condition = args[0].as_bool().unwrap();
+    let message = args[1].as_string().unwrap();
+    assert!(condition, "{}", message);
+    Value::None()
+}
 pub fn readln(args: Vec<Value>) -> Value {
     if args.len() != 0 {
         panic!("readln expected 0 arguments");
@@ -119,5 +161,8 @@ pub fn get_builtin_functions() -> HashMap<String, BuiltInFunction> {
         (String::from("wait"), BuiltInFunction::new(Box::new(wait))),
         (String::from("tostr"), BuiltInFunction::new(Box::new(tostr))),
         (String::from("time"), BuiltInFunction::new(Box::new(time))),
+        (String::from("assert"), BuiltInFunction::new(Box::new(assert))),
+        (String::from("assert_eq"), BuiltInFunction::new(Box::new(assert_eq))),
+        (String::from("len"), BuiltInFunction::new(Box::new(length))),
     ])
 }
