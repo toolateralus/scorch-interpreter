@@ -1,5 +1,5 @@
 use crate::runtime::types::Value;
-use std::collections::HashMap;
+use std::{collections::HashMap, rc::Rc};
 
 #[test]
 fn if_else_statements() {
@@ -38,8 +38,8 @@ fn loops() {
 #[test]
 fn functions() {
     let ctx = super::execute_from_file(String::from("scorch_src/unit_tests/functions.scorch"));
-    let status = ctx.variables["status"].clone();
-    if let Value::String(str_status) = status.value.clone() {
+    let status = Rc::clone(&ctx.variables["status"]);
+    if let Value::String(str_status) = &status.value {
         assert!(str_status == "passed", "test failed: {}", str_status);
     }
 }

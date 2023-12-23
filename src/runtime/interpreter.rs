@@ -34,14 +34,14 @@ impl Interpreter {
         // builtin functions
         if self.builtin.contains_key(id) {
             let builtin = self.builtin.get_mut(id).unwrap();
-            return builtin.call(args.clone());
+            return builtin.call(args);
         }
         
         // function pointer
         let Some(fn_ptr) = self.context.find_variable(id) else {
             panic!("Function not found");
         };
-        let function = match fn_ptr.value.clone() {
+        let function = match &fn_ptr.value {
             Value::Function(func) => func.clone(),
             _ => panic!("Expected function"),
         };
@@ -71,6 +71,36 @@ impl Interpreter {
         }
 
         Value::None()
+    }
+
+    fn dot_op(&mut self, lhs: &Box<Node>, rhs: &Box<Node>) -> Value {
+        let result = Value::None();
+        let Node::Identifier(id) = lhs.as_ref() else {
+            dbg!(lhs, rhs);
+            panic!("Expected Identifier node");
+        };
+                
+        let Node::Expression(root) = rhs.as_ref() else {
+            dbg!(lhs, rhs);
+            panic!("Expected Expression node");
+        };
+                
+        let Node::FunctionCall { id: func_id, arguments } = root.as_ref() else {
+            dbg!(lhs, rhs);
+            panic!("Expected FunctionCall node");
+        };
+                
+        let Some(argus) = arguments else {
+            dbg!(lhs, rhs);
+            panic!("Expected arguments");
+        };
+                
+        let mut argus = argus.clone();
+        argus.insert(0, Node::Identifier(id.clone()));
+                
+        self.try_find_and_execute_fn(&Some(argus), func_id);
+                
+        result
     }
 }
 
@@ -442,33 +472,7 @@ impl Visitor<Value> for Interpreter {
     fn visit_binary_op(&mut self, node: &Node) -> Value {
         match node {
             Node::DotOp { lhs, op, rhs } => {
-                let mut result = Value::None();
-                let Node::Identifier(id) = lhs.as_ref() else {
-                    dbg!(node);
-                    panic!("Expected Identifier node");
-                };
-                
-                let Node::Expression(root) = rhs.as_ref() else {
-                    dbg!(node);
-                    panic!("Expected Expression node");
-                };
-                
-                let Node::FunctionCall { id: func_id, arguments } = root.as_ref() else {
-                    dbg!(node);
-                    panic!("Expected FunctionCall node");
-                };
-                
-                let Some(argus) = arguments else {
-                    dbg!(node);
-                    panic!("Expected arguments");
-                };
-                
-                let mut argus = argus.clone();
-                argus.insert(0, Node::Identifier(id.clone()));
-                
-                self.try_find_and_execute_fn(&Some(argus), func_id);
-                
-                result
+                self.dot_op(lhs, rhs)
             },
             Node::AddOp(lhs, rhs)
             | Node::SubOp(lhs, rhs)

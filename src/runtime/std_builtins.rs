@@ -11,12 +11,12 @@ pub fn print_ln(args: Vec<Value>) -> Value {
             Value::String(val) => print!("{}\n", val),
             Value::None() => print!("{:?}", Value::None()),
             Value::Function(_) => {
-                let newargs = Vec::from([arg.clone()]);
+                let newargs = Vec::from([arg]);
                 return tostr(newargs);
             }
             Value::Array(mutable, elements) => {
                 let mutable_str = if mutable { "mutable" } else { "immutable" };
-
+                
                 println!("{} array, length {}", mutable_str, elements.len());
 
                 for element in elements.iter() {

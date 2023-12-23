@@ -3,7 +3,7 @@ use std::{collections::HashMap, rc::Rc};
 
 use super::types::Variable;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Type {
     pub name: String,
     pub validator: Box<fn(&Value) -> bool>,
@@ -15,7 +15,6 @@ impl Type {
     }
 }
 
-#[derive(Debug, Clone)]
 pub struct TypeChecker {
     types: HashMap<String, Rc<Type>>,
 }
