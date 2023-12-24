@@ -111,6 +111,9 @@ impl TypeChecker {
             None => None,
         }
     }
+    pub fn from_value(&self, val: &Value) -> Option<Rc<Type>> {
+        self.get(_get_type_name(val))
+    }
 }
 pub fn _get_type_name<'a>(arg: &'a Value) -> &'a str {
     let arg_type_name = match arg {

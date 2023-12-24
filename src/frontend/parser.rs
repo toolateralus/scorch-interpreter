@@ -179,20 +179,13 @@ pub fn parse_array_initializer(tokens: &Vec<Token>, index: &mut usize) -> Vec<Bo
 }
 pub fn parse_array_access(index: &mut usize, tokens: &Vec<Token>, id: &str) -> Result<Node, ()> {
     let accessor = parse_expression(tokens, index);
-    let mut token = get_current(tokens, index);
+    let mut token = consume_newlines(index, tokens);
 
     if token.kind == TokenKind::CloseBracket {
         *index += 1; // move past ]
         token = get_current(tokens, index);
     }
-
-    if token.kind == TokenKind::Newline {
-        *index += 1; // move past \n
-        _ = consume_newlines(index, tokens);
-    }
-
-    token = get_current(tokens, index);
-
+    
     let mut node = Node::ArrayAccessExpr {
         id: id.to_string(),
         index_expr: Box::new(accessor),
@@ -203,7 +196,7 @@ pub fn parse_array_access(index: &mut usize, tokens: &Vec<Token>, id: &str) -> R
     if token.kind != TokenKind::Assignment {
         return Ok(node);
     }
-
+    
     match token.kind {
         TokenKind::Assignment => {
             *index += 1;
@@ -235,7 +228,7 @@ pub fn get_current<'a>(tokens: &'a Vec<Token>, index: &mut usize) -> &'a Token {
 }
 pub fn consume_newlines<'a>(index: &mut usize, tokens: &'a Vec<Token>) -> &'a Token {
     let mut current = get_current(tokens, index);
-    while *index + 1 < tokens.len() && current.kind == TokenKind::Newline {
+    while current.kind == TokenKind::Newline {
         *index += 1;
         current = get_current(tokens, index);
     }

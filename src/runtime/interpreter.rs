@@ -607,13 +607,15 @@ impl Visitor<Value> for Interpreter {
             let mut values = Vec::with_capacity(len);
             for value in elements {
                 let val = value.accept(self);
-                let Some(m_type) = self.type_checker.get(typename) else {
-                    panic!("{} not a valid type", typename);
+				// TODO curently not checking if type is valid 
+                let Some(m_type) = self.type_checker.from_value(&val) else {
+					dbg!(&node);
+                    panic!("{:?} doesn't match to a valid type", val);
                 };
                 let var = Variable::new(*elements_mutable, val, m_type);
                 values.push(var);
             }
-
+            
             return Value::Array(*mutability, values);
         } else {
             panic!("Expected List node");
