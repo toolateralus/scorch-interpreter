@@ -4,6 +4,7 @@ use std::rc::Rc;
 use crate::frontend::ast::*;
 use crate::frontend::tokens::*;
 
+use super::std_builtins::print_ln;
 use super::typechecker::*;
 use super::types::*;
 
@@ -67,12 +68,12 @@ impl Interpreter {
         if let Value::Return(Some(return_value)) = ret {
             return *return_value;
         }
-
+        
         Value::None()
     }
-
+    
     fn dot_op(&mut self, lhs: &Box<Node>, rhs: &Box<Node>) -> Value {
-        let result = Value::None();
+        
         let Node::Identifier(id) = lhs.as_ref() else {
             dbg!(lhs, rhs);
             panic!("Expected Identifier node");
@@ -95,10 +96,8 @@ impl Interpreter {
                 
         let mut argus = argus.clone();
         argus.insert(0, Node::Identifier(id.clone()));
-                
-        self.try_find_and_execute_fn(&Some(argus), func_id);
-                
-        result
+        
+        self.try_find_and_execute_fn(&Some(argus), func_id)
     }
 }
 
@@ -579,7 +578,7 @@ impl Visitor<Value> for Interpreter {
             None => self.visit_conditionless_repeat_stmnt(block),
         }
     }
-
+    
     fn visit_break_stmnt(&mut self, node: &Node) -> Value {
         if let Node::BreakStmnt(opt_val) = node {
             let Some(value_node) = opt_val else {
@@ -663,7 +662,7 @@ impl Visitor<Value> for Interpreter {
                 id, index_value as usize
             );
         }
-
+        
         let element = &mut elements[index_value as usize];
 
         // read
@@ -687,7 +686,11 @@ impl Visitor<Value> for Interpreter {
             self.context.insert_variable(id, Rc::new(var2));
             return Value::None();
         }
-
+        
         panic!("Expected expression in array assignment");
+    }
+
+    fn visit_lambda(&mut self, node: &Node) -> Value {
+        Value::None()
     }
 }

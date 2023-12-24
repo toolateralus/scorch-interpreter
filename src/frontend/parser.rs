@@ -23,7 +23,7 @@ pub fn parse_parameters(tokens: &Vec<Token>, index: &mut usize) -> Vec<Node> {
             panic!("Expected variable name in parameter declaration");
         }
 
-        let varname = parse_factor(tokens, index);
+        let varname = parse_operand(tokens, index);
 
         token = get_current(tokens, index);
         //parsing colon
@@ -44,7 +44,7 @@ pub fn parse_parameters(tokens: &Vec<Token>, index: &mut usize) -> Vec<Node> {
 
         // parsing type
         // varname: ^Typename
-        let typename = parse_factor(tokens, index);
+        let typename = parse_operand(tokens, index);
 
         // consume comma if there is one.
         if get_current(tokens, index).kind == TokenKind::Comma {
@@ -75,10 +75,12 @@ pub fn parse_arguments(tokens: &Vec<Token>, index: &mut usize) -> Vec<Node> {
         }
         // accumulate parameter expressions
         let arg = parse_expression(tokens, index);
+        
         // skip commas
         if get_current(tokens, index).kind == TokenKind::Comma {
             *index += 1;
         }
+        
         args.push(arg);
     }
     args
@@ -388,11 +390,11 @@ fn parse_decl(
 ) -> Result<Node, ()> {
     // varname : type = default;
     let id = token.value.clone();
-
+    
     *index += 1;
-
+    
     let operator = get_current(tokens, index);
-
+    
     match operator.kind {
         // varname := default;
         // declaring a variable with implicit type.
@@ -598,6 +600,54 @@ fn parse_explicit_decl(
     })
 }
 
+fn parse_lambda(tokens: &Vec<Token>, index: &mut usize) -> Node {
+    
+    if get_current(tokens, index).kind == TokenKind::LogicalOr {
+        *index += 1;
+        
+        if get_current(tokens, index).kind == TokenKind::Lambda {
+            *index += 1;
+        } else {
+            panic!("Expected lambda token");
+        }
+        
+        let block = parse_block(tokens, index);
+        
+        Node::Lambda {
+            params: Vec::new(),
+            block :Box::new(block) 
+        }
+    } else {
+        *index += 1;
+        let mut params = Vec::new();
+        loop {
+            let token = get_current(tokens, index);
+            
+            if token.kind == TokenKind::Pipe || token.kind == TokenKind::Lambda {
+                *index += 1;
+                break;
+            }
+                
+            let expr = Box::new(parse_expression(tokens, index));
+            
+            params.push(expr);
+        }
+        if get_current(tokens, index).kind == TokenKind::Lambda {
+            *index += 1;
+        } else {
+            dbg!(params);
+            panic!("Expected lambda token");
+        }
+                    
+        let block = parse_block(tokens, index);
+        
+        Node::Lambda {
+            params,
+            block: Box::new(block),
+        }
+    }
+}
+
 // ########################################
 // START PARSER FUNCTION HIERARCHY
 // TOP -> BOTTOM
@@ -655,15 +705,15 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
     if *index >= tokens.len() {
         return Err(());
     }
-
+    
     let first = consume_newlines(index, tokens);
-
+    
     if *index + 1 >= tokens.len() {
         return Err(()); // probably a newline
     }
 
     let second = tokens.get(*index + 1).unwrap();
-
+    
     // NOTE:: next is ahead one and must be discarded.
     // NOTE:: token is the current, but must also be discarded.
     // any branch of this must move the index forward at least once.
@@ -720,28 +770,20 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
         },
         TokenFamily::Identifier => {
             match second.kind {
-                TokenKind::OpenBracket => {
-                    *index += 2; // discard id[
-                    let node = parse_array_access(index, tokens, &first.value).unwrap();
-                    return Ok(node);
+                TokenKind::ColonEquals |
+                TokenKind::Colon |
+                TokenKind::Assignment => {
+                    return parse_decl(first, index, tokens, false);
                 }
-                TokenKind::Dot => {
-                    *index += 2; 
-                    let node = parse_dot_op(index, tokens, &first.value);
-                    return Ok(node);
+                _ => {
+                    let node = parse_expression(tokens, index);
+                    Ok(node)
                 }
-                _ => {}
-            }
-            parse_decl(first, index, tokens, false) // default immutability
+            } 
         }
-        TokenFamily::Operator => {
-            if first.kind == TokenKind::OpenCurly {
-                let block = parse_block(tokens, index);
-                Ok(block)
-            } else {
-                dbg!(first);
-                panic!("Expected brace token");
-            }
+        TokenFamily::Operator |
+        TokenFamily::Value => {
+            Ok(parse_expression(tokens, index))
         }
         _ => {
             dbg!(first);
@@ -749,21 +791,13 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
         }
     }
 }
-
-fn parse_dot_op(index: &mut usize, tokens: &Vec<Token>, lhs: &String) -> Node {
-    Node::DotOp {
-        lhs: Box::new(Node::Identifier(lhs.clone())),
-        op: TokenKind::Dot,
-        rhs: Box::new(parse_expression(tokens, index)),
-    }
-}
-
 fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Node {
     let mut left = parse_logical_expr(tokens, index);
     loop {
         let token = get_current(tokens, index);
         match token.kind {
-            TokenKind::LogicalAnd | TokenKind::LogicalOr => {
+            TokenKind::LogicalAnd |
+            TokenKind::LogicalOr => {
                 *index += 1;
                 let right = parse_logical_expr(tokens, index);
                 left = Node::LogicalExpression {
@@ -772,44 +806,12 @@ fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Node {
                     rhs: Box::new(right),
                 };
             }
-            TokenKind::OpenParenthesis => {
-                if let Node::Identifier(id) = &left {   
-                    match parse_fn_call(index, tokens, &id) {
-                        Ok(node) => {
-                            left = node;
-                            continue;
-                        }
-                        Err(_) => {
-                            dbg!(token);
-                            panic!("Expected function call node");
-                        }
-                    }
-                }
-            }
-
-            TokenKind::OpenBracket => {
-                if let Node::Identifier(id) = left {
-                    *index += 1; // move past [
-                    match parse_array_access(index, tokens, &id) {
-                        Ok(node) => {
-                            left = node;
-                            break;
-                        }
-                        Err(_) => {
-                            dbg!(token);
-                            panic!("Expected array access node");
-                        }
-                    }
-                } else {
-                    let init = parse_array_initializer(tokens, index);
-                    return new_array("Array".to_string(), init.len(), init.clone(), true, false);
-                }
-            }
             // these 5 token kinds are expression delimiters, but
             // the tokens are expected to be consumed by the caller of this function.
             TokenKind::CloseParenthesis
             | TokenKind::CloseBracket
             | TokenKind::OpenCurly
+            | TokenKind::Pipe
             | TokenKind::Newline
             | TokenKind::Comma
             | TokenKind::Eof => {
@@ -826,7 +828,6 @@ fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Node {
     }
     Node::Expression(Box::new(left))
 }
-
 fn parse_logical_expr(tokens: &Vec<Token>, index: &mut usize) -> Node {
     let mut left = parse_relational_expr(tokens, index);
     while let Some(token) = tokens.get(*index) {
@@ -888,17 +889,17 @@ fn parse_addition(tokens: &Vec<Token>, index: &mut usize) -> Node {
     left
 }
 fn parse_term(tokens: &Vec<Token>, index: &mut usize) -> Node {
-    let mut left = parse_factor(tokens, index);
+    let mut left = parse_unary(tokens, index);
     while let Some(token) = tokens.get(*index) {
         match token.kind {
             TokenKind::Multiply => {
                 *index += 1;
-                let right = parse_factor(tokens, index);
+                let right = parse_unary(tokens, index);
                 left = Node::MulOp(Box::new(left), Box::new(right));
             }
             TokenKind::Divide => {
                 *index += 1;
-                let right = parse_factor(tokens, index);
+                let right = parse_unary(tokens, index);
                 left = Node::DivOp(Box::new(left), Box::new(right));
             }
             _ => break,
@@ -906,14 +907,93 @@ fn parse_term(tokens: &Vec<Token>, index: &mut usize) -> Node {
     }
     left
 }
-fn parse_factor(tokens: &Vec<Token>, index: &mut usize) -> Node {
+
+fn parse_unary(tokens : &Vec<Token>, index: &mut usize) -> Node {
+    let op = get_current(tokens, index);
+    match op.kind {
+        TokenKind::Subtract => {
+            *index += 1;
+            let node = parse_compound(tokens, index);
+            if let Node::NegOp(_node) = node {
+                panic!("Double not operations are not allowed");
+            }
+            Node::NegOp(Box::new(node))
+        }
+        TokenKind::Not => {
+            *index += 1;
+            let node = parse_compound(tokens, index);
+            if let Node::NotOp(_node) = node {
+                panic!("Double not operations are not allowed");
+            }
+            Node::NotOp(Box::new(node))
+        }
+        _ => {
+            parse_compound(tokens, index)
+        }
+    }
+}
+
+fn parse_compound(tokens: &Vec<Token>, index: &mut usize) -> Node {
+    let left = parse_operand(tokens, index);
+    let op = get_current(tokens, index);
+    match op.kind {
+        TokenKind::OpenParenthesis => {
+            if let Node::Identifier(id) = &left {   
+                match parse_fn_call(index, tokens, &id) {
+                    Ok(node) => {
+                        node
+                    }
+                    Err(_) => {
+                        panic!("Expected function call node");
+                    }
+                }
+            } else {
+                panic!("Expected function call node");
+            }
+        }
+        TokenKind::Dot => {
+            *index += 1; // consume '.' operator.
+            Node::DotOp {
+                lhs: Box::new(left),
+                op: TokenKind::Dot,
+                rhs: Box::new(parse_compound(tokens, index)),
+            }
+        }
+        
+        TokenKind::OpenBracket => {
+            // id[]
+            if let Node::Identifier(id) = left {
+                *index += 1; // move past [
+                match parse_array_access(index, tokens, &id) {
+                    Ok(node) => {
+                        node
+                    }
+                    Err(_) => {
+                        panic!("Expected array access node");
+                    }
+                }
+            }
+            else {
+                dbg!(left);
+                panic!("Expected array access node");
+            }
+        }
+        _ => {
+            left
+        }
+    }
+    
+    
+}
+
+fn parse_operand(tokens: &Vec<Token>, index: &mut usize) -> Node {
     if let Some(token) = tokens.get(*index) {
         *index += 1;
         let node = match token.kind {
             TokenKind::Number => {
                 let int = token.value.parse::<i32>();
                 let float = token.value.parse::<f64>();
-
+                
                 if int.is_ok() {
                     return Node::Int(int.unwrap());
                 } else if float.is_ok() {
@@ -933,9 +1013,22 @@ fn parse_factor(tokens: &Vec<Token>, index: &mut usize) -> Node {
             }
             TokenKind::OpenBracket => {
                 let init = parse_array_initializer(tokens, index);
-                return new_array("Dynamic".to_string(), init.len(), init.clone(), true, false);
+                
+                // todo: this is a hack. we need to know if the array is mutable or not by normal means.
+                let array_mutable = true;
+                let elements_mutable = false;    
+                return new_array("Array".to_string(), init.len(), init.clone(), array_mutable, elements_mutable);
+            }
+            TokenKind::LogicalOr => {
+                let lambda = parse_lambda(tokens, index);
+                lambda
+            }
+            TokenKind::Pipe => {
+                parse_lambda(tokens, index)
             }
             TokenKind::OpenParenthesis => {
+                // todo: add value tuples maybe an epic syntax
+                
                 let node = parse_expression(tokens, index);
                 if let Some(token) = tokens.get(*index) {
                     if token.kind != TokenKind::CloseParenthesis {
@@ -946,28 +1039,11 @@ fn parse_factor(tokens: &Vec<Token>, index: &mut usize) -> Node {
                 }
                 node
             }
-            TokenKind::Subtract => {
-                let node = parse_factor(tokens, index);
-
-                if let Node::NegOp(_node) = node {
-                    panic!("Double not operations are not allowed");
-                }
-
-                Node::NegOp(Box::new(node))
-            }
-            TokenKind::Not => {
-                let node = parse_factor(tokens, index);
-
-                if let Node::NotOp(_node) = node {
-                    panic!("Double not operations are not allowed");
-                }
-
-                Node::NotOp(Box::new(node))
-            }
             TokenKind::Bool => {
                 let boolean = Node::Bool(token.value.parse::<bool>().unwrap());
                 boolean
             }
+            // todo: add a way to have a set of keywords be also operands
             TokenKind::Repeat => {
                 let next = get_current(tokens, index);
                 let stmnt = parse_repeat_stmnt(next, index, tokens);
@@ -978,11 +1054,14 @@ fn parse_factor(tokens: &Vec<Token>, index: &mut usize) -> Node {
                 panic!("Expected number or identifier token");
             }
         };
+        
+        
         node
     } else {
         panic!("Unexpected end of tokens")
     }
 }
+
 
 // ########################################
 // END PARSER FUNCTION HIERARCHY

@@ -5,6 +5,7 @@ pub trait Visitor<T> {
     fn visit_factor(&mut self, node: &Node) -> T;
     fn visit_eof(&mut self, node: &Node) -> T;
     fn visit_binary_op(&mut self, node: &Node) -> T;
+    fn visit_lambda(&mut self, node: &Node) -> T;
     fn visit_function_decl(&mut self, node: &Node) -> T;
     fn visit_param_decl(&mut self, node: &Node) -> T;
     fn visit_function_call(&mut self, node: &Node) -> T;
@@ -133,6 +134,7 @@ pub enum Node {
     Int(i32),
     Double(f64),
     DotOp { lhs: Box<Node>, op: TokenKind, rhs: Box<Node> },
+    Lambda { params: Vec<Box<Node>>, block: Box<Node> },
 }
 impl Node {
     pub fn accept<T>(&self, visitor: &mut dyn Visitor<T>) -> T {
@@ -172,6 +174,7 @@ impl Node {
             Node::Int(_) => visitor.visit_number(self),
             Node::Double(_) => visitor.visit_number(self),
             Node::DotOp { .. } => visitor.visit_binary_op(self),
+            Node::Lambda { params, block } => visitor.visit_lambda(self)
         }
     }
 }

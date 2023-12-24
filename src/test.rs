@@ -103,7 +103,7 @@ fn arithmetic() {
 #[test]
 fn arrays() {
     let ctx = super::execute_from_file(String::from("scorch_src/unit_tests/arrays.scorch"));
-
+    
     let _test_code_string = "empty_implicit 			:= []
     empty_explicit 			:= Array = []
     single_float_implicit 	:= [1.0]

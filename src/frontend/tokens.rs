@@ -12,8 +12,6 @@ pub fn create_tokenizer() -> Tokenizer {
         (String::from(","), TokenKind::Comma),
         (String::from("::"), TokenKind::DubColon),
         (String::from(":"), TokenKind::Colon),
-        (String::from("->"), TokenKind::Arrow),
-        (String::from(":="), TokenKind::ColonEquals),
         (String::from("="), TokenKind::Assignment),
         (String::from("=="), TokenKind::Equals),
         (String::from("!="), TokenKind::NotEquals),
@@ -22,9 +20,14 @@ pub fn create_tokenizer() -> Tokenizer {
         (String::from("<"), TokenKind::LeftAngle),
         (String::from(">"), TokenKind::RightAngle),
         (String::from("&&"), TokenKind::LogicalAnd),
-        (String::from("||"), TokenKind::LogicalOr),
+        
+        (String::from("->"), TokenKind::Arrow),
+        (String::from(":="), TokenKind::ColonEquals),
+        (String::from("|"), TokenKind::Pipe),
         (String::from("."), TokenKind::Dot),
         (String::from("=>"), TokenKind::Lambda),
+        
+        (String::from("||"), TokenKind::LogicalOr),
         (String::from("+"), TokenKind::Add),
         (String::from("-"), TokenKind::Subtract),
         (String::from("*"), TokenKind::Multiply),
@@ -42,7 +45,7 @@ pub fn create_tokenizer() -> Tokenizer {
         (String::from("if"), TokenKind::If),
         (String::from("else"), TokenKind::Else),
     ]);
-
+    
     let tokenizer = Tokenizer {
         operators,
         keywords,
@@ -70,21 +73,27 @@ pub enum TokenKind {
     // values
     Number,
     String,
+    Bool,
     Boolean,
+    
     // identifiers
     Identifier,
+    
     // operators
     Add,
     Subtract,
     Multiply,
     Divide,
-    Modulo,
+    Modulo, // todo: 
+    
     Equals,
     NotEquals,
     LessThanEquals,
     GreaterThanEquals,
+    
     LeftAngle,
     RightAngle,
+    
     LogicalAnd,
     LogicalOr,
     Not,
@@ -110,18 +119,22 @@ pub enum TokenKind {
 
     Return, // todo: design return. idk how we should do this @Cooper-Pilot
     Eof,
-
+    
+    DubColon, // :: 
+    
     // special operators
-    Lambda, // =>, Extract out.
-    DubColon,
-    ColonEquals,
-    Assignment,
-    Bool,
-    Break,
+    Dot, // . 
+    Pipe, // |
+    Lambda, // =
+    Arrow, // ->
+    
+    ColonEquals, // :=
+    
     Const,
     Var,
-    Arrow,
-    Dot, // ::
+    
+    Assignment, // =
+    Break,
 }
 #[derive(Debug, Clone)]
 pub struct Token {

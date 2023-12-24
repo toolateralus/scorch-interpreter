@@ -22,6 +22,7 @@ impl TypeChecker {
     pub fn new() -> Self {
         Self {
             types: HashMap::from([
+                
                 (
                     String::from("Int"),
                     Rc::new(Type {

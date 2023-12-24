@@ -18,10 +18,10 @@ pub fn print_ln(args: Vec<Value>) -> Value {
                 let mutable_str = if mutable { "mutable" } else { "immutable" };
                 
                 println!("{} array, length {}", mutable_str, elements.len());
-
-                for element in elements.iter() {
-                    print_ln(Vec::from([element.value.clone()]));
-                }
+                
+                // for element in elements.iter() {
+                //     print_ln(Vec::from([element.value.clone()]));
+                // }
             }
             Value::List(elements) => {
                 for element in elements.try_borrow().unwrap().iter() {
@@ -118,9 +118,10 @@ pub fn tostr(args: Vec<Value>) -> Value {
     }
     let arg = &args[0];
     let result = match arg {
+        Value::Int(val) => val.to_string(),
         Value::Double(val) => val.to_string(),
-        Value::Bool(val) => val.to_string(),
         Value::String(val) => val.clone(),
+        Value::Bool(val) => val.to_string(),
         Value::None() => String::from("None"),
         Value::Function(func) => {
             let params: Vec<String> = func
@@ -142,6 +143,8 @@ pub fn tostr(args: Vec<Value>) -> Value {
             format!("array : {} , length : {}", mutable_str, elements.len())
         }
         _ => {
+            dbg!(arg);
+            dbg!(args);
             panic!("Cannot convert value to string");
         }
     };
