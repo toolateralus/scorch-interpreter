@@ -1,3 +1,4 @@
-canvas := []
-
-push(canvas, 'i am gay', 'i am not gay')
+typedef | 
+    x := 0
+    x := 1
+|

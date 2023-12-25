@@ -579,7 +579,7 @@ impl Visitor<Value> for Interpreter {
 
     fn visit_array(&mut self, node: &Node) -> Value {
         if let Node::Array {
-            typename,
+            typename: _,
             init_capacity,
             elements,
             mutable: mutability,
@@ -678,7 +678,15 @@ impl Visitor<Value> for Interpreter {
         panic!("Expected expression in array assignment");
     }
 
-    fn visit_lambda(&mut self, node: &Node) -> Value {
+    fn visit_lambda(&mut self, _node: &Node) -> Value {
+        Value::None()
+    }
+
+    fn visit_type_def(&mut self, node: &Node) -> Value {
+        if let Node::TypeDef {id, block} = node{
+            let scope = Context::new();
+            
+        }
         Value::None()
     }
 }

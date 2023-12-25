@@ -1,3 +1,5 @@
+use std::thread::current;
+
 use super::{
     ast::Node,
     tokens::{Token, TokenFamily, TokenKind},
@@ -711,56 +713,7 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
     // NOTE:: token is the current, but must also be discarded.
     // any branch of this must move the index forward at least once.
     match first.family {
-        TokenFamily::Keyword => match first.kind {
-            TokenKind::Const => {
-                // consume 'const'
-                *index += 1;
-                let varname = second;
-                match parse_decl(varname, index, tokens, false) {
-                    Ok(node) => Ok(node),
-                    Err(_) => {
-                        dbg!(first);
-                        panic!("Expected declaration statement");
-                    }
-                }
-            }
-            TokenKind::Var => {
-                // consume 'const'
-                *index += 1;
-                let varname = second;
-                match parse_decl(varname, index, tokens, true) {
-                    Ok(node) => Ok(node),
-                    Err(_) => {
-                        dbg!(first);
-                        panic!("Expected declaration statement");
-                    }
-                }
-            }
-            TokenKind::Break => {
-                *index += 1; // discard break
-                if second.kind == TokenKind::Newline {
-                    Ok(Node::BreakStmnt(Option::None))
-                } else if second.kind != TokenKind::CloseCurly {
-                    let value = parse_expression(tokens, index);
-                    Ok(Node::BreakStmnt(Option::Some(Box::new(value))))
-                } else {
-                    panic!("break statements must be followed by a newline or a return value.");
-                }
-            }
-            TokenKind::Repeat => parse_repeat_stmnt(second, index, tokens),
-            TokenKind::If => {
-                let statement = parse_if_else(tokens, index);
-                Ok(statement)
-            }
-            TokenKind::Else => {
-                dbg!(first);
-                panic!("else statements must follow an if.");
-            }
-            _ => {
-                dbg!(first);
-                panic!("keyword is likely not yet implemented.");
-            }
-        },
+        TokenFamily::Keyword => parse_keyword_ops(first, index, second, tokens),
         TokenFamily::Identifier => {
             match second.kind {
                 TokenKind::ColonEquals |
@@ -781,6 +734,128 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
         _ => {
             dbg!(first);
             panic!("Expected keyword, identifier or operator token");
+        }
+    }
+}
+
+fn parse_keyword_ops(keyword: &Token, index: &mut usize, next_token: &Token, tokens: &Vec<Token>) -> Result<Node, ()> {
+    match keyword.kind {
+        TokenKind::Const => parse_const(index, next_token, tokens, keyword),
+        TokenKind::Var => parse_var(index, next_token, tokens, keyword),
+        TokenKind::Break => parse_break(index, next_token, tokens),
+        TokenKind::Repeat => parse_repeat_stmnt(next_token, index, tokens),
+        TokenKind::If => Ok(parse_if_else(tokens, index)),
+        TokenKind::Else => {
+            dbg!(keyword);
+            panic!("else statements must follow an if.");
+        }
+        TokenKind::Typedef => parse_type_def(index, next_token, tokens),
+        _ => {
+            dbg!(keyword);
+            panic!("keyword is likely misused or not yet implemented.");
+        }
+    }
+}
+
+fn parse_type_def(index: &mut usize, identifier: &Token, tokens: &Vec<Token>) -> Result<Node, ()> {
+    *index += 1; // consume 'typedef'
+    let id = identifier.value.clone();
+    let token = get_current(tokens, index);
+   
+    if token.kind != TokenKind::Pipe {
+        dbg!(token);
+        panic!("Expected pipe to open body for type definition");
+    }
+    
+    let mut statements = Vec::new();
+
+    let mut token = consume_newlines(index, tokens);
+
+    if token.kind == TokenKind::Pipe {
+        *index += 1;
+    }
+    while *index < tokens.len() {
+        
+        token = consume_newlines(index, tokens);
+
+        let mut mutable = false;
+
+        if token.family == TokenFamily::Keyword && token.kind == TokenKind::Var {
+            mutable = true;
+            *index += 1;
+            token = consume_newlines(index, tokens);
+        }
+
+        if token.kind == TokenKind::Pipe {
+            *index += 1;
+            break;
+        }
+
+        let statement = parse_decl(token, index, tokens, mutable);
+
+        match statement {
+            Ok(node) => statements.push(Box::new(node)),
+            Err(_) => {
+                
+                println!("Block encountered unexpected token:");
+                dbg!(&token);
+                panic!("Expected statement node");
+            }
+        }
+
+        token = get_current(tokens, index);
+
+        if token.kind == TokenKind::Comma {
+            *index += 1;
+            continue;
+        }
+    }
+    Ok(
+        Node::TypeDef {
+            id,
+            block: Box::new(
+                Node::Block(statements)
+            ),
+        }
+    )
+}
+
+
+fn parse_var(index: &mut usize, second: &Token, tokens: &Vec<Token>, first: &Token) -> Result<Node, ()> {
+    // consume 'var'
+    *index += 1;
+    let varname = second;
+    match parse_decl(varname, index, tokens, true) {
+        Ok(node) => Ok(node),
+        Err(_) => {
+            dbg!(first);
+            panic!("Expected declaration statement");
+        }
+    }
+}
+
+fn parse_break(index: &mut usize, second: &Token, tokens: &Vec<Token>) -> Result<Node, ()> {
+    *index += 1;
+    // discard break
+    if second.kind == TokenKind::Newline {
+        Ok(Node::BreakStmnt(Option::None))
+    } else if second.kind != TokenKind::CloseCurly {
+        let value = parse_expression(tokens, index);
+        Ok(Node::BreakStmnt(Option::Some(Box::new(value))))
+    } else {
+        panic!("break statements must be followed by a newline or a return value.");
+    }
+}
+
+fn parse_const(index: &mut usize, second: &Token, tokens: &Vec<Token>, first: &Token) -> Result<Node, ()> {
+    // consume 'const'
+    *index += 1;
+    let varname = second;
+    match parse_decl(varname, index, tokens, false) {
+        Ok(node) => Ok(node),
+        Err(_) => {
+            dbg!(first);
+            panic!("Expected declaration statement");
         }
     }
 }

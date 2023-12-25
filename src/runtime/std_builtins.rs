@@ -1,6 +1,6 @@
 use std::{collections::HashMap, rc::Rc};
 
-use super::{types::{BuiltInFunction, Value, Variable, Context}, interpreter::Interpreter, typechecker::TypeChecker};
+use super::{types::{BuiltInFunction, Value, Variable, Context}, typechecker::TypeChecker};
 
 pub fn print_ln(context : &mut Context, type_checker : &TypeChecker, args: Vec<Value>) -> Value {
     for arg in args {
@@ -37,7 +37,7 @@ pub fn print_ln(context : &mut Context, type_checker : &TypeChecker, args: Vec<V
     }
     Value::None()
 }
-pub fn wait(context : &mut Context, type_checker : &TypeChecker, args: Vec<Value>) -> Value {
+pub fn wait(_context : &mut Context, _type_checker : &TypeChecker, args: Vec<Value>) -> Value {
     if args.len() != 1 {
         panic!("wait expected 1 argument :: ms wait duration");
     }
@@ -48,7 +48,7 @@ pub fn wait(context : &mut Context, type_checker : &TypeChecker, args: Vec<Value
     }
     Value::None()
 }
-pub fn length(context : &mut Context, type_checker : &TypeChecker, args: Vec<Value>) -> Value {
+pub fn length(_context : &mut Context, _type_checker : &TypeChecker, args: Vec<Value>) -> Value {
     if args.len() != 1 {
         panic!("length takes one array argument");
     }
@@ -63,7 +63,7 @@ pub fn length(context : &mut Context, type_checker : &TypeChecker, args: Vec<Val
         }
     }
 }
-pub fn time(context : &mut Context, type_checker : &TypeChecker, args: Vec<Value>) -> Value {
+pub fn time(_context : &mut Context, _type_checker : &TypeChecker, args: Vec<Value>) -> Value {
     if args.len() != 0 {
         panic!("time expected 0 arguments");
     }
@@ -74,7 +74,7 @@ pub fn time(context : &mut Context, type_checker : &TypeChecker, args: Vec<Value
     
     Value::Double(time.as_secs_f64())
 }
-pub fn assert_eq(context : &mut Context, type_checker : &TypeChecker, args: Vec<Value>) -> Value {
+pub fn assert_eq(_context : &mut Context, _type_checker : &TypeChecker, args: Vec<Value>) -> Value {
     if args.len() != 3 {
         panic!("assert expected 3 arguments");
     }
@@ -93,7 +93,7 @@ pub fn assert_eq(context : &mut Context, type_checker : &TypeChecker, args: Vec<
     assert!(are_equal, "{}", message);
     Value::None()
 }
-pub fn assert(context : &mut Context, type_checker : &TypeChecker, args: Vec<Value>) -> Value {
+pub fn assert(_context : &mut Context, _type_checker : &TypeChecker, args: Vec<Value>) -> Value {
     if args.len() != 2 {
         panic!("assert expected 2 or 3 arguments");
     }
@@ -102,7 +102,7 @@ pub fn assert(context : &mut Context, type_checker : &TypeChecker, args: Vec<Val
     assert!(condition, "{}", message);
     Value::None()
 }
-pub fn readln(context : &mut Context, type_checker : &TypeChecker, args: Vec<Value>) -> Value {
+pub fn readln(_context : &mut Context, _type_checker : &TypeChecker, args: Vec<Value>) -> Value {
     if args.len() != 0 {
         panic!("readln expected 0 arguments");
     }
@@ -112,7 +112,7 @@ pub fn readln(context : &mut Context, type_checker : &TypeChecker, args: Vec<Val
         .expect("failed to read from stdin");
     Value::String(input.replace("\n", ""))
 }
-pub fn tostr(context : &mut Context, type_checker : &TypeChecker, args: Vec<Value>) -> Value {
+pub fn tostr(_context : &mut Context, _type_checker : &TypeChecker, args: Vec<Value>) -> Value {
     if args.len() != 1 {
         panic!("tostr expected 1 argument");
     }
@@ -150,8 +150,8 @@ pub fn tostr(context : &mut Context, type_checker : &TypeChecker, args: Vec<Valu
     };
     Value::String(result)
 }
-pub fn push(context : &mut Context, type_checker : &TypeChecker, args: Vec<Value>) -> Value {
-    if args.len() != 2 {
+pub fn push(_context : &mut Context, type_checker : &TypeChecker, args: Vec<Value>) -> Value {
+    if args.len() < 2 {
         panic!("push expected 2 arguments");
     }
     let arg = &args[0];
@@ -163,10 +163,10 @@ pub fn push(context : &mut Context, type_checker : &TypeChecker, args: Vec<Value
 
                 for i in 0..(args.len()) {
                     let value = &args[i];
-                    let Some(T) = type_checker.from_value(value) else {
+                    let Some(t) = type_checker.from_value(value) else {
                         panic!("invalid type for array");
                     };
-                    let var = Variable::new(*mutable, value.clone(), Rc::clone(&T));
+                    let var = Variable::new(*mutable, value.clone(), Rc::clone(&t));
                     new_array.push(var);
                 }
                 
@@ -181,7 +181,7 @@ pub fn push(context : &mut Context, type_checker : &TypeChecker, args: Vec<Value
         }
     }
 }
-pub fn pop(context : &mut Context, type_checker : &TypeChecker, args: Vec<Value>) -> Value {
+pub fn pop(_context : &mut Context, _type_checker : &TypeChecker, args: Vec<Value>) -> Value {
     if args.len() != 1 {
         panic!("pop expected 1 argument");
     }
@@ -200,7 +200,6 @@ pub fn pop(context : &mut Context, type_checker : &TypeChecker, args: Vec<Value>
             panic!("Cannot pop from non-array value");
         }
     }
-    Value::None()
 }
 pub fn get_builtin_functions() -> HashMap<String, BuiltInFunction> {
     HashMap::from([
