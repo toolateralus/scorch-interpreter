@@ -4,7 +4,6 @@ use std::rc::Rc;
 use crate::frontend::ast::*;
 use crate::frontend::tokens::*;
 
-use super::std_builtins::print_ln;
 use super::typechecker::*;
 use super::types::*;
 
@@ -29,16 +28,13 @@ impl Interpreter {
         id: &String,
     ) -> Value {
         let args = Function::extract_args(self, arguments);
-
-        // builtin functions
-        if self.builtin.contains_key(id) {
-            let builtin = self.builtin.get_mut(id).unwrap();
-            return builtin.call(args);
-        }
-        
         // function pointer
         let Some(fn_ptr) = self.context.find_variable(id) else {
-            panic!("Function not found");
+            let Some(builtin) = self.builtin.get_mut(id) else {
+                dbg!(id);
+                panic!("Function not found");
+            };
+            return builtin.call(&mut self.context, &self.type_checker, args);
         };
         let function = match &fn_ptr.value {
             Value::Function(func) => func.clone(),
@@ -52,6 +48,7 @@ impl Interpreter {
         if args.len() != function.params.len() {
             panic!("Number of arguments does not match the number of parameters");
         }
+
 
         for (arg, param) in args.iter().zip(function.params.iter()) {
             if !param.m_type.validate(arg) {

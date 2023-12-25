@@ -5,7 +5,7 @@ use crate::{
     runtime::interpreter::Interpreter,
 };
 
-use super::typechecker::Type;
+use super::typechecker::{Type, TypeChecker};
 
 #[derive(Debug, Clone)]
 pub enum Value {
@@ -108,14 +108,14 @@ impl Function {
     }
 }
 pub struct BuiltInFunction {
-    func: Box<dyn FnMut(Vec<Value>) -> Value>,
+    pub func: Box<dyn FnMut(&mut Context, &TypeChecker, Vec<Value>) -> Value>,
 }
 impl BuiltInFunction {
-    pub fn new(func: Box<dyn FnMut(Vec<Value>) -> Value>) -> Self {
+    pub fn new(func: Box<dyn FnMut(&mut Context, &TypeChecker, Vec<Value>) -> Value>) -> Self {
         BuiltInFunction { func }
     }
-    pub fn call(&mut self, args: Vec<Value>) -> Value {
-        (self.func)(args)
+    pub fn call(&mut self, context : &mut Context, type_checker : &TypeChecker, args: Vec<Value>) -> Value {
+        (self.func)(context, type_checker, args)
     }
 }
 pub trait Invokable {

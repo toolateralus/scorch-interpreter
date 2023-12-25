@@ -1,4 +1,3 @@
-add_hi: Fn(s: String) -> String {
-	break s + " hi"
-}
-"yo,".println()
+canvas := []
+
+push(canvas, 'i am gay', 'i am not gay')
