@@ -73,31 +73,20 @@ impl Interpreter {
     }
     
     fn dot_op(&mut self, lhs: &Box<Node>, rhs: &Box<Node>) -> Value {
-        
-        let Node::Identifier(id) = lhs.as_ref() else {
-            dbg!(lhs, rhs);
-            panic!("Expected Identifier node");
-        };
-                
-        let Node::Expression(root) = rhs.as_ref() else {
-            dbg!(lhs, rhs);
-            panic!("Expected Expression node");
-        };
-                
-        let Node::FunctionCall { id: func_id, arguments } = root.as_ref() else {
+        let Node::FunctionCall { id: func_id, arguments } = rhs.as_ref() else {
             dbg!(lhs, rhs);
             panic!("Expected FunctionCall node");
         };
                 
-        let Some(argus) = arguments else {
+        let Some(args) = arguments else {
             dbg!(lhs, rhs);
             panic!("Expected arguments");
         };
                 
-        let mut argus = argus.clone();
-        argus.insert(0, Node::Identifier(id.clone()));
+        let mut args = args.clone();
+        args.insert(0, *lhs.clone());
         
-        self.try_find_and_execute_fn(&Some(argus), func_id)
+        self.try_find_and_execute_fn(&Some(args), func_id)
     }
 }
 

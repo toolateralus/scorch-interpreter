@@ -927,56 +927,55 @@ fn parse_unary(tokens : &Vec<Token>, index: &mut usize) -> Node {
 }
 
 fn parse_compound(tokens: &Vec<Token>, index: &mut usize) -> Node {
-    let left = parse_operand(tokens, index);
-    let op = get_current(tokens, index);
-    match op.kind {
-        TokenKind::OpenParenthesis => {
-            if let Node::Identifier(id) = &left {   
-                match parse_fn_call(index, tokens, &id) {
-                    Ok(node) => {
-                        node
-                    }
-                    Err(_) => {
-                        panic!("Expected function call node");
-                    }
-                }
-            } else {
-                panic!("Expected function call node");
-            }
-        }
-        TokenKind::Dot => {
-            *index += 1; // consume '.' operator.
-            Node::DotOp {
-                lhs: Box::new(left),
-                op: TokenKind::Dot,
-                rhs: Box::new(parse_compound(tokens, index)),
-            }
-        }
-        
-        TokenKind::OpenBracket => {
-            // id[]
-            if let Node::Identifier(id) = left {
-                *index += 1; // move past [
-                match parse_array_access(index, tokens, &id) {
-                    Ok(node) => {
-                        node
-                    }
-                    Err(_) => {
-                        panic!("Expected array access node");
-                    }
-                }
-            }
-            else {
-                dbg!(left);
-                panic!("Expected array access node");
-            }
-        }
-        _ => {
-            left
-        }
-    }
-    
-    
+    let mut left = parse_operand(tokens, index);
+	loop {
+		let op = get_current(tokens, index);
+		match op.kind {
+			TokenKind::Dot => {
+				*index += 1; // consume '.' operator.
+				return Node::DotOp {
+					lhs: Box::new(left),
+					op: TokenKind::Dot,
+					rhs: Box::new(parse_compound(tokens, index)),
+				};
+			}
+			TokenKind::OpenParenthesis => {
+				if let Node::Identifier(id) = &left {   
+					match parse_fn_call(index, tokens, &id) {
+						Ok(node) => {
+							left = node;
+						}
+						Err(_) => {
+							panic!("Expected function call node");
+						}
+					}
+				} else {
+					panic!("Expected function call node");
+				}
+			}
+			TokenKind::OpenBracket => {
+				// id[]
+				if let Node::Identifier(id) = left {
+					*index += 1; // move past [
+					match parse_array_access(index, tokens, &id) {
+						Ok(node) => {
+							left = node;
+						}
+						Err(_) => {
+							panic!("Expected array access node");
+						}
+					}
+				}
+				else {
+					dbg!(left);
+					panic!("Expected array access node");
+				}
+			}
+			_ => {
+				return left;
+			}
+		}
+	}
 }
 
 fn parse_operand(tokens: &Vec<Token>, index: &mut usize) -> Node {
