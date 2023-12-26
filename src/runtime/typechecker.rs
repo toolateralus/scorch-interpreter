@@ -1,7 +1,7 @@
 use crate::{runtime::types::Value, frontend::ast::Node};
 use std::{collections::HashMap, rc::Rc};
 
-use super::types::{Variable, Typedef};
+use super::{types::{Variable, Typedef}, interpreter::Interpreter};
 
 #[derive(Debug)]
 pub struct Type {
@@ -98,26 +98,7 @@ impl TypeChecker {
             ]),
         }
     }
-    
-    pub(crate) fn create(&mut self, id: &str, block: &Node) -> Typedef {
-        let Node::Block(_statements) = block else {
-            panic!("Expected block")
-        };
-        
-        let _new_type = Type {
-            name: id.to_string(),
-            validator: Box::new(|_value| 
-                true
-            ),
-        };
-        
-        let typedef = Typedef {
-            name: id.to_string(),
-            fields: HashMap::new(),
-        };
-        
-        return typedef;
-    }
+
    
 }
 

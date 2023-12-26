@@ -675,29 +675,80 @@ impl Visitor<Value> for Interpreter {
         
         panic!("Expected expression in array assignment");
     }
-
+    
     fn visit_lambda(&mut self, _node: &Node) -> Value {
         Value::None()
     }
 
     fn visit_type_def(&mut self, node: &Node) -> Value {
         if let Node::StructDef {id, block} = node{
-            let typedef = self.type_checker.create(id, block);
+            let Node::Block(_statements) = block.as_ref() else {
+                panic!("Expected block")
+            };
+            
+            let _new_type = Type {
+                name: id.to_string(),
+                validator: Box::new(|_value| 
+                    true
+                ),
+            };
+            
+            let mut fields = HashMap::new();
+            
+            for statement in _statements {
+                let Node::DeclStmt { target_type, id, expression, mutable } = statement.as_ref() else {
+                    panic!("Expected declaration")
+                };
+                fields.insert(id.clone(), self.type_checker.get(&target_type).unwrap());
+            }
+            
+            let typedef = Typedef {
+                name: id.to_string(),
+                fields,
+                type_: _new_type
+            };
+            
             self.type_checker.typedefs.insert(id.to_string(), Box::new(typedef));
         }
         Value::None()
     }
     fn visit_struct_init(&mut self, node: &Node) -> Value {
-        if let Node::StructInit { id, params: _ } = node {
-            self.context = Context::new();
-            let typedef = if let Some(typedef) = self.type_checker.typedefs.get_mut(id) {
-                typedef
-            } else {
-                panic!("Struct {} not found", id);
+        let Node::StructInit { id, args } = node else {
+            panic!("Expected StructInit node");
+        };
+        
+        let context = self.context.clone();
+        
+        self.context = Context::new();
+        
+        let typedef = if let Some(typedef) = self.type_checker.typedefs.get_mut(id) {
+            typedef
+        } else {
+            panic!("Struct {} not found", id);
+        };
+        
+        let fields = typedef.fields.clone();
+        
+        for (field, arg) in fields.iter().zip(args.iter()) {
+            let value = arg.accept(self);
+            let Some(t) = self.type_checker.from_value(&value) else {
+                panic!("doesn't match to a valid type");
             };
-
-            let _fields = typedef.fields.clone();
+            
+            if field.1.as_ref().name != t.name {
+                panic!("Type mismatch");
+            }
+            
+            let var = Variable::new(true, value, Rc::clone(&t));
+            self.context.insert_variable(&field.0, Rc::new(var));
         }
-        Value::None()
+        let fields = self.context.variables.clone();
+        
+        self.context = context;
+        
+        Value::Struct {
+            name: id.clone(),
+            fields,
+        }
     }
 }

@@ -64,9 +64,9 @@ pub fn parse_parameters(tokens: &Vec<Token>, index: &mut usize) -> Vec<Node> {
 }
 pub fn parse_arguments(tokens: &Vec<Token>, index: &mut usize) -> Vec<Node> {
     *index += 1; // discard open_paren
-
+    
     let mut args = Vec::new();
-
+    
     loop {
         let token = get_current(tokens, index);
         // paramless.
@@ -446,6 +446,7 @@ fn parse_implicit_decl(
 
     // implicit variable declaration
     let value = parse_expression(tokens, index);
+    
     consume_normal_expr_delimiter(tokens, index);
 
     Ok(Node::DeclStmt {
@@ -736,7 +737,6 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
         }
     }
 }
-
 fn parse_keyword_ops(keyword: &Token, index: &mut usize, next_token: &Token, tokens: &Vec<Token>) -> Result<Node, ()> {
     match keyword.kind {
         TokenKind::Const => parse_const(index, next_token, tokens, keyword),
@@ -755,7 +755,6 @@ fn parse_keyword_ops(keyword: &Token, index: &mut usize, next_token: &Token, tok
         }
     }
 }
-
 fn parse_type_def(index: &mut usize, identifier: &Token, tokens: &Vec<Token>) -> Result<Node, ()> {
     *index += 2; // consume 'typedef && identifier'
     
@@ -819,8 +818,6 @@ fn parse_type_def(index: &mut usize, identifier: &Token, tokens: &Vec<Token>) ->
         }
     )
 }
-
-
 fn parse_var(index: &mut usize, second: &Token, tokens: &Vec<Token>, first: &Token) -> Result<Node, ()> {
     // consume 'var'
     *index += 1;
@@ -833,7 +830,6 @@ fn parse_var(index: &mut usize, second: &Token, tokens: &Vec<Token>, first: &Tok
         }
     }
 }
-
 fn parse_break(index: &mut usize, second: &Token, tokens: &Vec<Token>) -> Result<Node, ()> {
     *index += 1;
     // discard break
@@ -846,7 +842,6 @@ fn parse_break(index: &mut usize, second: &Token, tokens: &Vec<Token>) -> Result
         panic!("break statements must be followed by a newline or a return value.");
     }
 }
-
 fn parse_const(index: &mut usize, second: &Token, tokens: &Vec<Token>, first: &Token) -> Result<Node, ()> {
     // consume 'const'
     *index += 1;
@@ -879,6 +874,7 @@ fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Node {
             TokenKind::CloseParenthesis
             | TokenKind::CloseBracket
             | TokenKind::OpenCurly
+            | TokenKind::CloseCurly // for struct init, questonable
             | TokenKind::Pipe
             | TokenKind::Newline
             | TokenKind::Comma
@@ -975,7 +971,6 @@ fn parse_term(tokens: &Vec<Token>, index: &mut usize) -> Node {
     }
     left
 }
-
 fn parse_unary(tokens : &Vec<Token>, index: &mut usize) -> Node {
     let op = get_current(tokens, index);
     match op.kind {
@@ -1000,7 +995,6 @@ fn parse_unary(tokens : &Vec<Token>, index: &mut usize) -> Node {
         }
     }
 }
-
 fn parse_compound(tokens: &Vec<Token>, index: &mut usize) -> Node {
     let mut left = parse_operand(tokens, index);
 	loop {
@@ -1052,30 +1046,60 @@ fn parse_compound(tokens: &Vec<Token>, index: &mut usize) -> Node {
 		}
 	}
 }
-
 fn parse_operand(tokens: &Vec<Token>, index: &mut usize) -> Node {
-    if let Some(token) = tokens.get(*index) {
+    if let Some(identifier) = tokens.get(*index) {
         *index += 1;
-        let node = match token.kind {
+        let node = match identifier.kind {
             TokenKind::Number => {
-                let int = token.value.parse::<i32>();
-                let float = token.value.parse::<f64>();
+                let int = identifier.value.parse::<i32>();
+                let float = identifier.value.parse::<f64>();
                 
                 if int.is_ok() {
                     return Node::Int(int.unwrap());
                 } else if float.is_ok() {
                     return Node::Double(float.unwrap());
                 } else {
-                    dbg!(token);
+                    dbg!(identifier);
                     panic!("Expected number token");
                 }
             }
             TokenKind::Identifier => {
-                let id = Node::Identifier(token.value.clone());
-                id
-            }
+                let iden = Node::Identifier(identifier.value.clone());
+                
+                let token = get_current(tokens, index);
+                
+                if token.kind != TokenKind::OpenCurly {
+                    return iden;
+                } else {
+                    *index += 1; // discard open_paren
+                }
+                
+                let mut args = Vec::new();
+                
+                loop {
+                    let token = get_current(tokens, index);
+                    // paramless.
+                    if token.kind == TokenKind::CloseCurly {
+                        *index += 1;
+                        break;
+                    }
+                    // accumulate parameter expressions
+                    let arg = parse_expression(tokens, index);
+                    
+                    // skip commas
+                    if get_current(tokens, index).kind == TokenKind::Comma {
+                        *index += 1;
+                    }
+                    
+                    args.push(arg);
+                }
+                Node::StructInit {
+                    id: identifier.value.clone(),
+                    args,
+                }
+            },
             TokenKind::String => {
-                let id = Node::String(token.value.clone());
+                let id = Node::String(identifier.value.clone());
                 id
             }
             TokenKind::OpenBracket => {
@@ -1107,7 +1131,7 @@ fn parse_operand(tokens: &Vec<Token>, index: &mut usize) -> Node {
                 node
             }
             TokenKind::Bool => {
-                let boolean = Node::Bool(token.value.parse::<bool>().unwrap());
+                let boolean = Node::Bool(identifier.value.parse::<bool>().unwrap());
                 boolean
             }
             // todo: add a way to have a set of keywords be also operands
@@ -1117,7 +1141,7 @@ fn parse_operand(tokens: &Vec<Token>, index: &mut usize) -> Node {
                 stmnt.unwrap()
             }
             _ => {
-                dbg!(token);
+                dbg!(identifier);
                 panic!("Expected number or identifier token");
             }
         };

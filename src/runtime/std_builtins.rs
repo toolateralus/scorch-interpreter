@@ -31,9 +31,8 @@ pub fn print_ln(context : &mut Context, type_checker : &TypeChecker, args: Vec<V
             Value::Struct {
                 name,
                 fields,
-                block,
             } => {
-                println!("struct {:#?} {:#?} {:#?}", name, fields, block);
+                println!("struct {:#?} {:#?}", name, fields);
             },
             Value::Return(_) => panic!("Cannot print return value"),
         }

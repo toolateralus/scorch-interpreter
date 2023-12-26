@@ -1,6 +1,7 @@
 typedef Vec | 
     var x : Int
     var y : Int
+    var z : Int
 |
 
-myvec := Vec{0, 0}
+myvec := Vec {100, 200, 300} 

@@ -20,14 +20,14 @@ pub enum Value {
     List(Rc<RefCell<Vec<Variable>>>),
     Struct {
         name: String,
-        fields: HashMap<String, Variable>,
-        block: Box<Node>,
+        fields: HashMap<String, Rc<Variable>>,
     },
 }
 
 pub struct Typedef {
     pub name: String,
-    pub fields: HashMap<String, Variable>,
+    pub fields: HashMap<String, Rc<Type>>,
+    pub(crate) type_: Type,
 }
 
 impl Value {
