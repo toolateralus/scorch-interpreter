@@ -27,10 +27,10 @@ pub trait Visitor<T> {
     // Precedence 6
     fn visit_assignment(&mut self, node: &Node) -> T;
     fn visit_declaration(&mut self, node: &Node) -> T;
-    // fn visit_function_call(&mut self, node: &Node) -> T;
-    // fn visit_function_decl(&mut self, node: &Node) -> T;
-    // fn visit_param_decl(&mut self, node: &Node) -> T;
-
+    fn visit_function_call(&mut self, node: &Node) -> T;
+    fn visit_function_decl(&mut self, node: &Node) -> T;
+    fn visit_param_decl(&mut self, node: &Node) -> T;
+    
     // Precedence 7
     // fn visit_repeat_stmnt(&mut self, node: &Node) -> T;
     // fn visit_break_stmnt(&mut self, node: &Node) -> T;
@@ -149,9 +149,9 @@ impl Node {
     pub fn accept<T>(&self, visitor: &mut dyn Visitor<T>) -> T {
         match self {
             // functions
-            // Node::FnDeclStmnt { .. } => visitor.visit_function_decl(self),
-            // Node::ParamDeclNode { .. } => visitor.visit_param_decl(self),
-            // Node::FunctionCall { .. } => visitor.visit_function_call(self),
+            Node::FnDeclStmnt { .. } => visitor.visit_function_decl(self),
+            Node::ParamDeclNode { .. } => visitor.visit_param_decl(self),
+            Node::FunctionCall { .. } => visitor.visit_function_call(self),
             // Node::Lambda { .. } => visitor.visit_lambda(self),
             
             // control flow keywords

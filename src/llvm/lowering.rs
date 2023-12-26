@@ -7,7 +7,7 @@ use inkwell::builder::Builder;
 use inkwell::context::{Context};
 
 use inkwell::module::Module;
-use inkwell::values::BasicValueEnum;
+use inkwell::values::{BasicValueEnum, BasicMetadataValueEnum};
 
 use super::context::{SymbolTable, Type, Instance};
 
@@ -341,7 +341,63 @@ impl<'ctx> Visitor<BasicValueEnum<'ctx>> for LLVMVisitor<'ctx> {
             _ => panic!("Unsupported binary operator"),
         }
     }
-    fn visit_assignment(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
+    fn visit_assignment(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+        let Node::Assignment { id, expression } = node else {
+            panic!("Expected Assignment node");
+        };
+        let value = expression.accept(self);
+        self.symbol_table.insert_var(id.clone(), Instance {
+            name: id.clone(),
+            type_: Type::Dynamic,
+            value,
+        });
+        value
+    }
+    
+    fn visit_function_call(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+        let Node::FunctionCall { id, arguments } = node else {
+            panic!("Expected FunctionCall node");
+        };
+        
+        let mut args = Vec::new();
+        
+        let Some(arguments) = arguments.as_ref() else {
+            panic!("Expected arguments");
+        };  
+        
+        for arg in arguments {
+            args.push(arg.accept(self));
+        }
+        
+        let Some(function) = self.symbol_table.get_fn(id) else {
+            panic!("Function not found");
+        };
+        
+        let args: Vec<BasicMetadataValueEnum> = args.iter().map(|arg| {
+            match arg {
+                BasicValueEnum::IntValue(int) => BasicMetadataValueEnum::IntValue(*int),
+                BasicValueEnum::FloatValue(float) => BasicMetadataValueEnum::FloatValue(*float),
+                BasicValueEnum::PointerValue(ptr) => BasicMetadataValueEnum::PointerValue(*ptr),
+                BasicValueEnum::ArrayValue(array) => BasicMetadataValueEnum::ArrayValue(*array),
+                BasicValueEnum::StructValue(structure) => BasicMetadataValueEnum::StructValue(*structure),
+                BasicValueEnum::VectorValue(vector) => BasicMetadataValueEnum::VectorValue(*vector),
+            }
+        }).collect();
+        
+        let function_value = self.module.get_function(&function.name).unwrap();
+        
+        let Ok(call) = self.builder.build_call(function_value, &args[..], "calltmp") else {
+            panic!("Failed to build function call");
+        };  
+        
+        call.try_as_basic_value().left().unwrap()
+    }
+
+    fn visit_function_decl(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+        todo!()
+    }
+
+    fn visit_param_decl(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
         todo!()
     }
 }

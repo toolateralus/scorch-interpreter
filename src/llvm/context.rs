@@ -9,6 +9,7 @@ pub enum Type {
     Function,
     Array { type_name: String },
     Struct { id: String },
+    Dynamic,
 }
 
 pub struct SymbolTable<'ctx> {
