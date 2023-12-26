@@ -1,4 +1,6 @@
-typedef | 
-    x := 0
-    x := 1
+typedef Vec | 
+    var x : Int
+    var y : Int
 |
+
+myvec := Vec{0, 0}

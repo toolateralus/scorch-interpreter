@@ -1,4 +1,3 @@
-use std::thread::current;
 
 use super::{
     ast::Node,
@@ -758,7 +757,8 @@ fn parse_keyword_ops(keyword: &Token, index: &mut usize, next_token: &Token, tok
 }
 
 fn parse_type_def(index: &mut usize, identifier: &Token, tokens: &Vec<Token>) -> Result<Node, ()> {
-    *index += 1; // consume 'typedef'
+    *index += 2; // consume 'typedef && identifier'
+    
     let id = identifier.value.clone();
     let token = get_current(tokens, index);
    
@@ -811,7 +811,7 @@ fn parse_type_def(index: &mut usize, identifier: &Token, tokens: &Vec<Token>) ->
         }
     }
     Ok(
-        Node::TypeDef {
+        Node::StructDef {
             id,
             block: Box::new(
                 Node::Block(statements)
@@ -1006,6 +1006,18 @@ fn parse_compound(tokens: &Vec<Token>, index: &mut usize) -> Node {
 	loop {
 		let op = get_current(tokens, index);
 		match op.kind {
+            TokenKind::OpenCurly => {
+                let Node::Identifier(id) = &left else {
+                    panic!("Expected identifier before open curly brace  ");
+                };
+                *index += 1; // consume {
+                let params = parse_parameters(tokens, index);
+                *index += 1; // consume }
+                return Node::StructInit {
+                    id: id.to_string(),
+                    params,
+                };
+            }
 			TokenKind::Dot => {
 				*index += 1; // consume '.' operator.
 				return Node::DotOp {

@@ -1,16 +1,89 @@
 use core::panic;
 use std::rc::Rc;
 
+use super::{types::Variable, typechecker::TypeChecker};
+
 use crate::{
     frontend::ast::Node,
     runtime::interpreter::Interpreter,
     runtime::types::{Parameter, Value},
 };
 
-use super::{types::Variable, typechecker::TypeChecker};
-
-// loops
+// some helpers for the interpreter. off in this file for a smaller main interpreter file.
 impl Interpreter {
+    pub fn get_params_list(&mut self, param_nodes: &Vec<Node>) -> Vec<Parameter> {
+        let mut params = Vec::new();
+        for param in param_nodes {
+            if let Node::ParamDeclNode { varname, typename } = param {
+                let param_name = match varname.as_ref() {
+                    Node::Identifier(id) => id.clone(),
+                    _ => {
+                        dbg!(varname);
+                        panic!("Expected Identifier node");
+                    }
+                };
+
+                let type_name = match typename.as_ref() {
+                    Node::Identifier(id) => id.clone(),
+                    _ => {
+                        dbg!(typename);
+                        panic!("Expected Identifier node");
+                    }
+                };
+
+                let Some(m_type) = self.type_checker.get(type_name.as_str()) else {
+                    panic!("{} isnt a type", type_name)
+                };
+
+                let parameter = Parameter {
+                    name: param_name,
+                    m_type,
+                };
+
+                params.push(parameter);
+            }
+        }
+        params
+    }
+    pub fn bin_op_float(&mut self, node: &Node, lhs: &f64, rhs: &f64) -> Value {
+        let result: f64;
+        match node {
+            Node::AddOp(_, _) => result = lhs + rhs,
+            Node::SubOp(_, _) => result = lhs - rhs,
+            Node::MulOp(_, _) => result = lhs * rhs,
+            Node::DivOp(_, _) => result = lhs / rhs,
+            _ => {
+                dbg!(node);
+                panic!("Expected binary operation node");
+            }
+        }
+        Value::Double(result)
+    }
+    pub fn bin_op_int(&mut self, node: &Node, lhs: &i32, rhs: &i32) -> Value {
+        let result: i32;
+        match node {
+            Node::AddOp(_, _) => result = lhs + rhs,
+            Node::SubOp(_, _) => result = lhs - rhs,
+            Node::MulOp(_, _) => result = lhs * rhs,
+            Node::DivOp(_, _) => result = lhs / rhs,
+            _ => {
+                dbg!(node);
+                panic!("Expected binary operation node");
+            }
+        }
+        Value::Int(result)
+    }
+    pub fn bin_op_string(&mut self, node: &Node, lhs: &String, rhs: &String) -> Value {
+        let result: String;
+        match node {
+            Node::AddOp(_, _) => result = format!("{}{}", lhs, rhs),
+            _ => {
+                dbg!(node);
+                panic!("invalid binary operation on strings");
+            }
+        }
+        Value::String(result)
+    }
     pub fn visit_conditional_repeat_stmnt(
         &mut self,
         id: &str,
@@ -106,82 +179,5 @@ impl Interpreter {
                 }
             }
         }
-    }
-}
-
-// binary operation definitions
-impl Interpreter {
-    pub fn get_params_list(&mut self, param_nodes: &Vec<Node>) -> Vec<Parameter> {
-        let mut params = Vec::new();
-        for param in param_nodes {
-            if let Node::ParamDeclNode { varname, typename } = param {
-                let param_name = match varname.as_ref() {
-                    Node::Identifier(id) => id.clone(),
-                    _ => {
-                        dbg!(varname);
-                        panic!("Expected Identifier node");
-                    }
-                };
-
-                let type_name = match typename.as_ref() {
-                    Node::Identifier(id) => id.clone(),
-                    _ => {
-                        dbg!(typename);
-                        panic!("Expected Identifier node");
-                    }
-                };
-
-                let Some(m_type) = self.type_checker.get(type_name.as_str()) else {
-                    panic!("{} isnt a type", type_name)
-                };
-
-                let parameter = Parameter {
-                    name: param_name,
-                    m_type,
-                };
-
-                params.push(parameter);
-            }
-        }
-        params
-    }
-    pub fn bin_op_float(&mut self, node: &Node, lhs: &f64, rhs: &f64) -> Value {
-        let result: f64;
-        match node {
-            Node::AddOp(_, _) => result = lhs + rhs,
-            Node::SubOp(_, _) => result = lhs - rhs,
-            Node::MulOp(_, _) => result = lhs * rhs,
-            Node::DivOp(_, _) => result = lhs / rhs,
-            _ => {
-                dbg!(node);
-                panic!("Expected binary operation node");
-            }
-        }
-        Value::Double(result)
-    }
-    pub fn bin_op_int(&mut self, node: &Node, lhs: &i32, rhs: &i32) -> Value {
-        let result: i32;
-        match node {
-            Node::AddOp(_, _) => result = lhs + rhs,
-            Node::SubOp(_, _) => result = lhs - rhs,
-            Node::MulOp(_, _) => result = lhs * rhs,
-            Node::DivOp(_, _) => result = lhs / rhs,
-            _ => {
-                dbg!(node);
-                panic!("Expected binary operation node");
-            }
-        }
-        Value::Int(result)
-    }
-    pub fn bin_op_string(&mut self, node: &Node, lhs: &String, rhs: &String) -> Value {
-        let result: String;
-        match node {
-            Node::AddOp(_, _) => result = format!("{}{}", lhs, rhs),
-            _ => {
-                dbg!(node);
-                panic!("invalid binary operation on strings");
-            }
-        }
-        Value::String(result)
     }
 }

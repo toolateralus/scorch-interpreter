@@ -29,6 +29,7 @@ pub trait Visitor<T> {
     fn visit_if_stmnt(&mut self, node: &Node) -> T;
     fn visit_else_stmnt(&mut self, node: &Node) -> T;
     fn visit_type_def(&mut self, node: &Node) -> T;
+    fn visit_struct_init(&mut self, node: &Node) -> T;
 }
 #[derive(Debug, Clone)]
 pub enum Node {
@@ -136,7 +137,8 @@ pub enum Node {
     Double(f64),
     DotOp { lhs: Box<Node>, op: TokenKind, rhs: Box<Node> },
     Lambda { params: Vec<Box<Node>>, block: Box<Node> },
-    TypeDef { id: String, block: Box<Node> },
+    StructDef { id: String, block: Box<Node> },
+    StructInit { id: String, params: Vec<Node> },
 }
 impl Node {
     pub fn accept<T>(&self, visitor: &mut dyn Visitor<T>) -> T {
@@ -172,7 +174,8 @@ impl Node {
             Node::Double(..) => visitor.visit_number(self),
             Node::DotOp { .. } => visitor.visit_binary_op(self),
             Node::Lambda { .. } => visitor.visit_lambda(self),
-            Node::TypeDef { .. } => visitor.visit_type_def(self),
+            Node::StructDef { .. } => visitor.visit_type_def(self),
+            Node::StructInit { id: _, params: _ } => visitor.visit_struct_init(self),
         }
     }
 }

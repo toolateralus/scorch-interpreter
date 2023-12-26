@@ -21,7 +21,6 @@ impl Interpreter {
             type_checker: TypeChecker::new(),
         }
     }
-    
     fn try_find_and_execute_fn(
         &mut self,
         arguments: &Option<Vec<Node>>,
@@ -86,7 +85,6 @@ impl Interpreter {
         self.try_find_and_execute_fn(&Some(args), func_id)
     }
 }
-
 impl Visitor<Value> for Interpreter {
     // top level nodes
     fn visit_program(&mut self, node: &Node) -> Value {
@@ -683,9 +681,22 @@ impl Visitor<Value> for Interpreter {
     }
 
     fn visit_type_def(&mut self, node: &Node) -> Value {
-        if let Node::TypeDef {id, block} = node{
-            let scope = Context::new();
-            
+        if let Node::StructDef {id, block} = node{
+            let typedef = self.type_checker.create(id, block);
+            self.type_checker.typedefs.insert(id.to_string(), Box::new(typedef));
+        }
+        Value::None()
+    }
+    fn visit_struct_init(&mut self, node: &Node) -> Value {
+        if let Node::StructInit { id, params: _ } = node {
+            self.context = Context::new();
+            let typedef = if let Some(typedef) = self.type_checker.typedefs.get_mut(id) {
+                typedef
+            } else {
+                panic!("Struct {} not found", id);
+            };
+
+            let _fields = typedef.fields.clone();
         }
         Value::None()
     }
