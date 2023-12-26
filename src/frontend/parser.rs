@@ -399,7 +399,7 @@ fn parse_decl(
             *index += 1;
             let expression = parse_expression(tokens, index);
             consume_normal_expr_delimiter(tokens, index);
-
+            
             Ok(Node::Assignment {
                 id: token.value.clone(),
                 expression: Box::new(expression),

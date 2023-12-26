@@ -9,23 +9,31 @@ use super::context::SymbolTable;
 
 pub struct LLVMLoweringVisitor<'ctx> {
     pub context: &'ctx Context,
-    pub module: &'ctx Module<'ctx>,
     pub builder: &'ctx Builder<'ctx>,
     pub symbol_table: &'ctx mut SymbolTable<'ctx>,
 }
 impl<'ctx> Visitor<BasicValueEnum<'ctx>> for LLVMLoweringVisitor<'ctx> {
     fn visit_block(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
         let Node::Block(statements) = node else {
+            dbg!(node);
             panic!("Expected Block node");
         };
-        let mut result : BasicValueEnum<'ctx>;
+        let mut result : Option<BasicValueEnum<'ctx>> = None;
         for statement in statements {
-            result = statement.accept(self);
+            result = Some(statement.accept(self));
         }
-        result
+        result.unwrap()
     }
     fn visit_program(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
-        self.visit_block(node)
+        if let Node::Program(statements) = &node {
+            let mut result : Option<BasicValueEnum<'ctx>> = None;
+            for statement in statements {
+                result = Some(statement.accept(self));
+            }
+            return result.unwrap();
+        } else {
+            panic!("Expected Program node");
+        }
     }
     fn visit_string(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
         match node {
@@ -47,46 +55,24 @@ impl<'ctx> Visitor<BasicValueEnum<'ctx>> for LLVMLoweringVisitor<'ctx> {
             _ => panic!("Expected BoolLiteral node"),
         }
     }
-    fn visit_term(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
-        match node {
-            Node::BinaryOperation(lhs, op, rhs) => {
-                let left = lhs.accept(self);
-                let right = rhs.accept(self);
-
-                match op {
-                    TokenKind::Multiply => BasicValueEnum::FloatValue(
-                        self.builder
-                            .build_float_mul(
-                                left.into_float_value(),
-                                right.into_float_value(),
-                                "multmp",
-                            )
-                            .unwrap(),
-                    ),
-                    TokenKind::Divide => BasicValueEnum::FloatValue(
-                        self.builder
-                            .build_float_div(
-                                left.into_float_value(),
-                                right.into_float_value(),
-                                "divtmp",
-                            )
-                            .unwrap(),
-                    ),
-                    _ => panic!("Unsupported term operator"),
-                }
-            }
-            _ => panic!("Expected Term node"),
-        }
-    }
-    fn visit_factor(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
-        todo!()
-    }
     fn visit_expression(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
         match node {
             Node::Expression(root) => {
                 root.accept(self)
             }
             _ => panic!("Expected Expression node"),
+        }
+    }
+    fn visit_number(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+        match node {
+            Node::Int(value) => {
+                let signed = true;
+                BasicValueEnum::IntValue(self.context.i32_type().const_int(*value, signed))
+            }
+            Node::Double(value) => {
+                BasicValueEnum::FloatValue(self.context.f64_type().const_float(*value))
+            }
+            _ => panic!("Expected Number node"),
         }
     }
     fn visit_relational_expression(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
@@ -235,9 +221,7 @@ impl<'ctx> Visitor<BasicValueEnum<'ctx>> for LLVMLoweringVisitor<'ctx> {
     fn visit_eof(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
         todo!()
     }
-    fn visit_number(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
-        todo!()
-    }
+    
     fn visit_identifier(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
         todo!()
     }

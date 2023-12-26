@@ -6,14 +6,10 @@ pub mod util;
 use ::std::collections::HashMap;
 use ::std::env;
 use std::fs;
-use inkwell::builder::Builder;
 use inkwell::context::Context;
-use inkwell::module::Module;
-use inkwell::values::BasicValueEnum;
 use frontend::tokens::TokenProcessor;
-use util::*;
 
-use crate::llvm::lowering::{self, LLVMLoweringVisitor};
+use crate::llvm::lowering::LLVMLoweringVisitor;
 
 fn main() {
     let flags_map = parse_cmd_line_args();
@@ -34,16 +30,19 @@ fn main() {
     
     let context = Context::create();
     let builder = context.create_builder();
-    let module = context.create_module("main");
     
-    let visitor = LLVMLoweringVisitor {
+    let mut visitor = &mut LLVMLoweringVisitor {
         context: &context,
-        module: &module,
         builder: &builder,
         symbol_table: &mut symbol_table,
     };
     
     dbg!(&ast_root);
+    
+    let result = ast_root.accept(visitor);
+    
+    println!("Result:");
+    dbg!(&result);
 }
 
 fn parse_cmd_line_args() -> HashMap<String, bool> {

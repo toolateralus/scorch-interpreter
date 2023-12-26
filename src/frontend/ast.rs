@@ -13,8 +13,6 @@ pub trait Visitor<T> {
     // fn visit_array_access(&mut self, node: &Node) -> T;
     
     // Precedence 3
-    fn visit_term(&mut self, node: &Node) -> T;
-    fn visit_factor(&mut self, node: &Node) -> T;
     fn visit_expression(&mut self, node: &Node) -> T;
     
     // Precedence 4
