@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use inkwell::values::BasicValueEnum;
+use std::collections::HashMap;
 pub enum Type {
     Int,
     Void,
@@ -52,5 +52,5 @@ pub struct FunctionDefinition {
 }
 pub struct StructDefinition {
     pub name: String,
-    pub fields: HashMap<String,Type>,
+    pub fields: HashMap<String, Type>,
 }

@@ -1,15 +1,15 @@
-
+use std::collections::HashMap;
 
 use crate::frontend::ast::{Node, Visitor};
 use crate::frontend::tokens::TokenKind;
 use inkwell::basic_block::BasicBlock;
 use inkwell::builder::Builder;
-use inkwell::context::{Context};
+use inkwell::context::Context;
 
 use inkwell::module::Module;
-use inkwell::values::{BasicValueEnum, BasicMetadataValueEnum};
+use inkwell::values::{BasicMetadataValueEnum, BasicValueEnum};
 
-use super::context::{SymbolTable, Type, Instance};
+use super::context::{Instance, SymbolTable, Type, FunctionDefinition};
 
 pub struct LLVMVisitor<'ctx> {
     pub context: &'ctx Context,
@@ -19,7 +19,10 @@ pub struct LLVMVisitor<'ctx> {
 }
 
 impl<'ctx> LLVMVisitor<'ctx> {
-    pub(crate) fn new(context: &'ctx Context, symbol_table: &'ctx mut SymbolTable<'ctx>) -> LLVMVisitor<'ctx> {
+    pub(crate) fn new(
+        context: &'ctx Context,
+        symbol_table: &'ctx mut SymbolTable<'ctx>,
+    ) -> LLVMVisitor<'ctx> {
         LLVMVisitor {
             context,
             builder: context.create_builder(),
@@ -29,22 +32,26 @@ impl<'ctx> LLVMVisitor<'ctx> {
     }
 }
 impl<'ctx> Visitor<BasicValueEnum<'ctx>> for LLVMVisitor<'ctx> {
-    
     fn visit_block(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
         let Node::Block(statements) = node else {
             dbg!(node);
             panic!("Expected Block node");
         };
-    
-        let function = self.builder.get_insert_block().unwrap().get_parent().unwrap();
-        let mut result : Option<BasicValueEnum<'ctx>> = None;
-    
+
+        let function = self
+            .builder
+            .get_insert_block()
+            .unwrap()
+            .get_parent()
+            .unwrap();
+        let mut result: Option<BasicValueEnum<'ctx>> = None;
+
         for statement in statements {
             let basic_block = self.context.append_basic_block(function, "block");
             self.builder.position_at_end(basic_block);
             result = Some(statement.accept(self));
         }
-    
+
         result.unwrap()
     }
     fn visit_program(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
@@ -52,11 +59,11 @@ impl<'ctx> Visitor<BasicValueEnum<'ctx>> for LLVMVisitor<'ctx> {
             // Create a new function to contain the code for the program
             let function_type = self.context.void_type().fn_type(&[], false);
             let function = self.module.add_function("main", function_type, None);
-            
+
             // Create a new basic block to start insertion into
             let basic_block = self.context.append_basic_block(function, "entry");
             self.builder.position_at_end(basic_block);
-            
+
             // Visit each statement in the program
             let mut result: Option<BasicValueEnum<'ctx>> = None;
             for statement in statements {
@@ -87,16 +94,16 @@ impl<'ctx> Visitor<BasicValueEnum<'ctx>> for LLVMVisitor<'ctx> {
         match node {
             Node::Bool(value) => {
                 let bool_value = if *value { 1 } else { 0 };
-                BasicValueEnum::IntValue(self.context.bool_type().const_int(bool_value as u64, false))
+                BasicValueEnum::IntValue(
+                    self.context.bool_type().const_int(bool_value as u64, false),
+                )
             }
             _ => panic!("Expected BoolLiteral node"),
         }
     }
     fn visit_expression(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
         match node {
-            Node::Expression(root) => {
-                root.accept(self)
-            }
+            Node::Expression(root) => root.accept(self),
             _ => panic!("Expected Expression node"),
         }
     }
@@ -114,10 +121,10 @@ impl<'ctx> Visitor<BasicValueEnum<'ctx>> for LLVMVisitor<'ctx> {
     }
     fn visit_relational_expression(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
         match node {
-            Node::RelationalExpression{lhs, op, rhs} => {
+            Node::RelationalExpression { lhs, op, rhs } => {
                 let left = lhs.accept(self);
                 let right = rhs.accept(self);
-                
+
                 match op {
                     TokenKind::LeftAngle => BasicValueEnum::IntValue(
                         self.builder
@@ -187,27 +194,19 @@ impl<'ctx> Visitor<BasicValueEnum<'ctx>> for LLVMVisitor<'ctx> {
     }
     fn visit_logical_expression(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
         match node {
-            Node::LogicalExpression{lhs, op, rhs} => {
+            Node::LogicalExpression { lhs, op, rhs } => {
                 let left = lhs.accept(self);
                 let right = rhs.accept(self);
-                
+
                 match op {
                     TokenKind::LogicalAnd => BasicValueEnum::IntValue(
                         self.builder
-                            .build_and(
-                                left.into_int_value(),
-                                right.into_int_value(),
-                                "andtmp",
-                            )
+                            .build_and(left.into_int_value(), right.into_int_value(), "andtmp")
                             .unwrap(),
                     ),
                     TokenKind::LogicalOr => BasicValueEnum::IntValue(
                         self.builder
-                            .build_or(
-                                left.into_int_value(),
-                                right.into_int_value(),
-                                "ortmp",
-                            )
+                            .build_or(left.into_int_value(), right.into_int_value(), "ortmp")
                             .unwrap(),
                     ),
                     _ => panic!("Unsupported logical operator"),
@@ -244,16 +243,21 @@ impl<'ctx> Visitor<BasicValueEnum<'ctx>> for LLVMVisitor<'ctx> {
     }
     fn visit_declaration(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
         match node {
-            Node::DeclStmt { target_type: _, id, expression, mutable: _ } => {
+            Node::DeclStmt {
+                target_type: _,
+                id,
+                expression,
+                mutable: _,
+            } => {
                 let value = expression.accept(self);
                 let symbol = Instance {
                     name: id.clone(),
                     type_: Type::Int,
                     value: value,
                 };
-                
+
                 self.symbol_table.insert_var(id.clone(), symbol);
-                
+
                 value
             }
             _ => panic!("Expected Declaration node"),
@@ -278,66 +282,74 @@ impl<'ctx> Visitor<BasicValueEnum<'ctx>> for LLVMVisitor<'ctx> {
         let left = lhs.accept(self);
         let right = rhs.accept(self);
         match op {
-            TokenKind::Add => {
-                match (left, right) {
-                    (BasicValueEnum::IntValue(left_val), BasicValueEnum::IntValue(right_val)) => {
-                        BasicValueEnum::IntValue(
-                            self.builder.build_int_add(left_val, right_val, "addtmp").unwrap(),
-                        )
-                    }
-                    (BasicValueEnum::FloatValue(left_val), BasicValueEnum::FloatValue(right_val)) => {
-                        BasicValueEnum::FloatValue(
-                            self.builder.build_float_add(left_val, right_val, "addtmp").unwrap(),
-                        )
-                    }
-                    _ => panic!("Unsupported operand types for addition"),
+            TokenKind::Add => match (left, right) {
+                (BasicValueEnum::IntValue(left_val), BasicValueEnum::IntValue(right_val)) => {
+                    BasicValueEnum::IntValue(
+                        self.builder
+                            .build_int_add(left_val, right_val, "addtmp")
+                            .unwrap(),
+                    )
                 }
-            }
-            TokenKind::Subtract => {
-                match (left, right) {
-                    (BasicValueEnum::IntValue(left_val), BasicValueEnum::IntValue(right_val)) => {
-                        BasicValueEnum::IntValue(
-                            self.builder.build_int_sub(left_val, right_val, "subtmp").unwrap(),
-                        )
-                    }
-                    (BasicValueEnum::FloatValue(left_val), BasicValueEnum::FloatValue(right_val)) => {
-                        BasicValueEnum::FloatValue(
-                            self.builder.build_float_sub(left_val, right_val, "subtmp").unwrap(),
-                        )
-                    }
-                    _ => panic!("Unsupported operand types for subtraction"),
+                (BasicValueEnum::FloatValue(left_val), BasicValueEnum::FloatValue(right_val)) => {
+                    BasicValueEnum::FloatValue(
+                        self.builder
+                            .build_float_add(left_val, right_val, "addtmp")
+                            .unwrap(),
+                    )
                 }
-            }
-            TokenKind::Multiply => {
-                match (left, right) {
-                    (BasicValueEnum::IntValue(left_val), BasicValueEnum::IntValue(right_val)) => {
-                        BasicValueEnum::IntValue(
-                            self.builder.build_int_mul(left_val, right_val, "multmp").unwrap(),
-                        )
-                    }
-                    (BasicValueEnum::FloatValue(left_val), BasicValueEnum::FloatValue(right_val)) => {
-                        BasicValueEnum::FloatValue(
-                            self.builder.build_float_mul(left_val, right_val, "multmp").unwrap(),
-                        )
-                    }
-                    _ => panic!("Unsupported operand types for multiplication"),
+                _ => panic!("Unsupported operand types for addition"),
+            },
+            TokenKind::Subtract => match (left, right) {
+                (BasicValueEnum::IntValue(left_val), BasicValueEnum::IntValue(right_val)) => {
+                    BasicValueEnum::IntValue(
+                        self.builder
+                            .build_int_sub(left_val, right_val, "subtmp")
+                            .unwrap(),
+                    )
                 }
-            }
-            TokenKind::Divide => {
-                match (left, right) {
-                    (BasicValueEnum::IntValue(left_val), BasicValueEnum::IntValue(right_val)) => {
-                        BasicValueEnum::IntValue(
-                            self.builder.build_int_signed_div(left_val, right_val, "divtmp").unwrap(),
-                        )
-                    }
-                    (BasicValueEnum::FloatValue(left_val), BasicValueEnum::FloatValue(right_val)) => {
-                        BasicValueEnum::FloatValue(
-                            self.builder.build_float_div(left_val, right_val, "divtmp").unwrap(),
-                        )
-                    }
-                    _ => panic!("Unsupported operand types for division"),
+                (BasicValueEnum::FloatValue(left_val), BasicValueEnum::FloatValue(right_val)) => {
+                    BasicValueEnum::FloatValue(
+                        self.builder
+                            .build_float_sub(left_val, right_val, "subtmp")
+                            .unwrap(),
+                    )
                 }
-            }
+                _ => panic!("Unsupported operand types for subtraction"),
+            },
+            TokenKind::Multiply => match (left, right) {
+                (BasicValueEnum::IntValue(left_val), BasicValueEnum::IntValue(right_val)) => {
+                    BasicValueEnum::IntValue(
+                        self.builder
+                            .build_int_mul(left_val, right_val, "multmp")
+                            .unwrap(),
+                    )
+                }
+                (BasicValueEnum::FloatValue(left_val), BasicValueEnum::FloatValue(right_val)) => {
+                    BasicValueEnum::FloatValue(
+                        self.builder
+                            .build_float_mul(left_val, right_val, "multmp")
+                            .unwrap(),
+                    )
+                }
+                _ => panic!("Unsupported operand types for multiplication"),
+            },
+            TokenKind::Divide => match (left, right) {
+                (BasicValueEnum::IntValue(left_val), BasicValueEnum::IntValue(right_val)) => {
+                    BasicValueEnum::IntValue(
+                        self.builder
+                            .build_int_signed_div(left_val, right_val, "divtmp")
+                            .unwrap(),
+                    )
+                }
+                (BasicValueEnum::FloatValue(left_val), BasicValueEnum::FloatValue(right_val)) => {
+                    BasicValueEnum::FloatValue(
+                        self.builder
+                            .build_float_div(left_val, right_val, "divtmp")
+                            .unwrap(),
+                    )
+                }
+                _ => panic!("Unsupported operand types for division"),
+            },
             _ => panic!("Unsupported binary operator"),
         }
     }
@@ -346,55 +358,124 @@ impl<'ctx> Visitor<BasicValueEnum<'ctx>> for LLVMVisitor<'ctx> {
             panic!("Expected Assignment node");
         };
         let value = expression.accept(self);
-        self.symbol_table.insert_var(id.clone(), Instance {
-            name: id.clone(),
-            type_: Type::Dynamic,
-            value,
-        });
+        self.symbol_table.insert_var(
+            id.clone(),
+            Instance {
+                name: id.clone(),
+                type_: Type::Dynamic,
+                value,
+            },
+        );
         value
     }
-    
+
     fn visit_function_call(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
         let Node::FunctionCall { id, arguments } = node else {
             panic!("Expected FunctionCall node");
         };
-        
+
         let mut args = Vec::new();
-        
+
         let Some(arguments) = arguments.as_ref() else {
             panic!("Expected arguments");
-        };  
-        
+        };
+
         for arg in arguments {
             args.push(arg.accept(self));
         }
-        
+
         let Some(function) = self.symbol_table.get_fn(id) else {
             panic!("Function not found");
         };
-        
-        let args: Vec<BasicMetadataValueEnum> = args.iter().map(|arg| {
-            match arg {
+
+        let args: Vec<BasicMetadataValueEnum> = args
+            .iter()
+            .map(|arg| match arg {
                 BasicValueEnum::IntValue(int) => BasicMetadataValueEnum::IntValue(*int),
                 BasicValueEnum::FloatValue(float) => BasicMetadataValueEnum::FloatValue(*float),
                 BasicValueEnum::PointerValue(ptr) => BasicMetadataValueEnum::PointerValue(*ptr),
                 BasicValueEnum::ArrayValue(array) => BasicMetadataValueEnum::ArrayValue(*array),
-                BasicValueEnum::StructValue(structure) => BasicMetadataValueEnum::StructValue(*structure),
+                BasicValueEnum::StructValue(structure) => {
+                    BasicMetadataValueEnum::StructValue(*structure)
+                },
                 BasicValueEnum::VectorValue(vector) => BasicMetadataValueEnum::VectorValue(*vector),
-            }
-        }).collect();
-        
+            })
+            .collect();
+
         let function_value = self.module.get_function(&function.name).unwrap();
-        
-        let Ok(call) = self.builder.build_call(function_value, &args[..], "calltmp") else {
+
+        let Ok(call) = self
+            .builder
+            .build_call(function_value, &args[..], "calltmp")
+        else {
             panic!("Failed to build function call");
-        };  
-        
+        };
+
         call.try_as_basic_value().left().unwrap()
     }
 
     fn visit_function_decl(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
-        todo!()
+        let Node::FnDeclStmnt {
+            id,
+            body,
+            params,
+            return_type,
+            mutable,
+        } = node
+        else {
+            panic!("Expected FunctionDecl node");
+        };
+        
+        let params = self.get_params_list(params);
+        
+        self.symbol_table.insert_fn(
+            id.clone(),
+            FunctionDefinition {
+                name: id.clone(),
+                params: HashMap::new(),
+                return_type: Type::Int,
+            },
+        );
+        
+        if let Node::FnDeclStmnt {
+            id,
+            params,
+            body,
+            return_type,
+            mutable,
+        } = node
+        {
+            let body_cloned = body.clone();
+            let Some(r_type) = self.type_checker.get(return_type) else {
+                panic!("FnDecl: {} not a valid return type", return_type);
+            };
+            let func = Function {
+                name: id.to_string(),
+                params: self.get_params_list(params),
+                body: body_cloned,
+                return_type: r_type,
+                mutable: *mutable,
+            };
+            // Todo: we might want to have a better way to do this than just getting it by string
+            let Some(m_type) = self.type_checker.get("Fn") else {
+                panic!("Fn isn't a type");
+            };
+            let function = Variable {
+                mutable: *mutable,
+                value: Value::Function(Rc::new(func)),
+                m_type,
+            };
+            self.context.insert_variable(&id, Rc::new(function));
+        } else {
+            panic!("Expected FunctionDecl node");
+        };
+        Value::None()
+        
+        
+        
+        
+        
+        
     }
 
     fn visit_param_decl(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
