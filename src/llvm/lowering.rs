@@ -228,7 +228,7 @@ impl<'ctx> Visitor<BasicValueEnum<'ctx>> for LLVMVisitor<'ctx> {
         match node {
             Node::DeclStmt { target_type: _, id, expression, mutable: _ } => {
                 let value = expression.accept(self);
-                self.symbol_table.add_symbol(id.clone(), value);
+                self.symbol_table.insert_var(id.clone(), value);
                 value
             }
             _ => panic!("Expected Declaration node"),
@@ -241,11 +241,81 @@ impl<'ctx> Visitor<BasicValueEnum<'ctx>> for LLVMVisitor<'ctx> {
         todo!()
     }
     
-    fn visit_identifier(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
-        todo!()
+    fn visit_identifier(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+        let Node::Identifier(id) = &node else {
+            panic!("Expected Identifier node");
+        };
+        *self.symbol_table.get_var(id).unwrap()
     }
-    fn visit_binary_op(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
-        todo!()
+    fn visit_binary_op(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+        let Node::BinaryOperation(lhs, op, rhs) = node else {
+            panic!("Expected binary operator node");
+        };
+        let left = lhs.accept(self);
+        let right = rhs.accept(self);
+        match op {
+            TokenKind::Add => {
+                match (left, right) {
+                    (BasicValueEnum::IntValue(left_val), BasicValueEnum::IntValue(right_val)) => {
+                        BasicValueEnum::IntValue(
+                            self.builder.build_int_add(left_val, right_val, "addtmp").unwrap(),
+                        )
+                    }
+                    (BasicValueEnum::FloatValue(left_val), BasicValueEnum::FloatValue(right_val)) => {
+                        BasicValueEnum::FloatValue(
+                            self.builder.build_float_add(left_val, right_val, "addtmp").unwrap(),
+                        )
+                    }
+                    _ => panic!("Unsupported operand types for addition"),
+                }
+            }
+            TokenKind::Subtract => {
+                match (left, right) {
+                    (BasicValueEnum::IntValue(left_val), BasicValueEnum::IntValue(right_val)) => {
+                        BasicValueEnum::IntValue(
+                            self.builder.build_int_sub(left_val, right_val, "subtmp").unwrap(),
+                        )
+                    }
+                    (BasicValueEnum::FloatValue(left_val), BasicValueEnum::FloatValue(right_val)) => {
+                        BasicValueEnum::FloatValue(
+                            self.builder.build_float_sub(left_val, right_val, "subtmp").unwrap(),
+                        )
+                    }
+                    _ => panic!("Unsupported operand types for subtraction"),
+                }
+            }
+            TokenKind::Multiply => {
+                match (left, right) {
+                    (BasicValueEnum::IntValue(left_val), BasicValueEnum::IntValue(right_val)) => {
+                        BasicValueEnum::IntValue(
+                            self.builder.build_int_mul(left_val, right_val, "multmp").unwrap(),
+                        )
+                    }
+                    (BasicValueEnum::FloatValue(left_val), BasicValueEnum::FloatValue(right_val)) => {
+                        BasicValueEnum::FloatValue(
+                            self.builder.build_float_mul(left_val, right_val, "multmp").unwrap(),
+                        )
+                    }
+                    _ => panic!("Unsupported operand types for multiplication"),
+                }
+            }
+            TokenKind::Divide => {
+                match (left, right) {
+                    (BasicValueEnum::IntValue(left_val), BasicValueEnum::IntValue(right_val)) => {
+                        BasicValueEnum::IntValue(
+                            self.builder.build_int_signed_div(left_val, right_val, "divtmp").unwrap(),
+                        )
+                    }
+                    (BasicValueEnum::FloatValue(left_val), BasicValueEnum::FloatValue(right_val)) => {
+                        BasicValueEnum::FloatValue(
+                            self.builder.build_float_div(left_val, right_val, "divtmp").unwrap(),
+                        )
+                    }
+                    _ => panic!("Unsupported operand types for division"),
+                }
+            }
+            _ => panic!("Unsupported binary operator"),
+        }
     }
     fn visit_assignment(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
         todo!()

@@ -53,7 +53,7 @@ pub enum Node {
     String(String),
     Identifier(String),
     Bool(bool),
-
+    
     // Expressions
     LogicalExpression {
         lhs: Box<Node>,
