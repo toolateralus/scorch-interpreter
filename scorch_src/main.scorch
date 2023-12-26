@@ -1,11 +1,1 @@
-typedef Vec | 
-    var x : Int
-    var y : Int
-    var z : Int
-|
-
-var vec := Vec {10, 20, 30}
-
-repeat {
-    println(vec)
-}
+x := 'lol swag'.println()

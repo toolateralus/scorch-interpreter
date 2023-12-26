@@ -21,7 +21,7 @@ use frontend::tokens::*;
 use util::*;
 
 fn main() -> () {
-    let flags_map = parse_cmd_line_args();
+    let flags_map = prs_cmd_line_args();
 
     let flags = util::Flags::new(flags_map);
 
@@ -36,7 +36,7 @@ fn main() -> () {
     }
 }
 
-fn parse_cmd_line_args() -> HashMap<String, bool> {
+fn prs_cmd_line_args() -> HashMap<String, bool> {
     let mut flags = HashMap::new();
     let args: Vec<String> = env::args().collect();
     let mut i = 0;
