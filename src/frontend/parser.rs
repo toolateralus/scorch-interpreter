@@ -1006,18 +1006,6 @@ fn parse_compound(tokens: &Vec<Token>, index: &mut usize) -> Node {
 	loop {
 		let op = get_current(tokens, index);
 		match op.kind {
-            TokenKind::OpenCurly => {
-                let Node::Identifier(id) = &left else {
-                    panic!("Expected identifier before open curly brace  ");
-                };
-                *index += 1; // consume {
-                let params = parse_parameters(tokens, index);
-                *index += 1; // consume }
-                return Node::StructInit {
-                    id: id.to_string(),
-                    params,
-                };
-            }
 			TokenKind::Dot => {
 				*index += 1; // consume '.' operator.
 				return Node::DotOp {

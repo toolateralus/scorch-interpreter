@@ -137,15 +137,16 @@ impl TypeChecker {
 }
 pub fn _get_type_name<'a>(arg: &'a Value) -> &'a str {
     let arg_type_name = match arg {
-        Value::Int(..) => "Int",
-        Value::Double(_) => "Double",
-        Value::Bool(_) => "Bool",
-        Value::String(_) => "String",
-        Value::None() => "None",
-        Value::Array(..) | Value::List(..) => "Array",
-        Value::Function(_func) => "Fn",
-        Value::Return(_) => todo!(),
-        Value::Struct { name: _, fields: _, block: _ } => "Struct",
+        Value::Array( .. ) |
+        Value::List(..) => "Array",
+        Value::None()    => "None",
+        Value::Int( .. )   => "Int",
+        Value::Bool( .. )   => "Bool",
+        Value::String( .. ) => "String",
+        Value::Double( .. ) => "Double",
+        Value::Function( .. ) => "Fn",
+        Value::Return( .. ) => todo!(),
+        Value::Struct { .. } => "Struct",
     };
     arg_type_name
 }
