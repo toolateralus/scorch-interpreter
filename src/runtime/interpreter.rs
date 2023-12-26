@@ -681,7 +681,7 @@ impl Visitor<Value> for Interpreter {
     }
 
     fn visit_type_def(&mut self, node: &Node) -> Value {
-        if let Node::StructDef {id, block} = node{
+        if let Node::TypeDef {id, block} = node{
             let Node::Block(_statements) = block.as_ref() else {
                 panic!("Expected block")
             };
@@ -713,7 +713,7 @@ impl Visitor<Value> for Interpreter {
         Value::None()
     }
     fn visit_struct_init(&mut self, node: &Node) -> Value {
-        let Node::StructInit { id, args } = node else {
+        let Node::TypedefInit { id, args } = node else {
             panic!("Expected StructInit node");
         };
         
@@ -729,6 +729,10 @@ impl Visitor<Value> for Interpreter {
         
         let fields = typedef.fields.clone();
         
+        if fields.len() != args.len() {
+            panic!("{id} constructor:  number of arguments does not match the number of fields");
+        }
+        
         for (field, arg) in fields.iter().zip(args.iter()) {
             let value = arg.accept(self);
             let Some(t) = self.type_checker.from_value(&value) else {
@@ -736,7 +740,7 @@ impl Visitor<Value> for Interpreter {
             };
             
             if field.1.as_ref().name != t.name {
-                panic!("Type mismatch");
+                panic!("type mismatch in '{id}' constructor. expected {:?}, got {:?}", field.1.as_ref().name,  t.name);
             }
             
             let var = Variable::new(true, value, Rc::clone(&t));

@@ -4,4 +4,8 @@ typedef Vec |
     var z : Int
 |
 
-myvec := Vec {100, 200, 300} 
+var vec := Vec {10, 20, 30}
+
+repeat {
+    println(vec)
+}

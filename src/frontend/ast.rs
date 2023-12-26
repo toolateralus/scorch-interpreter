@@ -137,8 +137,8 @@ pub enum Node {
     Double(f64),
     DotOp { lhs: Box<Node>, op: TokenKind, rhs: Box<Node> },
     Lambda { params: Vec<Box<Node>>, block: Box<Node> },
-    StructDef { id: String, block: Box<Node> },
-    StructInit { id: String, args: Vec<Node> },
+    TypeDef { id: String, block: Box<Node> },
+    TypedefInit { id: String, args: Vec<Node> },
 }
 impl Node {
     pub fn accept<T>(&self, visitor: &mut dyn Visitor<T>) -> T {
@@ -174,8 +174,8 @@ impl Node {
             Node::Double(..) => visitor.visit_number(self),
             Node::DotOp { .. } => visitor.visit_binary_op(self),
             Node::Lambda { .. } => visitor.visit_lambda(self),
-            Node::StructDef { .. } => visitor.visit_type_def(self),
-            Node::StructInit { id: _, args: _ } => visitor.visit_struct_init(self),
+            Node::TypeDef { .. } => visitor.visit_type_def(self),
+            Node::TypedefInit { id: _, args: _ } => visitor.visit_struct_init(self),
         }
     }
 }

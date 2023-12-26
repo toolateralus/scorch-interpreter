@@ -810,7 +810,7 @@ fn parse_type_def(index: &mut usize, identifier: &Token, tokens: &Vec<Token>) ->
         }
     }
     Ok(
-        Node::StructDef {
+        Node::TypeDef {
             id,
             block: Box::new(
                 Node::Block(statements)
@@ -1093,7 +1093,7 @@ fn parse_operand(tokens: &Vec<Token>, index: &mut usize) -> Node {
                     
                     args.push(arg);
                 }
-                Node::StructInit {
+                Node::TypedefInit {
                     id: identifier.value.clone(),
                     args,
                 }
