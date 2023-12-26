@@ -1,13 +1,11 @@
 // tokenizer, parser.
 pub mod frontend;
-
 // interpreter, execution. types.
 pub mod runtime;
-
 // cli repl, load & run file, etc.
 pub mod util;
-
 // unit test module, see /test.rs
+pub mod llvm;
 #[cfg(test)]
 pub mod test;
 use ::std::collections::HashMap;
