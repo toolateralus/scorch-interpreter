@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use inkwell::values::BasicValueEnum;
-
 pub enum Type {
     Int,
     Void,
