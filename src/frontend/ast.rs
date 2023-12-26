@@ -32,7 +32,7 @@ pub trait Visitor<T> {
 
     // Precedence 7
     // fn visit_repeat_stmnt(&mut self, node: &Node) -> T;
-    // fn visit_break_stmnt(&mut self, node: &Node) -> T;
+    fn visit_break_stmnt(&mut self, node: &Node) -> T;
     // fn visit_if_stmnt(&mut self, node: &Node) -> T;
     // fn visit_else_stmnt(&mut self, node: &Node) -> T;
 
@@ -154,7 +154,7 @@ impl Node {
 
             // control flow keywords
             // Node::RepeatStmnt { .. } => visitor.visit_repeat_stmnt(self),
-            // Node::BreakStmnt(_) => visitor.visit_break_stmnt(self),
+            Node::BreakStmnt(_) => visitor.visit_break_stmnt(self),
             // Node::IfStmnt { .. } => visitor.visit_if_stmnt(self),
             // Node::ElseStmnt { .. } => visitor.visit_else_stmnt(self),
 

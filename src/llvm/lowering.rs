@@ -32,17 +32,9 @@ impl<'ctx> Visitor<BasicValueEnum<'ctx>> for LLVMVisitor<'ctx> {
             panic!("Expected Block node");
         };
 
-        let function = self
-            .builder
-            .get_insert_block()
-            .unwrap()
-            .get_parent()
-            .unwrap();
         let mut result: Option<BasicValueEnum<'ctx>> = None;
 
         for statement in statements {
-            let basic_block = self.context.append_basic_block(function, "block");
-            self.builder.position_at_end(basic_block);
             result = Some(statement.accept(self));
         }
 
@@ -413,7 +405,9 @@ impl<'ctx> Visitor<BasicValueEnum<'ctx>> for LLVMVisitor<'ctx> {
         
         let result = body.accept(self);
         
-        self.builder.build_return(Some(&result));
+        let Ok(_) = self.builder.build_return(Some(&result)) else {
+            panic!("Failed to build return instruction");
+        };
         
         self.symbol_table.insert_fn(
             id.clone(),
@@ -468,8 +462,20 @@ impl<'ctx> Visitor<BasicValueEnum<'ctx>> for LLVMVisitor<'ctx> {
         else {
             panic!("Failed to build function call");
         };
-
+        
         call.try_as_basic_value().left().unwrap()
     }
-
+    fn visit_break_stmnt(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+        let Node::BreakStmnt(Some(value)) = node else {
+            panic!("Expected BreakStmnt node");
+        };
+        
+        let val = value.accept(self);
+        
+        let Ok(_) = self.builder.build_return(Some(&val)) else {
+            panic!("Failed to build return instruction");
+        };
+        
+        BasicValueEnum::IntValue(self.context.i32_type().const_int(0, false))
+    }
 }
