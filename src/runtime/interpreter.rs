@@ -22,23 +22,19 @@ impl Interpreter {
             type_checker: TypeChecker::new(),
         }
     }
-    
     fn try_find_and_execute_fn(
         &mut self,
         arguments: &Option<Vec<Node>>,
         id: &String,
     ) -> Value {
         let args = Function::extract_args(self, arguments);
-
-        // builtin functions
-        if self.builtin.contains_key(id) {
-            let builtin = self.builtin.get_mut(id).unwrap();
-            return builtin.call(args);
-        }
-        
         // function pointer
         let Some(fn_ptr) = self.context.find_variable(id) else {
-            panic!("Function not found");
+            let Some(builtin) = self.builtin.get_mut(id) else {
+                dbg!(id);
+                panic!("Function not found");
+            };
+            return builtin.call(&mut self.context, &self.type_checker, args);
         };
         let function = match &fn_ptr.value {
             Value::Function(func) => func.clone(),
@@ -52,6 +48,7 @@ impl Interpreter {
         if args.len() != function.params.len() {
             panic!("Number of arguments does not match the number of parameters");
         }
+
 
         for (arg, param) in args.iter().zip(function.params.iter()) {
             if !param.m_type.validate(arg) {
@@ -89,7 +86,6 @@ impl Interpreter {
         self.try_find_and_execute_fn(&Some(args), func_id)
     }
 }
-
 impl Visitor<Value> for Interpreter {
     // top level nodes
     fn visit_program(&mut self, node: &Node) -> Value {
@@ -686,8 +682,85 @@ impl Visitor<Value> for Interpreter {
         
         panic!("Expected expression in array assignment");
     }
+    
 
     fn visit_lambda(&mut self, _node: &Node) -> Value {
         Value::None()
+    }
+
+    fn visit_type_def(&mut self, node: &Node) -> Value {
+        if let Node::TypeDef {id, block} = node{
+            let Node::Block(_statements) = block.as_ref() else {
+                panic!("Expected block")
+            };
+            
+            let _new_type = Type {
+                name: id.to_string(),
+                validator: Box::new(|_value| 
+                    true
+                ),
+            };
+            
+            let mut fields = HashMap::new();
+            
+            for statement in _statements {
+                let Node::DeclStmt { target_type, id, expression, mutable } = statement.as_ref() else {
+                    panic!("Expected declaration")
+                };
+                fields.insert(id.clone(), self.type_checker.get(&target_type).unwrap());
+            }
+            
+            let typedef = Typedef {
+                name: id.to_string(),
+                fields,
+                type_: _new_type
+            };
+            
+            self.type_checker.typedefs.insert(id.to_string(), Box::new(typedef));
+        }
+        Value::None()
+    }
+    fn visit_struct_init(&mut self, node: &Node) -> Value {
+        let Node::TypedefInit { id, args } = node else {
+            panic!("Expected StructInit node");
+        };
+        
+        let context = self.context.clone();
+        
+        self.context = Context::new();
+        
+        let typedef = if let Some(typedef) = self.type_checker.typedefs.get_mut(id) {
+            typedef
+        } else {
+            panic!("Struct {} not found", id);
+        };
+        
+        let fields = typedef.fields.clone();
+        
+        if fields.len() != args.len() {
+            panic!("{id} constructor:  number of arguments does not match the number of fields");
+        }
+        
+        for (field, arg) in fields.iter().zip(args.iter()) {
+            let value = arg.accept(self);
+            let Some(t) = self.type_checker.from_value(&value) else {
+                panic!("doesn't match to a valid type");
+            };
+            
+            if field.1.as_ref().name != t.name {
+                panic!("type mismatch in '{id}' constructor. expected {:?}, got {:?}", field.1.as_ref().name,  t.name);
+            }
+            
+            let var = Variable::new(true, value, Rc::clone(&t));
+            self.context.insert_variable(&field.0, Rc::new(var));
+        }
+        let fields = self.context.variables.clone();
+        
+        self.context = context;
+        
+        Value::Struct {
+            name: id.clone(),
+            fields,
+        }
     }
 }

@@ -1,7 +1,7 @@
-use crate::runtime::types::Value;
+use crate::{runtime::types::Value, frontend::ast::Node};
 use std::{collections::HashMap, rc::Rc};
 
-use super::types::Variable;
+use super::{types::{Variable, Typedef}, interpreter::Interpreter};
 
 #[derive(Debug)]
 pub struct Type {
@@ -17,10 +17,12 @@ impl Type {
 
 pub struct TypeChecker {
     types: HashMap<String, Rc<Type>>,
+    pub typedefs: HashMap<String, Box<Typedef>>,
 }
 impl TypeChecker {
     pub fn new() -> Self {
         Self {
+            typedefs: HashMap::new(),
             types: HashMap::from([
                 
                 (
@@ -96,14 +98,13 @@ impl TypeChecker {
             ]),
         }
     }
+
+   
 }
 
 impl TypeChecker {
     pub fn validate(val: &Variable) -> bool {
         val.m_type.validate(&val.value)
-    }
-    pub fn _set(&mut self, name: &String, type_: Type) -> () {
-        self.types.insert(name.clone(), Rc::new(type_));
     }
     pub fn get(&self, name: &str) -> Option<Rc<Type>> {
         match self.types.get(name) {
@@ -117,19 +118,16 @@ impl TypeChecker {
 }
 pub fn _get_type_name<'a>(arg: &'a Value) -> &'a str {
     let arg_type_name = match arg {
-        Value::Int(..) => "Int",
-        Value::Double(_) => "Double",
-        Value::Bool(_) => "Bool",
-        Value::String(_) => "String",
-        Value::None() => "None",
-        Value::Array(..) | Value::List(..) => "Array",
-        Value::Function(_func) => "Fn",
-        Value::Return(_) => todo!(),
-        // not yet implemented
-        Value::Struct {
-            name: _,
-            context: _,
-        } => todo!(),
+        Value::Array( .. ) |
+        Value::List(..) => "Array",
+        Value::None()    => "None",
+        Value::Int( .. )   => "Int",
+        Value::Bool( .. )   => "Bool",
+        Value::String( .. ) => "String",
+        Value::Double( .. ) => "Double",
+        Value::Function( .. ) => "Fn",
+        Value::Return( .. ) => todo!(),
+        Value::Struct { .. } => "Struct",
     };
     arg_type_name
 }

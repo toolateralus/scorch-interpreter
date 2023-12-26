@@ -1,4 +1,1 @@
-add_hi: Fn(s: String) -> String {
-	break s + " hi"
-}
-"yo,".println()
+x := 'lol swag'.println()

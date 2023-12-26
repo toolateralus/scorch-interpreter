@@ -39,11 +39,15 @@ pub fn create_tokenizer() -> Tokenizer {
     let keywords = HashMap::from([
         (String::from("const"), TokenKind::Const),
         (String::from("var"), TokenKind::Var),
-        (String::from("repeat"), TokenKind::Repeat),
+        
         (String::from("return"), TokenKind::Return),
         (String::from("break"), TokenKind::Break),
+        
         (String::from("if"), TokenKind::If),
         (String::from("else"), TokenKind::Else),
+
+        (String::from("typedef"), TokenKind::Typedef),
+        (String::from("repeat"), TokenKind::Repeat),
     ]);
     
     let tokenizer = Tokenizer {
@@ -135,6 +139,7 @@ pub enum TokenKind {
     
     Assignment, // =
     Break,
+    Typedef,
 }
 #[derive(Debug, Clone)]
 pub struct Token {
