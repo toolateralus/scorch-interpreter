@@ -1,6 +1,7 @@
 // tokenizer, parser.
 pub mod frontend;
 pub mod util;
+pub mod llvm;
 
 use ::std::collections::HashMap;
 use ::std::env;

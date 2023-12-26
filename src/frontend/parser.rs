@@ -397,13 +397,15 @@ fn parse_decl(
         // assigning a value to an already declared variable.
         TokenKind::Assignment => {
             *index += 1;
-            let id = Node::Identifier(token.value.clone());
             let expression = parse_expression(tokens, index);
             consume_normal_expr_delimiter(tokens, index);
-            Ok(Node::AssignStmnt {
-                id: Box::new(id),
+            
+            Ok(
+                Node::Assignment {
+                id: token.value.clone(),
                 expression: Box::new(expression),
-            })
+                }
+            )
         }
         TokenKind::OpenBracket => {
             *index += 1; // discard [
@@ -869,12 +871,12 @@ fn parse_addition(tokens: &Vec<Token>, index: &mut usize) -> Node {
             TokenKind::Add => {
                 *index += 1;
                 let right = parse_term(tokens, index);
-                left = Node::AddOp(Box::new(left), Box::new(right));
+                left = Node::BinaryOperation(Box::new(left), token.kind, Box::new(right));
             }
             TokenKind::Subtract => {
                 *index += 1;
                 let right = parse_term(tokens, index);
-                left = Node::SubOp(Box::new(left), Box::new(right));
+                left = Node::BinaryOperation(Box::new(left), token.kind, Box::new(right));
             }
             _ => break,
         }
@@ -888,12 +890,12 @@ fn parse_term(tokens: &Vec<Token>, index: &mut usize) -> Node {
             TokenKind::Multiply => {
                 *index += 1;
                 let right = parse_unary(tokens, index);
-                left = Node::MulOp(Box::new(left), Box::new(right));
+                left = Node::BinaryOperation(Box::new(left), token.kind, Box::new(right));
             }
             TokenKind::Divide => {
                 *index += 1;
                 let right = parse_unary(tokens, index);
-                left = Node::DivOp(Box::new(left), Box::new(right));
+                left = Node::BinaryOperation(Box::new(left), token.kind, Box::new(right));
             }
             _ => break,
         }

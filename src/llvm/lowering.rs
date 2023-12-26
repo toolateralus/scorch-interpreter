@@ -1,4 +1,7 @@
+use std::collections::HashMap;
+
 use crate::frontend::ast::{Visitor, Node};
+use crate::frontend::tokens::TokenKind;
 use inkwell::context::Context;
 use inkwell::module::Module;
 use inkwell::builder::Builder;
@@ -19,11 +22,52 @@ pub struct LLVMLoweringVisitor<'ctx> {
     pub context: &'ctx Context,
     pub module : &'ctx Module<'ctx>,
     pub builder: &'ctx Builder<'ctx>,
+    pub symbol_table: &'ctx mut SymbolTable<'ctx>,
 }
+pub struct SymbolTable<'ctx> {
+    pub symbols: HashMap<String, BasicValueEnum<'ctx>>,
+    pub functions : HashMap<String, FunctionDefinition<'ctx>>,
+    pub structs : HashMap<String, StructDefinition<'ctx>>,
+}
+impl<'ctx> SymbolTable<'ctx> {
+    // Add a new symbol
+    pub fn add_symbol(&mut self, name: String, value: BasicValueEnum<'ctx>) {
+        self.symbols.insert(name, value);
+    }
 
-pub struct StructDefinition {
+    // Retrieve a symbol
+    pub fn get_symbol(&self, name: &str) -> Option<&BasicValueEnum<'ctx>> {
+        self.symbols.get(name)
+    }
+
+    // Add a new function
+    pub fn add_function(&mut self, name: String, function: FunctionDefinition<'ctx>) {
+        self.functions.insert(name, function);
+    }
+
+    // Retrieve a function
+    pub fn get_function(&self, name: &str) -> Option<&FunctionDefinition<'ctx>> {
+        self.functions.get(name)
+    }
+
+    // Add a new struct
+    pub fn add_struct(&mut self, name: String, structure: StructDefinition<'ctx>) {
+        self.structs.insert(name, structure);
+    }
+
+    // Retrieve a struct
+    pub fn get_struct(&self, name: &str) -> Option<&StructDefinition<'ctx>> {
+        self.structs.get(name)
+    }
+}
+pub struct FunctionDefinition<'ctx> {
     pub name: String,
-    pub fields: Vec<String>,
+    pub params: HashMap<String, &'ctx Type>,
+    pub return_type: &'ctx Type,
+}
+pub struct StructDefinition<'ctx> {
+    pub name: String,
+    pub fields: HashMap<String, &'ctx Type>,
 }
 
 impl<'ctx> Visitor<BasicValueEnum<'ctx>> for LLVMLoweringVisitor<'ctx> {
@@ -64,7 +108,7 @@ impl<'ctx> Visitor<BasicValueEnum<'ctx>> for LLVMLoweringVisitor<'ctx> {
     fn visit_identifier(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
         match node {
             Node::Identifier(name) => {
-                match self.symbol_table.get(name) {
+                match self.symbol_table.get_symbol(name) {
                     Some(value) => *value,
                     None => panic!("Undefined variable"),
                 }
@@ -83,9 +127,7 @@ impl<'ctx> Visitor<BasicValueEnum<'ctx>> for LLVMLoweringVisitor<'ctx> {
     fn visit_factor(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
         todo!()
     }
-    fn visit_binary_op(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
-        todo!()
-    }
+   
     fn visit_relational_expression(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
         todo!()
     }
@@ -100,28 +142,26 @@ impl<'ctx> Visitor<BasicValueEnum<'ctx>> for LLVMLoweringVisitor<'ctx> {
     }
     fn visit_binary_op(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
         match node {
-            Node::BinaryOp { left, op, right } => {
-                let left = self.visit(left);
-                let right = self.visit(right);
+            Node::BinaryOperation(lhs, op, rhs) => {
+                let left = lhs.accept(self);
+                let right = rhs.accept(self);
                 
-                match op.as_str() {
-                    "+" => self.builder.build_float_add(left.into_float_value(), right.into_float_value(), "addtmp"),
-                    "-" => self.builder.build_float_sub(left.into_float_value(), right.into_float_value(), "subtmp"),
-                    "*" => self.builder.build_float_mul(left.into_float_value(), right.into_float_value(), "multmp"),
-                    "/" => self.builder.build_float_div(left.into_float_value(), right.into_float_value(), "divtmp"),
+                match op {
+                    TokenKind::Add => BasicValueEnum::FloatValue(self.builder.build_float_add(left.into_float_value(), right.into_float_value(), "addtmp").unwrap()),
+                    TokenKind::Subtract => BasicValueEnum::FloatValue(self.builder.build_float_sub(left.into_float_value(), right.into_float_value(), "subtmp").unwrap()),
+                    TokenKind::Multiply => BasicValueEnum::FloatValue(self.builder.build_float_mul(left.into_float_value(), right.into_float_value(), "multmp").unwrap()),
+                    TokenKind::Divide => BasicValueEnum::FloatValue(self.builder.build_float_div(left.into_float_value(), right.into_float_value(), "divtmp").unwrap()),
                     _ => panic!("Unsupported binary operator"),
-                }.into()
+                }
             }
             _ => panic!("Expected BinaryOp node"),
         }
     }
     fn visit_assignment(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
         match node {
-            Node::Assignment { name, value } => {
-                let value = self.visit(value);
-
-                self.symbol_table.insert(name.clone(), value);
-
+            Node::Assignment { id, expression } => {
+                let value = expression.accept(self);
+                self.symbol_table.add_symbol(id.clone(), value);
                 value
             }
             _ => panic!("Expected Assignment node"),
