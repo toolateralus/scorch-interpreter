@@ -29,7 +29,6 @@ pub trait Visitor<T> {
     fn visit_declaration(&mut self, node: &Node) -> T;
     fn visit_function_call(&mut self, node: &Node) -> T;
     fn visit_function_decl(&mut self, node: &Node) -> T;
-    fn visit_param_decl(&mut self, node: &Node) -> T;
 
     // Precedence 7
     // fn visit_repeat_stmnt(&mut self, node: &Node) -> T;
@@ -115,9 +114,9 @@ pub enum Node {
         return_type: String,
         mutable: bool,
     },
-    ParamDeclNode {
-        varname: Box<Node>,
-        typename: Box<Node>,
+    ParamDecl {
+        varname: String,
+        typename: String,
     },
     BreakStmnt(Option<Box<Node>>),
     Array {
@@ -150,7 +149,6 @@ impl Node {
         match self {
             // functions
             Node::FnDeclStmnt { .. } => visitor.visit_function_decl(self),
-            Node::ParamDeclNode { .. } => visitor.visit_param_decl(self),
             Node::FunctionCall { .. } => visitor.visit_function_call(self),
             // Node::Lambda { .. } => visitor.visit_lambda(self),
 

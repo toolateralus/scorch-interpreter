@@ -1,4 +1,9 @@
 x := 250 * 250
 
 
-println(x)
+get_funcy := {
+    i := 250
+    break i
+}
+
+const y := get_funcy(false)

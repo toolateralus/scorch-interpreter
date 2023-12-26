@@ -50,10 +50,18 @@ pub fn parse_parameters(tokens: &Vec<Token>, index: &mut usize) -> Vec<Node> {
         if get_current(tokens, index).kind == TokenKind::Comma {
             *index += 1;
         }
-
-        let param_decl_node = Node::ParamDeclNode {
-            varname: Box::new(varname),
-            typename: Box::new(typename),
+        
+        let Node::Identifier(varname) = varname else {
+            panic!("Expected identifier node");
+        };
+        
+        let Node::Identifier(typename) = typename else {
+            panic!("Expected identifier node");
+        };
+        
+        let param_decl_node = Node::ParamDecl {
+            varname,
+            typename,
         };
 
         params.push(param_decl_node);

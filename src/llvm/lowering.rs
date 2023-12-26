@@ -1,23 +1,17 @@
 use std::collections::HashMap;
-
 use crate::frontend::ast::{Node, Visitor};
 use crate::frontend::tokens::TokenKind;
-use inkwell::basic_block::BasicBlock;
 use inkwell::builder::Builder;
 use inkwell::context::Context;
-
 use inkwell::module::Module;
 use inkwell::values::{BasicMetadataValueEnum, BasicValueEnum};
-
 use super::context::{Instance, SymbolTable, Type, FunctionDefinition};
-
 pub struct LLVMVisitor<'ctx> {
     pub context: &'ctx Context,
     pub builder: Builder<'ctx>,
     pub module: Module<'ctx>,
     pub symbol_table: &'ctx mut SymbolTable<'ctx>,
 }
-
 impl<'ctx> LLVMVisitor<'ctx> {
     pub(crate) fn new(
         context: &'ctx Context,
@@ -71,7 +65,9 @@ impl<'ctx> Visitor<BasicValueEnum<'ctx>> for LLVMVisitor<'ctx> {
             }
 
             // Build a return instruction in the end of the function
-            self.builder.build_return(None);
+            let Ok(_) = self.builder.build_return(None) else {
+                panic!("Failed to build return instruction");
+            };
 
             // Return the result of the last statement
             result.unwrap()
@@ -244,16 +240,21 @@ impl<'ctx> Visitor<BasicValueEnum<'ctx>> for LLVMVisitor<'ctx> {
     fn visit_declaration(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
         match node {
             Node::DeclStmt {
-                target_type: _,
+                target_type,
                 id,
                 expression,
-                mutable: _,
+                mutable,
             } => {
+                if self.symbol_table.get_var(id).is_some() {
+                    panic!("Redefinition of a variable : {id}");
+                }
+                
                 let value = expression.accept(self);
                 let symbol = Instance {
                     name: id.clone(),
-                    type_: Type::Int,
-                    value: value,
+                    type_: Type::from_string(target_type.clone()),
+                    value,
+                    mutable: *mutable,
                 };
 
                 self.symbol_table.insert_var(id.clone(), symbol);
@@ -267,13 +268,16 @@ impl<'ctx> Visitor<BasicValueEnum<'ctx>> for LLVMVisitor<'ctx> {
         todo!()
     }
     fn visit_eof(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
-        todo!()
+        todo!() // probably do nothing always. this doesnt seem to always come in.
     }
     fn visit_identifier(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
         let Node::Identifier(id) = &node else {
             panic!("Expected Identifier node");
         };
-        self.symbol_table.get_var(id).unwrap().value
+        let Some(var) = self.symbol_table.get_var(id) else {
+            panic!("Variable not found");
+        };
+        var.value
     }
     fn visit_binary_op(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
         let Node::BinaryOperation(lhs, op, rhs) = node else {
@@ -358,17 +362,71 @@ impl<'ctx> Visitor<BasicValueEnum<'ctx>> for LLVMVisitor<'ctx> {
             panic!("Expected Assignment node");
         };
         let value = expression.accept(self);
+        
+        let Some(var) = self.symbol_table.get_var(id) else {
+            dbg!(id);
+            panic!("Variable not found :: cannot assign undefined variables.");
+        };
+        
+        if !var.mutable {
+            dbg!(node);
+            panic!("Cannot assign to immutable variable");
+        }
+        
         self.symbol_table.insert_var(
             id.clone(),
             Instance {
-                name: id.clone(),
-                type_: Type::Dynamic,
+                name: var.name.clone(),
+                type_: var.type_.clone(),
                 value,
+                mutable: var.mutable,
             },
         );
         value
     }
-
+    fn visit_function_decl(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+        let Node::FnDeclStmnt {
+            id,
+            body,
+            params,
+            return_type,
+            mutable: _,
+        } = node
+        else {
+            panic!("Expected FunctionDecl node");
+        };
+        
+        let mut params_new = HashMap::new();
+        
+        for param in params {
+            let Node::ParamDecl { varname ,typename } = param else {
+                panic!("Expected ParamDecl node");  
+            };
+            params_new.insert(varname.clone(), Type::from_string(typename.to_string()));
+        }
+        
+        let function_type = self.context.i32_type().fn_type(&[], false);
+        let function_value = self.module.add_function(&id, function_type, None);
+        
+        let entry_block = self.context.append_basic_block(function_value, "entry");
+        self.builder.position_at_end(entry_block);
+        
+        let result = body.accept(self);
+        
+        self.builder.build_return(Some(&result));
+        
+        self.symbol_table.insert_fn(
+            id.clone(),
+            FunctionDefinition {
+                name: id.clone(),
+                params: HashMap::new(),
+                return_type: Type::Int,
+                func_val : function_value
+            },
+        );
+        
+        result
+    }
     fn visit_function_call(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
         let Node::FunctionCall { id, arguments } = node else {
             panic!("Expected FunctionCall node");
@@ -403,7 +461,7 @@ impl<'ctx> Visitor<BasicValueEnum<'ctx>> for LLVMVisitor<'ctx> {
             .collect();
 
         let function_value = self.module.get_function(&function.name).unwrap();
-
+        
         let Ok(call) = self
             .builder
             .build_call(function_value, &args[..], "calltmp")
@@ -414,71 +472,4 @@ impl<'ctx> Visitor<BasicValueEnum<'ctx>> for LLVMVisitor<'ctx> {
         call.try_as_basic_value().left().unwrap()
     }
 
-    fn visit_function_decl(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
-        let Node::FnDeclStmnt {
-            id,
-            body,
-            params,
-            return_type,
-            mutable,
-        } = node
-        else {
-            panic!("Expected FunctionDecl node");
-        };
-        
-        let params = self.get_params_list(params);
-        
-        self.symbol_table.insert_fn(
-            id.clone(),
-            FunctionDefinition {
-                name: id.clone(),
-                params: HashMap::new(),
-                return_type: Type::Int,
-            },
-        );
-        
-        if let Node::FnDeclStmnt {
-            id,
-            params,
-            body,
-            return_type,
-            mutable,
-        } = node
-        {
-            let body_cloned = body.clone();
-            let Some(r_type) = self.type_checker.get(return_type) else {
-                panic!("FnDecl: {} not a valid return type", return_type);
-            };
-            let func = Function {
-                name: id.to_string(),
-                params: self.get_params_list(params),
-                body: body_cloned,
-                return_type: r_type,
-                mutable: *mutable,
-            };
-            // Todo: we might want to have a better way to do this than just getting it by string
-            let Some(m_type) = self.type_checker.get("Fn") else {
-                panic!("Fn isn't a type");
-            };
-            let function = Variable {
-                mutable: *mutable,
-                value: Value::Function(Rc::new(func)),
-                m_type,
-            };
-            self.context.insert_variable(&id, Rc::new(function));
-        } else {
-            panic!("Expected FunctionDecl node");
-        };
-        Value::None()
-        
-        
-        
-        
-        
-        
-    }
-
-    fn visit_param_decl(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
-        todo!()
-    }
 }
