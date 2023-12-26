@@ -900,7 +900,6 @@ fn parse_term(tokens: &Vec<Token>, index: &mut usize) -> Node {
     }
     left
 }
-
 fn parse_unary(tokens : &Vec<Token>, index: &mut usize) -> Node {
     let op = get_current(tokens, index);
     match op.kind {
@@ -925,7 +924,6 @@ fn parse_unary(tokens : &Vec<Token>, index: &mut usize) -> Node {
         }
     }
 }
-
 fn parse_compound(tokens: &Vec<Token>, index: &mut usize) -> Node {
     let mut left = parse_operand(tokens, index);
 	loop {
@@ -977,13 +975,12 @@ fn parse_compound(tokens: &Vec<Token>, index: &mut usize) -> Node {
 		}
 	}
 }
-
 fn parse_operand(tokens: &Vec<Token>, index: &mut usize) -> Node {
     if let Some(token) = tokens.get(*index) {
         *index += 1;
         let node = match token.kind {
             TokenKind::Number => {
-                let int = token.value.parse::<i32>();
+                let int = token.value.parse::<u64>();
                 let float = token.value.parse::<f64>();
                 
                 if int.is_ok() {
@@ -1053,7 +1050,6 @@ fn parse_operand(tokens: &Vec<Token>, index: &mut usize) -> Node {
         panic!("Unexpected end of tokens")
     }
 }
-
 
 // ########################################
 // END PARSER FUNCTION HIERARCHY

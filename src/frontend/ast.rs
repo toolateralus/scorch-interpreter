@@ -51,12 +51,6 @@ pub enum Node {
         op: TokenKind,
         rhs: Box<Node>,
     },
-    BinaryOperation {
-        lhs: Box<Node>,
-        op: TokenKind,
-        rhs: Box<Node>,
-    },
-
     // todo: implement remainder operator.
     // todo: remove the individual binary operations
     // and use the BinaryOperation node with the TokenKind
@@ -131,7 +125,7 @@ pub enum Node {
         expression: Option<Box<Node>>,
         assignment: bool,
     },
-    Int(i32),
+    Int(u64),
     Double(f64),
     DotOp { lhs: Box<Node>, op: TokenKind, rhs: Box<Node> },
     Lambda { params: Vec<Box<Node>>, block: Box<Node> },
@@ -157,7 +151,6 @@ impl Node {
             Node::ElseStmnt { .. } => visitor.visit_else_stmnt(self),
             Node::RelationalExpression { .. } => visitor.visit_relational_expression(self),
             Node::LogicalExpression { .. } => visitor.visit_logical_expression(self),
-            Node::BinaryOperation { .. } => visitor.visit_binary_op(self),
             Node::FnDeclStmnt { .. } => visitor.visit_function_decl(self),
             Node::ParamDeclNode { .. } => visitor.visit_param_decl(self),
             Node::FunctionCall { .. } => visitor.visit_function_call(self),
