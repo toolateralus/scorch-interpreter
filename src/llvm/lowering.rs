@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
-use crate::frontend::ast::{Visitor, Node};
+use crate::frontend::ast::{Node, Visitor};
 use crate::frontend::tokens::TokenKind;
+use inkwell::builder::Builder;
 use inkwell::context::Context;
 use inkwell::module::Module;
-use inkwell::builder::Builder;
 use inkwell::values::BasicValueEnum;
 
 pub enum Type {
@@ -13,21 +13,21 @@ pub enum Type {
     Bool,
     Float,
     String,
-    Array{typename: String},
-    Struct{id: String},
-    Function{id: String},
+    Array { typename: String },
+    Struct { id: String },
+    Function { id: String },
 }
 
 pub struct LLVMLoweringVisitor<'ctx> {
     pub context: &'ctx Context,
-    pub module : &'ctx Module<'ctx>,
+    pub module: &'ctx Module<'ctx>,
     pub builder: &'ctx Builder<'ctx>,
     pub symbol_table: &'ctx mut SymbolTable<'ctx>,
 }
 pub struct SymbolTable<'ctx> {
     pub symbols: HashMap<String, BasicValueEnum<'ctx>>,
-    pub functions : HashMap<String, FunctionDefinition<'ctx>>,
-    pub structs : HashMap<String, StructDefinition<'ctx>>,
+    pub functions: HashMap<String, FunctionDefinition<'ctx>>,
+    pub structs: HashMap<String, StructDefinition<'ctx>>,
 }
 impl<'ctx> SymbolTable<'ctx> {
     // Add a new symbol
@@ -71,25 +71,25 @@ pub struct StructDefinition<'ctx> {
 }
 
 impl<'ctx> Visitor<BasicValueEnum<'ctx>> for LLVMLoweringVisitor<'ctx> {
-    fn visit_eof(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+    fn visit_eof(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
         todo!()
     }
-    
-    fn visit_declaration(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+
+    fn visit_declaration(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
         todo!()
     }
-    fn visit_program(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+    fn visit_program(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
         todo!()
     }
-    fn visit_block(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+    fn visit_block(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
         todo!()
     }
-    
+
     // Operands
-    fn visit_bool(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+    fn visit_bool(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
         todo!()
     }
-    fn visit_string(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+    fn visit_string(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
         todo!()
     }
     fn visit_number(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
@@ -107,37 +107,35 @@ impl<'ctx> Visitor<BasicValueEnum<'ctx>> for LLVMLoweringVisitor<'ctx> {
     }
     fn visit_identifier(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
         match node {
-            Node::Identifier(name) => {
-                match self.symbol_table.get_symbol(name) {
-                    Some(value) => *value,
-                    None => panic!("Undefined variable"),
-                }
-            }
+            Node::Identifier(name) => match self.symbol_table.get_symbol(name) {
+                Some(value) => *value,
+                None => panic!("Undefined variable"),
+            },
             _ => panic!("Expected Identifier node"),
         }
     }
-        
+
     // Expressions
-    fn visit_expression(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+    fn visit_expression(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
         todo!()
     }
-    fn visit_term(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+    fn visit_term(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
         todo!()
     }
-    fn visit_factor(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+    fn visit_factor(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
         todo!()
     }
-   
-    fn visit_relational_expression(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+
+    fn visit_relational_expression(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
         todo!()
     }
-    fn visit_logical_expression(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+    fn visit_logical_expression(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
         todo!()
     }
-    fn visit_not_op(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+    fn visit_not_op(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
         todo!()
     }
-    fn visit_neg_op(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+    fn visit_neg_op(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
         todo!()
     }
     fn visit_binary_op(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
@@ -145,12 +143,44 @@ impl<'ctx> Visitor<BasicValueEnum<'ctx>> for LLVMLoweringVisitor<'ctx> {
             Node::BinaryOperation(lhs, op, rhs) => {
                 let left = lhs.accept(self);
                 let right = rhs.accept(self);
-                
+
                 match op {
-                    TokenKind::Add => BasicValueEnum::FloatValue(self.builder.build_float_add(left.into_float_value(), right.into_float_value(), "addtmp").unwrap()),
-                    TokenKind::Subtract => BasicValueEnum::FloatValue(self.builder.build_float_sub(left.into_float_value(), right.into_float_value(), "subtmp").unwrap()),
-                    TokenKind::Multiply => BasicValueEnum::FloatValue(self.builder.build_float_mul(left.into_float_value(), right.into_float_value(), "multmp").unwrap()),
-                    TokenKind::Divide => BasicValueEnum::FloatValue(self.builder.build_float_div(left.into_float_value(), right.into_float_value(), "divtmp").unwrap()),
+                    TokenKind::Add => BasicValueEnum::FloatValue(
+                        self.builder
+                            .build_float_add(
+                                left.into_float_value(),
+                                right.into_float_value(),
+                                "addtmp",
+                            )
+                            .unwrap(),
+                    ),
+                    TokenKind::Subtract => BasicValueEnum::FloatValue(
+                        self.builder
+                            .build_float_sub(
+                                left.into_float_value(),
+                                right.into_float_value(),
+                                "subtmp",
+                            )
+                            .unwrap(),
+                    ),
+                    TokenKind::Multiply => BasicValueEnum::FloatValue(
+                        self.builder
+                            .build_float_mul(
+                                left.into_float_value(),
+                                right.into_float_value(),
+                                "multmp",
+                            )
+                            .unwrap(),
+                    ),
+                    TokenKind::Divide => BasicValueEnum::FloatValue(
+                        self.builder
+                            .build_float_div(
+                                left.into_float_value(),
+                                right.into_float_value(),
+                                "divtmp",
+                            )
+                            .unwrap(),
+                    ),
                     _ => panic!("Unsupported binary operator"),
                 }
             }
@@ -167,40 +197,40 @@ impl<'ctx> Visitor<BasicValueEnum<'ctx>> for LLVMLoweringVisitor<'ctx> {
             _ => panic!("Expected Assignment node"),
         }
     }
-    
+
     // Functions
-    fn visit_lambda(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+    fn visit_lambda(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
         todo!()
     }
-    fn visit_function_decl(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+    fn visit_function_decl(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
         todo!()
     }
-    fn visit_param_decl(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+    fn visit_param_decl(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
         todo!()
     }
-    fn visit_function_call(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+    fn visit_function_call(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
         todo!()
     }
-    
+
     // Arrays.
-    fn visit_array(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+    fn visit_array(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
         todo!()
     }
-    fn visit_array_access(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+    fn visit_array_access(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
         todo!()
     }
-    
+
     // Keywords.
-    fn visit_if_stmnt(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+    fn visit_if_stmnt(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
         todo!()
     }
-    fn visit_else_stmnt(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+    fn visit_else_stmnt(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
         todo!()
     }
-    fn visit_repeat_stmnt(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+    fn visit_repeat_stmnt(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
         todo!()
     }
-    fn visit_break_stmnt(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+    fn visit_break_stmnt(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
         todo!()
     }
 }

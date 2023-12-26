@@ -51,13 +51,9 @@ pub enum Node {
         op: TokenKind,
         rhs: Box<Node>,
     },
-    BinaryOperation (
-        Box<Node>,
-        TokenKind,
-        Box<Node>,
-    ),
+    BinaryOperation(Box<Node>, TokenKind, Box<Node>),
     // todo: implement remainder operator.
-   
+
     // todo: do the same with Unary operations :
     // we can have a special noed for these instead of
     // weaving it in with factors.
@@ -125,8 +121,15 @@ pub enum Node {
     },
     Int(u64),
     Double(f64),
-    DotOp { lhs: Box<Node>, op: TokenKind, rhs: Box<Node> },
-    Lambda { params: Vec<Box<Node>>, block: Box<Node> },
+    DotOp {
+        lhs: Box<Node>,
+        op: TokenKind,
+        rhs: Box<Node>,
+    },
+    Lambda {
+        params: Vec<Box<Node>>,
+        block: Box<Node>,
+    },
 }
 impl Node {
     pub fn accept<T>(&self, visitor: &mut dyn Visitor<T>) -> T {
@@ -153,11 +156,11 @@ impl Node {
             Node::BreakStmnt(_) => visitor.visit_break_stmnt(self),
             Node::Array { .. } => visitor.visit_array(self),
             Node::ArrayAccessExpr { .. } => visitor.visit_array_access(self),
-            Node::Int( ..) => visitor.visit_number(self),
-            Node::Double( .. ) => visitor.visit_number(self),
+            Node::Int(..) => visitor.visit_number(self),
+            Node::Double(..) => visitor.visit_number(self),
             Node::DotOp { .. } => visitor.visit_binary_op(self),
             Node::Lambda { .. } => visitor.visit_lambda(self),
-            Node::BinaryOperation (..) => visitor.visit_binary_op(self),
+            Node::BinaryOperation(..) => visitor.visit_binary_op(self),
         }
     }
 }

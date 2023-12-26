@@ -1,7 +1,7 @@
 // tokenizer, parser.
 pub mod frontend;
-pub mod util;
 pub mod llvm;
+pub mod util;
 
 use ::std::collections::HashMap;
 use ::std::env;
@@ -10,11 +10,11 @@ use util::*;
 
 fn main() -> () {
     let flags_map = parse_cmd_line_args();
-    
+
     let flags = util::Flags::new(flags_map);
-    
-    let file = format!("{}/{}", flags.proj_root, "scorch_src/main.scorch");
-    
+
+    let _file = format!("{}/{}", flags.proj_root, "scorch_src/main.scorch");
+
     if flags.cli {
         run_cli();
     }

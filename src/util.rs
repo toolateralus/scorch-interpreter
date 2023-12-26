@@ -1,5 +1,4 @@
-use std::fs::File;
-use std::io::{self, Read, Write};
+use std::io::{self, Write};
 
 use crate::frontend::*;
 use crate::*;
@@ -36,7 +35,7 @@ pub fn get_project_root() -> String {
 }
 
 pub fn run_cli() {
-    let mut tokenizer = tokens::create_tokenizer();
+    let tokenizer = tokens::create_tokenizer();
     let mut input = String::new();
 
     loop {
@@ -51,7 +50,7 @@ pub fn run_cli() {
 
         let tokens = &tokenizer.tokens;
 
-        let ast_root = parser::parse_program(&tokens);
+        let _ast_root = parser::parse_program(&tokens);
         input.clear();
     }
 }

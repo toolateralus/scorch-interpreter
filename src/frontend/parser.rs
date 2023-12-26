@@ -75,12 +75,12 @@ pub fn parse_arguments(tokens: &Vec<Token>, index: &mut usize) -> Vec<Node> {
         }
         // accumulate parameter expressions
         let arg = parse_expression(tokens, index);
-        
+
         // skip commas
         if get_current(tokens, index).kind == TokenKind::Comma {
             *index += 1;
         }
-        
+
         args.push(arg);
     }
     args
@@ -185,7 +185,7 @@ pub fn parse_array_access(index: &mut usize, tokens: &Vec<Token>, id: &str) -> R
         *index += 1; // move past ]
         token = get_current(tokens, index);
     }
-    
+
     let mut node = Node::ArrayAccessExpr {
         id: id.to_string(),
         index_expr: Box::new(accessor),
@@ -196,7 +196,7 @@ pub fn parse_array_access(index: &mut usize, tokens: &Vec<Token>, id: &str) -> R
     if token.kind != TokenKind::Assignment {
         return Ok(node);
     }
-    
+
     match token.kind {
         TokenKind::Assignment => {
             *index += 1;
@@ -383,11 +383,11 @@ fn parse_decl(
 ) -> Result<Node, ()> {
     // varname : type = default;
     let id = token.value.clone();
-    
+
     *index += 1;
-    
+
     let operator = get_current(tokens, index);
-    
+
     match operator.kind {
         // varname := default;
         // declaring a variable with implicit type.
@@ -399,13 +399,11 @@ fn parse_decl(
             *index += 1;
             let expression = parse_expression(tokens, index);
             consume_normal_expr_delimiter(tokens, index);
-            
-            Ok(
-                Node::Assignment {
+
+            Ok(Node::Assignment {
                 id: token.value.clone(),
                 expression: Box::new(expression),
-                }
-            )
+            })
         }
         TokenKind::OpenBracket => {
             *index += 1; // discard [
@@ -596,35 +594,34 @@ fn parse_explicit_decl(
 }
 
 fn parse_lambda(tokens: &Vec<Token>, index: &mut usize) -> Node {
-    
     if get_current(tokens, index).kind == TokenKind::LogicalOr {
         *index += 1;
-        
+
         if get_current(tokens, index).kind == TokenKind::Lambda {
             *index += 1;
         } else {
             panic!("Expected lambda token");
         }
-        
+
         let block = parse_block(tokens, index);
-        
+
         Node::Lambda {
             params: Vec::new(),
-            block :Box::new(block) 
+            block: Box::new(block),
         }
     } else {
         *index += 1;
         let mut params = Vec::new();
         loop {
             let token = get_current(tokens, index);
-            
+
             if token.kind == TokenKind::Pipe || token.kind == TokenKind::Lambda {
                 *index += 1;
                 break;
             }
-                
+
             let expr = Box::new(parse_expression(tokens, index));
-            
+
             params.push(expr);
         }
         if get_current(tokens, index).kind == TokenKind::Lambda {
@@ -633,9 +630,9 @@ fn parse_lambda(tokens: &Vec<Token>, index: &mut usize) -> Node {
             dbg!(params);
             panic!("Expected lambda token");
         }
-                    
+
         let block = parse_block(tokens, index);
-        
+
         Node::Lambda {
             params,
             block: Box::new(block),
@@ -700,15 +697,15 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
     if *index >= tokens.len() {
         return Err(());
     }
-    
+
     let first = consume_newlines(index, tokens);
-    
+
     if *index + 1 >= tokens.len() {
         return Err(()); // probably a newline
     }
 
     let second = tokens.get(*index + 1).unwrap();
-    
+
     // NOTE:: next is ahead one and must be discarded.
     // NOTE:: token is the current, but must also be discarded.
     // any branch of this must move the index forward at least once.
@@ -763,23 +760,16 @@ fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
                 panic!("keyword is likely not yet implemented.");
             }
         },
-        TokenFamily::Identifier => {
-            match second.kind {
-                TokenKind::ColonEquals |
-                TokenKind::Colon |
-                TokenKind::Assignment => {
-                    return parse_decl(first, index, tokens, false);
-                }
-                _ => {
-                    let node = parse_expression(tokens, index);
-                    Ok(node)
-                }
-            } 
-        }
-        TokenFamily::Operator |
-        TokenFamily::Value => {
-            Ok(parse_expression(tokens, index))
-        }
+        TokenFamily::Identifier => match second.kind {
+            TokenKind::ColonEquals | TokenKind::Colon | TokenKind::Assignment => {
+                return parse_decl(first, index, tokens, false);
+            }
+            _ => {
+                let node = parse_expression(tokens, index);
+                Ok(node)
+            }
+        },
+        TokenFamily::Operator | TokenFamily::Value => Ok(parse_expression(tokens, index)),
         _ => {
             dbg!(first);
             panic!("Expected keyword, identifier or operator token");
@@ -791,8 +781,7 @@ fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Node {
     loop {
         let token = get_current(tokens, index);
         match token.kind {
-            TokenKind::LogicalAnd |
-            TokenKind::LogicalOr => {
+            TokenKind::LogicalAnd | TokenKind::LogicalOr => {
                 *index += 1;
                 let right = parse_logical_expr(tokens, index);
                 left = Node::LogicalExpression {
@@ -902,7 +891,7 @@ fn parse_term(tokens: &Vec<Token>, index: &mut usize) -> Node {
     }
     left
 }
-fn parse_unary(tokens : &Vec<Token>, index: &mut usize) -> Node {
+fn parse_unary(tokens: &Vec<Token>, index: &mut usize) -> Node {
     let op = get_current(tokens, index);
     match op.kind {
         TokenKind::Subtract => {
@@ -921,61 +910,58 @@ fn parse_unary(tokens : &Vec<Token>, index: &mut usize) -> Node {
             }
             Node::NotOp(Box::new(node))
         }
-        _ => {
-            parse_compound(tokens, index)
-        }
+        _ => parse_compound(tokens, index),
     }
 }
 fn parse_compound(tokens: &Vec<Token>, index: &mut usize) -> Node {
     let mut left = parse_operand(tokens, index);
-	loop {
-		let op = get_current(tokens, index);
-		match op.kind {
-			TokenKind::Dot => {
-				*index += 1; // consume '.' operator.
-				return Node::DotOp {
-					lhs: Box::new(left),
-					op: TokenKind::Dot,
-					rhs: Box::new(parse_compound(tokens, index)),
-				};
-			}
-			TokenKind::OpenParenthesis => {
-				if let Node::Identifier(id) = &left {   
-					match parse_fn_call(index, tokens, &id) {
-						Ok(node) => {
-							left = node;
-						}
-						Err(_) => {
-							panic!("Expected function call node");
-						}
-					}
-				} else {
-					panic!("Expected function call node");
-				}
-			}
-			TokenKind::OpenBracket => {
-				// id[]
-				if let Node::Identifier(id) = left {
-					*index += 1; // move past [
-					match parse_array_access(index, tokens, &id) {
-						Ok(node) => {
-							left = node;
-						}
-						Err(_) => {
-							panic!("Expected array access node");
-						}
-					}
-				}
-				else {
-					dbg!(left);
-					panic!("Expected array access node");
-				}
-			}
-			_ => {
-				return left;
-			}
-		}
-	}
+    loop {
+        let op = get_current(tokens, index);
+        match op.kind {
+            TokenKind::Dot => {
+                *index += 1; // consume '.' operator.
+                return Node::DotOp {
+                    lhs: Box::new(left),
+                    op: TokenKind::Dot,
+                    rhs: Box::new(parse_compound(tokens, index)),
+                };
+            }
+            TokenKind::OpenParenthesis => {
+                if let Node::Identifier(id) = &left {
+                    match parse_fn_call(index, tokens, &id) {
+                        Ok(node) => {
+                            left = node;
+                        }
+                        Err(_) => {
+                            panic!("Expected function call node");
+                        }
+                    }
+                } else {
+                    panic!("Expected function call node");
+                }
+            }
+            TokenKind::OpenBracket => {
+                // id[]
+                if let Node::Identifier(id) = left {
+                    *index += 1; // move past [
+                    match parse_array_access(index, tokens, &id) {
+                        Ok(node) => {
+                            left = node;
+                        }
+                        Err(_) => {
+                            panic!("Expected array access node");
+                        }
+                    }
+                } else {
+                    dbg!(left);
+                    panic!("Expected array access node");
+                }
+            }
+            _ => {
+                return left;
+            }
+        }
+    }
 }
 fn parse_operand(tokens: &Vec<Token>, index: &mut usize) -> Node {
     if let Some(token) = tokens.get(*index) {
@@ -984,7 +970,7 @@ fn parse_operand(tokens: &Vec<Token>, index: &mut usize) -> Node {
             TokenKind::Number => {
                 let int = token.value.parse::<u64>();
                 let float = token.value.parse::<f64>();
-                
+
                 if int.is_ok() {
                     return Node::Int(int.unwrap());
                 } else if float.is_ok() {
@@ -1004,22 +990,26 @@ fn parse_operand(tokens: &Vec<Token>, index: &mut usize) -> Node {
             }
             TokenKind::OpenBracket => {
                 let init = parse_array_initializer(tokens, index);
-                
+
                 // todo: this is a hack. we need to know if the array is mutable or not by normal means.
                 let array_mutable = true;
-                let elements_mutable = false;    
-                return new_array("Array".to_string(), init.len(), init.clone(), array_mutable, elements_mutable);
+                let elements_mutable = false;
+                return new_array(
+                    "Array".to_string(),
+                    init.len(),
+                    init.clone(),
+                    array_mutable,
+                    elements_mutable,
+                );
             }
             TokenKind::LogicalOr => {
                 let lambda = parse_lambda(tokens, index);
                 lambda
             }
-            TokenKind::Pipe => {
-                parse_lambda(tokens, index)
-            }
+            TokenKind::Pipe => parse_lambda(tokens, index),
             TokenKind::OpenParenthesis => {
                 // todo: add value tuples maybe an epic syntax
-                
+
                 let node = parse_expression(tokens, index);
                 if let Some(token) = tokens.get(*index) {
                     if token.kind != TokenKind::CloseParenthesis {
@@ -1045,8 +1035,7 @@ fn parse_operand(tokens: &Vec<Token>, index: &mut usize) -> Node {
                 panic!("Expected number or identifier token");
             }
         };
-        
-        
+
         node
     } else {
         panic!("Unexpected end of tokens")
