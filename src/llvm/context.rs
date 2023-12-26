@@ -6,22 +6,22 @@ pub enum Type {
     Bool,
     Float,
     String,
+    Function,
     Array { type_name: String },
     Struct { id: String },
-    Function { id: String },
 }
 
 pub struct SymbolTable<'ctx> {
-    pub symbols: HashMap<String, BasicValueEnum<'ctx>>,
+    pub symbols: HashMap<String, Instance<'ctx>>,
     pub functions: HashMap<String, FunctionDefinition>,
     pub structs: HashMap<String, StructDefinition>,
 }
 
 impl<'ctx> SymbolTable<'ctx> {
-    pub fn insert_var(&mut self, name: String, value: BasicValueEnum<'ctx>) {
+    pub fn insert_var(&mut self, name: String, value: Instance<'ctx>) {
         self.symbols.insert(name, value);
     }
-    pub fn get_var(&self, name: &str) -> Option<&BasicValueEnum<'ctx>> {
+    pub fn get_var(&self, name: &str) -> Option<&Instance<'ctx>> {
         self.symbols.get(name)
     }
     pub fn insert_fn(&mut self, name: String, function: FunctionDefinition) {
@@ -36,6 +36,12 @@ impl<'ctx> SymbolTable<'ctx> {
     pub fn get_struct(&self, name: &str) -> Option<&StructDefinition> {
         self.structs.get(name)
     }
+}
+
+pub struct Instance<'ctx> {
+    pub name: String,
+    pub type_: Type,
+    pub value: BasicValueEnum<'ctx>,
 }
 
 pub struct FunctionDefinition {

@@ -2,13 +2,14 @@
 
 use crate::frontend::ast::{Node, Visitor};
 use crate::frontend::tokens::TokenKind;
+use inkwell::basic_block::BasicBlock;
 use inkwell::builder::Builder;
 use inkwell::context::{Context};
 
 use inkwell::module::Module;
 use inkwell::values::BasicValueEnum;
 
-use super::context::SymbolTable;
+use super::context::{SymbolTable, Type, Instance};
 
 pub struct LLVMVisitor<'ctx> {
     pub context: &'ctx Context,
@@ -30,26 +31,43 @@ impl<'ctx> LLVMVisitor<'ctx> {
 impl<'ctx> Visitor<BasicValueEnum<'ctx>> for LLVMVisitor<'ctx> {
     
     fn visit_block(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
-        
-        
         let Node::Block(statements) = node else {
             dbg!(node);
             panic!("Expected Block node");
         };
+    
+        let function = self.builder.get_insert_block().unwrap().get_parent().unwrap();
         let mut result : Option<BasicValueEnum<'ctx>> = None;
+    
         for statement in statements {
+            let basic_block = self.context.append_basic_block(function, "block");
+            self.builder.position_at_end(basic_block);
             result = Some(statement.accept(self));
         }
+    
         result.unwrap()
     }
     fn visit_program(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
-        
         if let Node::Program(statements) = node {
+            // Create a new function to contain the code for the program
+            let function_type = self.context.void_type().fn_type(&[], false);
+            let function = self.module.add_function("main", function_type, None);
+            
+            // Create a new basic block to start insertion into
+            let basic_block = self.context.append_basic_block(function, "entry");
+            self.builder.position_at_end(basic_block);
+            
+            // Visit each statement in the program
             let mut result: Option<BasicValueEnum<'ctx>> = None;
             for statement in statements {
                 result = Some(statement.accept(self));
             }
-            return result.unwrap();
+
+            // Build a return instruction in the end of the function
+            self.builder.build_return(None);
+
+            // Return the result of the last statement
+            result.unwrap()
         } else {
             panic!("Expected Program node");
         }
@@ -228,7 +246,14 @@ impl<'ctx> Visitor<BasicValueEnum<'ctx>> for LLVMVisitor<'ctx> {
         match node {
             Node::DeclStmt { target_type: _, id, expression, mutable: _ } => {
                 let value = expression.accept(self);
-                self.symbol_table.insert_var(id.clone(), value);
+                let symbol = Instance {
+                    name: id.clone(),
+                    type_: Type::Int,
+                    value: value,
+                };
+                
+                self.symbol_table.insert_var(id.clone(), symbol);
+                
                 value
             }
             _ => panic!("Expected Declaration node"),
@@ -240,12 +265,11 @@ impl<'ctx> Visitor<BasicValueEnum<'ctx>> for LLVMVisitor<'ctx> {
     fn visit_eof(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
         todo!()
     }
-    
     fn visit_identifier(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
         let Node::Identifier(id) = &node else {
             panic!("Expected Identifier node");
         };
-        *self.symbol_table.get_var(id).unwrap()
+        self.symbol_table.get_var(id).unwrap().value
     }
     fn visit_binary_op(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
         let Node::BinaryOperation(lhs, op, rhs) = node else {
