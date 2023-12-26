@@ -159,7 +159,7 @@ impl Node {
             Node::Int(_) => visitor.visit_number(self),
             Node::Double(_) => visitor.visit_number(self),
             Node::BinaryOperation { .. } => visitor.visit_binary_op(self),
-            Node::Lambda { params, block } => visitor.visit_lambda(self)
+            Node::Lambda { params: _, block: _ } => visitor.visit_lambda(self)
         }
     }
 }
