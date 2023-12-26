@@ -869,12 +869,20 @@ fn parse_addition(tokens: &Vec<Token>, index: &mut usize) -> Node {
             TokenKind::Add => {
                 *index += 1;
                 let right = parse_term(tokens, index);
-                left = Node::AddOp(Box::new(left), Box::new(right));
+                left = Node::BinaryOperation { 
+                    op: TokenKind::Add,
+                    lhs: Box::new(left),
+                    rhs: Box::new(right),
+                };
             }
             TokenKind::Subtract => {
                 *index += 1;
                 let right = parse_term(tokens, index);
-                left = Node::SubOp(Box::new(left), Box::new(right));
+                left = Node::BinaryOperation { 
+                    op: TokenKind::Subtract,
+                    lhs: Box::new(left),
+                    rhs: Box::new(right),
+                    };
             }
             _ => break,
         }
@@ -888,12 +896,12 @@ fn parse_term(tokens: &Vec<Token>, index: &mut usize) -> Node {
             TokenKind::Multiply => {
                 *index += 1;
                 let right = parse_unary(tokens, index);
-                left = Node::MulOp(Box::new(left), Box::new(right));
+                left = Node::BinaryOperation { lhs: Box::new(left), op: TokenKind::Multiply, rhs: Box::new(right)};
             }
             TokenKind::Divide => {
                 *index += 1;
                 let right = parse_unary(tokens, index);
-                left = Node::DivOp(Box::new(left), Box::new(right));
+                left = Node::BinaryOperation { lhs: Box::new(left), op: TokenKind::Divide, rhs: Box::new(right) };
             }
             _ => break,
         }
@@ -933,7 +941,7 @@ fn parse_compound(tokens: &Vec<Token>, index: &mut usize) -> Node {
 		match op.kind {
 			TokenKind::Dot => {
 				*index += 1; // consume '.' operator.
-				return Node::DotOp {
+				return Node::BinaryOperation {
 					lhs: Box::new(left),
 					op: TokenKind::Dot,
 					rhs: Box::new(parse_compound(tokens, index)),
