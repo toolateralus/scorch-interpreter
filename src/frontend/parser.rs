@@ -24,7 +24,7 @@ pub fn parse_parameters(tokens: &Vec<Token>, index: &mut usize) -> Vec<Node> {
             panic!("Expected variable name in parameter declaration");
         }
 
-        let varname = parse_operand(tokens, index);
+        let varname = prs_operand(tokens, index);
 
         token = get_current(tokens, index);
         //parsing colon
@@ -45,7 +45,7 @@ pub fn parse_parameters(tokens: &Vec<Token>, index: &mut usize) -> Vec<Node> {
 
         // parsing type
         // varname: ^Typename
-        let typename = parse_operand(tokens, index);
+        let typename = prs_operand(tokens, index);
 
         // consume comma if there is one.
         if get_current(tokens, index).kind == TokenKind::Comma {
@@ -75,7 +75,7 @@ pub fn parse_arguments(tokens: &Vec<Token>, index: &mut usize) -> Vec<Node> {
             break;
         }
         // accumulate parameter expressions
-        let arg = parse_expression(tokens, index);
+        let arg = prs_expression(tokens, index);
         
         // skip commas
         if get_current(tokens, index).kind == TokenKind::Comma {
@@ -97,7 +97,7 @@ pub fn prs_fn_decl(
     let token = get_current(tokens, index);
     let kind = token.kind;
     if kind == TokenKind::OpenCurly {
-        let body = parse_block(tokens, index);
+        let body = prs_block(tokens, index);
         let node = Node::FnDeclStmnt {
             id: id.clone(),
             body: Box::new(body),
@@ -158,6 +158,7 @@ pub fn new_array(
         elements_mutable, // todo: how do we want to qualify this?
     }
 }
+
 pub fn parse_array_initializer(tokens: &Vec<Token>, index: &mut usize) -> Vec<Box<Node>> {
     let mut args = Vec::new();
     loop {
@@ -168,7 +169,7 @@ pub fn parse_array_initializer(tokens: &Vec<Token>, index: &mut usize) -> Vec<Bo
             break;
         }
         // accumulate parameter expressions
-        let arg = parse_expression(tokens, index);
+        let arg = prs_expression(tokens, index);
 
         // skip commas
         if get_current(tokens, index).kind == TokenKind::Comma {
@@ -179,7 +180,7 @@ pub fn parse_array_initializer(tokens: &Vec<Token>, index: &mut usize) -> Vec<Bo
     args
 }
 pub fn parse_array_access(index: &mut usize, tokens: &Vec<Token>, id: &str) -> Result<Node, ()> {
-    let accessor = parse_expression(tokens, index);
+    let accessor = prs_expression(tokens, index);
     let mut token = consume_newlines(index, tokens);
 
     if token.kind == TokenKind::CloseBracket {
@@ -211,7 +212,7 @@ pub fn parse_array_access(index: &mut usize, tokens: &Vec<Token>, id: &str) -> R
                 node = Node::ArrayAccessExpr {
                     id,
                     index_expr,
-                    expression: Option::Some(Box::new(parse_expression(tokens, index))),
+                    expression: Option::Some(Box::new(prs_expression(tokens, index))),
                     assignment: true,
                 };
             }
@@ -220,6 +221,7 @@ pub fn parse_array_access(index: &mut usize, tokens: &Vec<Token>, id: &str) -> R
         _ => Err(()),
     }
 }
+
 pub fn get_current<'a>(tokens: &'a Vec<Token>, index: &mut usize) -> &'a Token {
     if let Some(token) = tokens.get(*index) {
         return token;
@@ -227,6 +229,7 @@ pub fn get_current<'a>(tokens: &'a Vec<Token>, index: &mut usize) -> &'a Token {
         panic!("Unexpected end of tokens")
     }
 }
+
 pub fn consume_newlines<'a>(index: &mut usize, tokens: &'a Vec<Token>) -> &'a Token {
     let mut current = get_current(tokens, index);
     while current.kind == TokenKind::Newline {
@@ -261,8 +264,8 @@ fn parse_repeat_stmnt(next: &Token, index: &mut usize, tokens: &Vec<Token>) -> R
     if next.family == TokenFamily::Identifier {
         let id = next.value.clone();
         *index += 1; // skip repeat, leaev identifier in expression.
-        let condition = parse_expression(tokens, index);
-        let block = parse_block(tokens, index);
+        let condition = prs_expression(tokens, index);
+        let block = prs_block(tokens, index);
         let node = Node::RepeatStmnt {
             iterator_id: Option::Some(id),
             condition: Option::Some(Box::new(condition)),
@@ -274,7 +277,7 @@ fn parse_repeat_stmnt(next: &Token, index: &mut usize, tokens: &Vec<Token>) -> R
     *index += 1; // skip repeat
                  // style::
                  // repeat {... }
-    let block = parse_block(tokens, index);
+    let block = prs_block(tokens, index);
 
     //*index += 1;
 
@@ -286,7 +289,7 @@ fn parse_repeat_stmnt(next: &Token, index: &mut usize, tokens: &Vec<Token>) -> R
 }
 fn parse_if_else(tokens: &Vec<Token>, index: &mut usize) -> Node {
     *index += 1; // discard 'if'
-    let if_condition = parse_expression(tokens, index);
+    let if_condition = prs_expression(tokens, index);
 
     if get_current(tokens, index).kind != TokenKind::OpenCurly {
         dbg!(get_current(tokens, index));
@@ -296,7 +299,7 @@ fn parse_if_else(tokens: &Vec<Token>, index: &mut usize) -> Node {
 
     *index += 1; // skip open brace
 
-    let if_block = parse_block(tokens, index);
+    let if_block = prs_block(tokens, index);
 
     let else_or_end = consume_newlines(index, tokens);
 
@@ -324,7 +327,7 @@ fn parse_else(tokens: &Vec<Token>, index: &mut usize) -> Node {
 
     // if else with no comparison -> if ... {} else {}
     if get_current(tokens, index).kind == TokenKind::OpenCurly {
-        let else_block = parse_block(tokens, index);
+        let else_block = prs_block(tokens, index);
 
         // Check for another else after this block
         if get_current(tokens, index).kind == TokenKind::Else {
@@ -344,7 +347,7 @@ fn parse_else(tokens: &Vec<Token>, index: &mut usize) -> Node {
     }
     // if else with comparison -> if ... {} else ... {}
     else {
-        let else_condition = parse_expression(tokens, index);
+        let else_condition = prs_expression(tokens, index);
         let cur = get_current(tokens, index);
 
         match cur.kind {
@@ -356,7 +359,7 @@ fn parse_else(tokens: &Vec<Token>, index: &mut usize) -> Node {
             }
         }
 
-        let else_block = parse_block(tokens, index);
+        let else_block = prs_block(tokens, index);
 
         if get_current(tokens, index).kind == TokenKind::Else {
             let nested_else = parse_else(tokens, index);
@@ -399,7 +402,7 @@ fn parse_decl(
         TokenKind::Assignment => {
             *index += 1;
             let id = Node::Identifier(token.value.clone());
-            let expression = parse_expression(tokens, index);
+            let expression = prs_expression(tokens, index);
             consume_normal_expr_delimiter(tokens, index);
             Ok(Node::AssignStmnt {
                 id: Box::new(id),
@@ -463,7 +466,7 @@ fn parse_function_decl_stmnt(
     mutable: bool,
 ) -> Option<Result<Node, ()>> {
     if get_current(tokens, index).kind == TokenKind::OpenCurly {
-        let body = parse_block(tokens, index);
+        let body = prs_block(tokens, index);
         //dbg!(&body);
         let node = Node::FnDeclStmnt {
             id: id.clone(),
@@ -485,7 +488,7 @@ fn parse_function_decl_stmnt(
         let mut temp_index = *index + 2;
         if get_current(tokens, &mut temp_index).kind == TokenKind::Colon {
             let params = parse_parameters(tokens, index);
-            let body = parse_block(tokens, index);
+            let body = prs_block(tokens, index);
             let node = Node::FnDeclStmnt {
                 id: id.clone(),
                 body: Box::new(body),
@@ -585,7 +588,7 @@ fn parse_explicit_decl(
 
     // varname : type = ^default;
 
-    let expression = parse_expression(tokens, index);
+    let expression = prs_expression(tokens, index);
     consume_normal_expr_delimiter(tokens, index);
     Ok(Node::DeclStmt {
         target_type,
@@ -596,7 +599,6 @@ fn parse_explicit_decl(
 }
 
 fn parse_lambda(tokens: &Vec<Token>, index: &mut usize) -> Node {
-    
     if get_current(tokens, index).kind == TokenKind::LogicalOr {
         *index += 1;
         
@@ -606,7 +608,7 @@ fn parse_lambda(tokens: &Vec<Token>, index: &mut usize) -> Node {
             panic!("Expected lambda token");
         }
         
-        let block = parse_block(tokens, index);
+        let block = prs_block(tokens, index);
         
         Node::Lambda {
             params: Vec::new(),
@@ -623,7 +625,7 @@ fn parse_lambda(tokens: &Vec<Token>, index: &mut usize) -> Node {
                 break;
             }
                 
-            let expr = Box::new(parse_expression(tokens, index));
+            let expr = Box::new(prs_expression(tokens, index));
             
             params.push(expr);
         }
@@ -634,7 +636,7 @@ fn parse_lambda(tokens: &Vec<Token>, index: &mut usize) -> Node {
             panic!("Expected lambda token");
         }
                     
-        let block = parse_block(tokens, index);
+        let block = prs_block(tokens, index);
         
         Node::Lambda {
             params,
@@ -643,11 +645,6 @@ fn parse_lambda(tokens: &Vec<Token>, index: &mut usize) -> Node {
     }
 }
 
-// ########################################
-// START PARSER FUNCTION HIERARCHY
-// TOP -> BOTTOM
-// GREATEST -> LEAST PRECEDENCE
-// ########################################
 pub fn parse_program(tokens: &Vec<Token>) -> Node {
     let mut index = 0;
     let mut statements = Vec::new();
@@ -656,7 +653,7 @@ pub fn parse_program(tokens: &Vec<Token>) -> Node {
         if token.kind == TokenKind::Eof {
             break;
         }
-        let statement = parse_statement(tokens, &mut index);
+        let statement = prs_statement(tokens, &mut index);
 
         match statement {
             Ok(node) => statements.push(Box::new(node)),
@@ -670,8 +667,7 @@ pub fn parse_program(tokens: &Vec<Token>) -> Node {
     }
     Node::Program(statements)
 }
-
-fn parse_block(tokens: &Vec<Token>, index: &mut usize) -> Node {
+fn prs_block(tokens: &Vec<Token>, index: &mut usize) -> Node {
     *index += 1;
     let mut statements = Vec::new();
     while *index < tokens.len() {
@@ -680,7 +676,7 @@ fn parse_block(tokens: &Vec<Token>, index: &mut usize) -> Node {
             *index += 1;
             break;
         }
-        let statement = parse_statement(tokens, index);
+        let statement = prs_statement(tokens, index);
 
         match statement {
             Ok(node) => statements.push(Box::new(node)),
@@ -696,7 +692,7 @@ fn parse_block(tokens: &Vec<Token>, index: &mut usize) -> Node {
     }
     Node::Block(statements)
 }
-fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
+fn prs_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
     if *index >= tokens.len() {
         return Err(());
     }
@@ -854,15 +850,15 @@ fn parse_const(index: &mut usize, second: &Token, tokens: &Vec<Token>, first: &T
         }
     }
 }
-fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Node {
-    let mut left = parse_logical_expr(tokens, index);
+fn prs_expression(tokens: &Vec<Token>, index: &mut usize) -> Node {
+    let mut left = prs_logical(tokens, index);
     loop {
         let token = get_current(tokens, index);
         match token.kind {
             TokenKind::LogicalAnd |
             TokenKind::LogicalOr => {
                 *index += 1;
-                let right = parse_logical_expr(tokens, index);
+                let right = prs_logical(tokens, index);
                 left = Node::LogicalExpression {
                     lhs: Box::new(left),
                     op: token.kind,
@@ -892,13 +888,13 @@ fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Node {
     }
     Node::Expression(Box::new(left))
 }
-fn parse_logical_expr(tokens: &Vec<Token>, index: &mut usize) -> Node {
-    let mut left = parse_relational_expr(tokens, index);
+fn prs_logical(tokens: &Vec<Token>, index: &mut usize) -> Node {
+    let mut left = prs_relational(tokens, index);
     while let Some(token) = tokens.get(*index) {
         match token.kind {
             TokenKind::LogicalAnd | TokenKind::LogicalOr => {
                 *index += 1;
-                let right = parse_relational_expr(tokens, index);
+                let right = prs_relational(tokens, index);
                 left = Node::LogicalExpression {
                     lhs: Box::new(left),
                     op: token.kind,
@@ -910,8 +906,8 @@ fn parse_logical_expr(tokens: &Vec<Token>, index: &mut usize) -> Node {
     }
     left
 }
-fn parse_relational_expr(tokens: &Vec<Token>, index: &mut usize) -> Node {
-    let mut left = parse_addition(tokens, index);
+fn prs_relational(tokens: &Vec<Token>, index: &mut usize) -> Node {
+    let mut left = prs_bin_op(tokens, index);
     while let Some(token) = tokens.get(*index) {
         match token.kind {
             TokenKind::Equals
@@ -921,7 +917,7 @@ fn parse_relational_expr(tokens: &Vec<Token>, index: &mut usize) -> Node {
             | TokenKind::LeftAngle
             | TokenKind::RightAngle => {
                 *index += 1;
-                let right = parse_addition(tokens, index);
+                let right = prs_bin_op(tokens, index);
                 left = Node::RelationalExpression {
                     lhs: Box::new(left),
                     op: token.kind,
@@ -933,38 +929,46 @@ fn parse_relational_expr(tokens: &Vec<Token>, index: &mut usize) -> Node {
     }
     left
 }
-fn parse_addition(tokens: &Vec<Token>, index: &mut usize) -> Node {
-    let mut left = parse_term(tokens, index);
+fn prs_bin_op(tokens: &Vec<Token>, index: &mut usize) -> Node {
+    let mut left = prs_term(tokens, index);
     while let Some(token) = tokens.get(*index) {
         match token.kind {
             TokenKind::Add => {
                 *index += 1;
-                let right = parse_term(tokens, index);
-                left = Node::AddOp(Box::new(left), Box::new(right));
+                let right = prs_term(tokens, index);
+                left = Node::BinaryOperation { 
+                    op: TokenKind::Add,
+                    lhs: Box::new(left),
+                    rhs: Box::new(right),
+                };
             }
             TokenKind::Subtract => {
                 *index += 1;
-                let right = parse_term(tokens, index);
-                left = Node::SubOp(Box::new(left), Box::new(right));
+                let right = prs_term(tokens, index);
+                left = Node::BinaryOperation { 
+                    op: TokenKind::Subtract,
+                    lhs: Box::new(left),
+                    rhs: Box::new(right),
+                    };
             }
             _ => break,
         }
     }
     left
 }
-fn parse_term(tokens: &Vec<Token>, index: &mut usize) -> Node {
-    let mut left = parse_unary(tokens, index);
+fn prs_term(tokens: &Vec<Token>, index: &mut usize) -> Node {
+    let mut left = prs_unary(tokens, index);
     while let Some(token) = tokens.get(*index) {
         match token.kind {
             TokenKind::Multiply => {
                 *index += 1;
-                let right = parse_unary(tokens, index);
-                left = Node::MulOp(Box::new(left), Box::new(right));
+                let right = prs_unary(tokens, index);
+                left = Node::BinaryOperation { lhs: Box::new(left), op: TokenKind::Multiply, rhs: Box::new(right)};
             }
             TokenKind::Divide => {
                 *index += 1;
-                let right = parse_unary(tokens, index);
-                left = Node::DivOp(Box::new(left), Box::new(right));
+                let right = prs_unary(tokens, index);
+                left = Node::BinaryOperation { lhs: Box::new(left), op: TokenKind::Divide, rhs: Box::new(right) };
             }
             _ => break,
         }
@@ -976,7 +980,7 @@ fn parse_unary(tokens : &Vec<Token>, index: &mut usize) -> Node {
     match op.kind {
         TokenKind::Subtract => {
             *index += 1;
-            let node = parse_compound(tokens, index);
+            let node = prs_compound(tokens, index);
             if let Node::NegOp(_node) = node {
                 panic!("Double not operations are not allowed");
             }
@@ -984,14 +988,14 @@ fn parse_unary(tokens : &Vec<Token>, index: &mut usize) -> Node {
         }
         TokenKind::Not => {
             *index += 1;
-            let node = parse_compound(tokens, index);
+            let node = prs_compound(tokens, index);
             if let Node::NotOp(_node) = node {
                 panic!("Double not operations are not allowed");
             }
             Node::NotOp(Box::new(node))
         }
         _ => {
-            parse_compound(tokens, index)
+            prs_compound(tokens, index)
         }
     }
 }
@@ -1002,10 +1006,10 @@ fn parse_compound(tokens: &Vec<Token>, index: &mut usize) -> Node {
 		match op.kind {
 			TokenKind::Dot => {
 				*index += 1; // consume '.' operator.
-				return Node::DotOp {
+				return Node::BinaryOperation {
 					lhs: Box::new(left),
 					op: TokenKind::Dot,
-					rhs: Box::new(parse_compound(tokens, index)),
+					rhs: Box::new(prs_compound(tokens, index)),
 				};
 			}
 			TokenKind::OpenParenthesis => {
@@ -1120,7 +1124,7 @@ fn parse_operand(tokens: &Vec<Token>, index: &mut usize) -> Node {
             TokenKind::OpenParenthesis => {
                 // todo: add value tuples maybe an epic syntax
                 
-                let node = parse_expression(tokens, index);
+                let node = prs_expression(tokens, index);
                 if let Some(token) = tokens.get(*index) {
                     if token.kind != TokenKind::CloseParenthesis {
                         dbg!(token);
@@ -1145,15 +1149,8 @@ fn parse_operand(tokens: &Vec<Token>, index: &mut usize) -> Node {
                 panic!("Expected number or identifier token");
             }
         };
-        
-        
         node
     } else {
         panic!("Unexpected end of tokens")
     }
 }
-
-
-// ########################################
-// END PARSER FUNCTION HIERARCHY
-// ########################################

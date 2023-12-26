@@ -58,16 +58,7 @@ pub enum Node {
         op: TokenKind,
         rhs: Box<Node>,
     },
-
-    // todo: implement remainder operator.
-    // todo: remove the individual binary operations
-    // and use the BinaryOperation node with the TokenKind
-    // operator field.
-    AddOp(Box<Node>, Box<Node>),
-    SubOp(Box<Node>, Box<Node>),
-    MulOp(Box<Node>, Box<Node>),
-    DivOp(Box<Node>, Box<Node>),
-
+    
     // todo: do the same with Unary operations :
     // we can have a special noed for these instead of
     // weaving it in with factors.
@@ -135,7 +126,6 @@ pub enum Node {
     },
     Int(i32),
     Double(f64),
-    DotOp { lhs: Box<Node>, op: TokenKind, rhs: Box<Node> },
     Lambda { params: Vec<Box<Node>>, block: Box<Node> },
     TypeDef { id: String, block: Box<Node> },
     TypedefInit { id: String, args: Vec<Node> },
@@ -145,10 +135,6 @@ impl Node {
         match self {
             Node::Undefined() => visitor.visit_eof(self),
             Node::Identifier( .. ) => visitor.visit_identifier(self),
-            Node::AddOp( .. ) => visitor.visit_binary_op(self),
-            Node::SubOp( .. ) => visitor.visit_binary_op(self),
-            Node::MulOp( .. ) => visitor.visit_binary_op(self),
-            Node::DivOp( .. ) => visitor.visit_binary_op(self),
             Node::AssignStmnt { .. } => visitor.visit_assignment(self),
             Node::DeclStmt { .. } => visitor.visit_declaration(self),
             Node::Block( .. ) => visitor.visit_block(self),
@@ -161,7 +147,6 @@ impl Node {
             Node::ElseStmnt { .. } => visitor.visit_else_stmnt(self),
             Node::RelationalExpression { .. } => visitor.visit_relational_expression(self),
             Node::LogicalExpression { .. } => visitor.visit_logical_expression(self),
-            Node::BinaryOperation { .. } => visitor.visit_binary_op(self),
             Node::FnDeclStmnt { .. } => visitor.visit_function_decl(self),
             Node::ParamDeclNode { .. } => visitor.visit_param_decl(self),
             Node::FunctionCall { .. } => visitor.visit_function_call(self),
@@ -176,6 +161,16 @@ impl Node {
             Node::Lambda { .. } => visitor.visit_lambda(self),
             Node::TypeDef { .. } => visitor.visit_type_def(self),
             Node::TypedefInit { id: _, args: _ } => visitor.visit_struct_init(self),
+            Node::ArrayAccessExpr {
+                id: _,
+                index_expr: _index,
+                expression: _,
+                assignment: _,
+            } => visitor.visit_array_access(self),
+            Node::Int(_) => visitor.visit_number(self),
+            Node::Double(_) => visitor.visit_number(self),
+            Node::BinaryOperation { .. } => visitor.visit_binary_op(self),
+            Node::Lambda { params: _, block: _ } => visitor.visit_lambda(self)
         }
     }
 }

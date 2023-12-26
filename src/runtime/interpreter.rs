@@ -4,6 +4,7 @@ use std::rc::Rc;
 use crate::frontend::ast::*;
 use crate::frontend::tokens::*;
 
+
 use super::typechecker::*;
 use super::types::*;
 
@@ -451,14 +452,20 @@ impl Visitor<Value> for Interpreter {
     }
 
     fn visit_binary_op(&mut self, node: &Node) -> Value {
-        match node {
-            Node::DotOp { lhs, op: _, rhs } => {
+        
+        let Node::BinaryOperation { lhs, op, rhs } = node else {
+            dbg!(node);
+            panic!("Expected binary operation node");
+        };
+        
+        match op {
+            TokenKind::Dot => {
                 self.dot_op(lhs, rhs)
             },
-            Node::AddOp(lhs, rhs)
-            | Node::SubOp(lhs, rhs)
-            | Node::MulOp(lhs, rhs)
-            | Node::DivOp(lhs, rhs) => {
+            TokenKind::Add | 
+            TokenKind::Divide | 
+            TokenKind::Multiply | 
+            TokenKind::Subtract => {
                 let e_lhs = lhs.accept(self);
                 let e_rhs = rhs.accept(self);
                 match (e_lhs, e_rhs) {
@@ -676,6 +683,7 @@ impl Visitor<Value> for Interpreter {
         panic!("Expected expression in array assignment");
     }
     
+
     fn visit_lambda(&mut self, _node: &Node) -> Value {
         Value::None()
     }
