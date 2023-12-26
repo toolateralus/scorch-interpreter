@@ -1,22 +1,11 @@
-use std::collections::HashMap;
-
 use crate::frontend::ast::{Node, Visitor};
 use crate::frontend::tokens::TokenKind;
 use inkwell::builder::Builder;
 use inkwell::context::Context;
 use inkwell::module::Module;
-use inkwell::values::BasicValueEnum;
+use inkwell::values::{BasicValueEnum, VectorValue};
 
-pub enum Type {
-    Int,
-    Void,
-    Bool,
-    Float,
-    String,
-    Array { typename: String },
-    Struct { id: String },
-    Function { id: String },
-}
+use super::context::SymbolTable;
 
 pub struct LLVMLoweringVisitor<'ctx> {
     pub context: &'ctx Context,
@@ -24,145 +13,47 @@ pub struct LLVMLoweringVisitor<'ctx> {
     pub builder: &'ctx Builder<'ctx>,
     pub symbol_table: &'ctx mut SymbolTable<'ctx>,
 }
-pub struct SymbolTable<'ctx> {
-    pub symbols: HashMap<String, BasicValueEnum<'ctx>>,
-    pub functions: HashMap<String, FunctionDefinition<'ctx>>,
-    pub structs: HashMap<String, StructDefinition<'ctx>>,
-}
-impl<'ctx> SymbolTable<'ctx> {
-    // Add a new symbol
-    pub fn add_symbol(&mut self, name: String, value: BasicValueEnum<'ctx>) {
-        self.symbols.insert(name, value);
-    }
-
-    // Retrieve a symbol
-    pub fn get_symbol(&self, name: &str) -> Option<&BasicValueEnum<'ctx>> {
-        self.symbols.get(name)
-    }
-
-    // Add a new function
-    pub fn add_function(&mut self, name: String, function: FunctionDefinition<'ctx>) {
-        self.functions.insert(name, function);
-    }
-
-    // Retrieve a function
-    pub fn get_function(&self, name: &str) -> Option<&FunctionDefinition<'ctx>> {
-        self.functions.get(name)
-    }
-
-    // Add a new struct
-    pub fn add_struct(&mut self, name: String, structure: StructDefinition<'ctx>) {
-        self.structs.insert(name, structure);
-    }
-
-    // Retrieve a struct
-    pub fn get_struct(&self, name: &str) -> Option<&StructDefinition<'ctx>> {
-        self.structs.get(name)
-    }
-}
-pub struct FunctionDefinition<'ctx> {
-    pub name: String,
-    pub params: HashMap<String, &'ctx Type>,
-    pub return_type: &'ctx Type,
-}
-pub struct StructDefinition<'ctx> {
-    pub name: String,
-    pub fields: HashMap<String, &'ctx Type>,
-}
-
 impl<'ctx> Visitor<BasicValueEnum<'ctx>> for LLVMLoweringVisitor<'ctx> {
-    fn visit_eof(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
-        todo!()
-    }
-
-    fn visit_declaration(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
-        todo!()
-    }
-    fn visit_program(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
-        todo!()
-    }
-    fn visit_block(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
-        todo!()
-    }
-
-    // Operands
-    fn visit_bool(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
-        todo!()
-    }
-    fn visit_string(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
-        todo!()
-    }
-    fn visit_number(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
-        match &node {
-            Node::Double(dbl) => {
-                BasicValueEnum::FloatValue(self.context.f64_type().const_float(*dbl))
-            }
-            Node::Int(int) => {
-                BasicValueEnum::IntValue(self.context.i32_type().const_int(*int, true))
-            }
-            _ => {
-                panic!("Expected number")
-            }
+    fn visit_block(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+        let Node::Block(statements) = node else {
+            panic!("Expected Block node");
+        };
+        let mut result : BasicValueEnum<'ctx>;
+        for statement in statements {
+            result = statement.accept(self);
         }
+        result
     }
-    fn visit_identifier(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+    fn visit_program(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+        self.visit_block(node)
+    }
+    fn visit_string(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
         match node {
-            Node::Identifier(name) => match self.symbol_table.get_symbol(name) {
-                Some(value) => *value,
-                None => panic!("Undefined variable"),
-            },
-            _ => panic!("Expected Identifier node"),
+            Node::String(string) => {
+                let Ok(string_ptr) = self.builder.build_global_string_ptr(string, "string") else {
+                    panic!("Failed to build string pointer");
+                };
+                BasicValueEnum::PointerValue(string_ptr.as_pointer_value())
+            }
+            _ => panic!("Expected StringLiteral node"),
         }
     }
-
-    // Expressions
-    fn visit_expression(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
-        todo!()
+    fn visit_bool(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+        match node {
+            Node::Bool(value) => {
+                let bool_value = if *value { 1 } else { 0 };
+                BasicValueEnum::IntValue(self.context.bool_type().const_int(bool_value as u64, false))
+            }
+            _ => panic!("Expected BoolLiteral node"),
+        }
     }
-    fn visit_term(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
-        todo!()
-    }
-    fn visit_factor(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
-        todo!()
-    }
-
-    fn visit_relational_expression(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
-        todo!()
-    }
-    fn visit_logical_expression(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
-        todo!()
-    }
-    fn visit_not_op(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
-        todo!()
-    }
-    fn visit_neg_op(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
-        todo!()
-    }
-    fn visit_binary_op(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+    fn visit_term(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
         match node {
             Node::BinaryOperation(lhs, op, rhs) => {
                 let left = lhs.accept(self);
                 let right = rhs.accept(self);
 
                 match op {
-                    TokenKind::Add => BasicValueEnum::FloatValue(
-                        self.builder
-                            .build_float_add(
-                                left.into_float_value(),
-                                right.into_float_value(),
-                                "addtmp",
-                            )
-                            .unwrap(),
-                    ),
-                    TokenKind::Subtract => BasicValueEnum::FloatValue(
-                        self.builder
-                            .build_float_sub(
-                                left.into_float_value(),
-                                right.into_float_value(),
-                                "subtmp",
-                            )
-                            .unwrap(),
-                    ),
                     TokenKind::Multiply => BasicValueEnum::FloatValue(
                         self.builder
                             .build_float_mul(
@@ -181,56 +72,179 @@ impl<'ctx> Visitor<BasicValueEnum<'ctx>> for LLVMLoweringVisitor<'ctx> {
                             )
                             .unwrap(),
                     ),
-                    _ => panic!("Unsupported binary operator"),
+                    _ => panic!("Unsupported term operator"),
                 }
             }
-            _ => panic!("Expected BinaryOp node"),
+            _ => panic!("Expected Term node"),
         }
     }
-    fn visit_assignment(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+    fn visit_factor(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+        todo!()
+    }
+    fn visit_expression(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
         match node {
-            Node::Assignment { id, expression } => {
+            Node::Expression(root) => {
+                root.accept(self)
+            }
+            _ => panic!("Expected Expression node"),
+        }
+    }
+    fn visit_relational_expression(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+        match node {
+            Node::RelationalExpression{lhs, op, rhs} => {
+                let left = lhs.accept(self);
+                let right = rhs.accept(self);
+
+                match op {
+                    TokenKind::LeftAngle => BasicValueEnum::IntValue(
+                        self.builder
+                            .build_int_compare(
+                                inkwell::IntPredicate::SLT,
+                                left.into_int_value(),
+                                right.into_int_value(),
+                                "cmptmp",
+                            )
+                            .unwrap(),
+                    ),
+                    TokenKind::LessThanEquals => BasicValueEnum::IntValue(
+                        self.builder
+                            .build_int_compare(
+                                inkwell::IntPredicate::SLE,
+                                left.into_int_value(),
+                                right.into_int_value(),
+                                "cmptmp",
+                            )
+                            .unwrap(),
+                    ),
+                    TokenKind::LeftAngle => BasicValueEnum::IntValue(
+                        self.builder
+                            .build_int_compare(
+                                inkwell::IntPredicate::SGT,
+                                left.into_int_value(),
+                                right.into_int_value(),
+                                "cmptmp",
+                            )
+                            .unwrap(),
+                    ),
+                    TokenKind::GreaterThanEquals => BasicValueEnum::IntValue(
+                        self.builder
+                            .build_int_compare(
+                                inkwell::IntPredicate::SGE,
+                                left.into_int_value(),
+                                right.into_int_value(),
+                                "cmptmp",
+                            )
+                            .unwrap(),
+                    ),
+                    TokenKind::Equals => BasicValueEnum::IntValue(
+                        self.builder
+                            .build_int_compare(
+                                inkwell::IntPredicate::EQ,
+                                left.into_int_value(),
+                                right.into_int_value(),
+                                "cmptmp",
+                            )
+                            .unwrap(),
+                    ),
+                    TokenKind::NotEquals => BasicValueEnum::IntValue(
+                        self.builder
+                            .build_int_compare(
+                                inkwell::IntPredicate::NE,
+                                left.into_int_value(),
+                                right.into_int_value(),
+                                "cmptmp",
+                            )
+                            .unwrap(),
+                    ),
+                    _ => panic!("Unsupported relational operator"),
+                }
+            }
+            _ => panic!("Expected RelationalExpression node"),
+        }
+    }
+    fn visit_logical_expression(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+        match node {
+            Node::LogicalExpression{lhs, op, rhs} => {
+                let left = lhs.accept(self);
+                let right = rhs.accept(self);
+                
+                match op {
+                    TokenKind::LogicalAnd => BasicValueEnum::IntValue(
+                        self.builder
+                            .build_and(
+                                left.into_int_value(),
+                                right.into_int_value(),
+                                "andtmp",
+                            )
+                            .unwrap(),
+                    ),
+                    TokenKind::LogicalOr => BasicValueEnum::IntValue(
+                        self.builder
+                            .build_or(
+                                left.into_int_value(),
+                                right.into_int_value(),
+                                "ortmp",
+                            )
+                            .unwrap(),
+                    ),
+                    _ => panic!("Unsupported logical operator"),
+                }
+            }
+            _ => panic!("Expected LogicalExpression node"),
+        }
+    }
+    fn visit_not_op(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+        match node {
+            Node::NotOp(expr) => {
+                let value = expr.accept(self);
+                BasicValueEnum::IntValue(
+                    self.builder
+                        .build_not(value.into_int_value(), "nottmp")
+                        .unwrap(),
+                )
+            }
+            _ => panic!("Expected NotOperation node"),
+        }
+    }
+    fn visit_neg_op(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+        match node {
+            Node::NegOp(expr) => {
+                let value = expr.accept(self);
+                BasicValueEnum::FloatValue(
+                    self.builder
+                        .build_float_neg(value.into_float_value(), "negtmp")
+                        .unwrap(),
+                )
+            }
+            _ => panic!("Expected NegOperation node"),
+        }
+    }
+    fn visit_declaration(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+        match node {
+            Node::DeclStmt { target_type, id, expression, mutable } => {
                 let value = expression.accept(self);
                 self.symbol_table.add_symbol(id.clone(), value);
                 value
             }
-            _ => panic!("Expected Assignment node"),
+            _ => panic!("Expected Declaration node"),
         }
     }
-
-    // Functions
-    fn visit_lambda(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
+    fn visit_lambda(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
         todo!()
     }
-    fn visit_function_decl(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
+    fn visit_eof(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
         todo!()
     }
-    fn visit_param_decl(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
+    fn visit_number(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
         todo!()
     }
-    fn visit_function_call(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
+    fn visit_identifier(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
         todo!()
     }
-
-    // Arrays.
-    fn visit_array(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
+    fn visit_binary_op(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
         todo!()
     }
-    fn visit_array_access(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
-        todo!()
-    }
-
-    // Keywords.
-    fn visit_if_stmnt(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
-        todo!()
-    }
-    fn visit_else_stmnt(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
-        todo!()
-    }
-    fn visit_repeat_stmnt(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
-        todo!()
-    }
-    fn visit_break_stmnt(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
+    fn visit_assignment(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
         todo!()
     }
 }

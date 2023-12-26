@@ -1,33 +1,49 @@
 use super::tokens::TokenKind;
 pub trait Visitor<T> {
-    fn visit_number(&mut self, node: &Node) -> T;
-    fn visit_term(&mut self, node: &Node) -> T;
-    fn visit_factor(&mut self, node: &Node) -> T;
-    fn visit_eof(&mut self, node: &Node) -> T;
-    fn visit_binary_op(&mut self, node: &Node) -> T;
-    fn visit_lambda(&mut self, node: &Node) -> T;
-    fn visit_function_decl(&mut self, node: &Node) -> T;
-    fn visit_param_decl(&mut self, node: &Node) -> T;
-    fn visit_function_call(&mut self, node: &Node) -> T;
-    fn visit_program(&mut self, node: &Node) -> T;
-    fn visit_repeat_stmnt(&mut self, node: &Node) -> T;
-    fn visit_break_stmnt(&mut self, node: &Node) -> T;
-    fn visit_relational_expression(&mut self, node: &Node) -> T;
-    fn visit_logical_expression(&mut self, node: &Node) -> T;
-    // unary operations
-    fn visit_not_op(&mut self, node: &Node) -> T;
-    fn visit_neg_op(&mut self, node: &Node) -> T;
-    fn visit_assignment(&mut self, node: &Node) -> T;
-    fn visit_declaration(&mut self, node: &Node) -> T;
+    // Precedence 1
     fn visit_block(&mut self, node: &Node) -> T;
-    fn visit_expression(&mut self, node: &Node) -> T;
+    fn visit_program(&mut self, node: &Node) -> T;
+    
+    // Precedence 2
+    fn visit_number(&mut self, node: &Node) -> T;
     fn visit_string(&mut self, node: &Node) -> T;
     fn visit_identifier(&mut self, node: &Node) -> T;
     fn visit_bool(&mut self, node: &Node) -> T;
-    fn visit_array(&mut self, node: &Node) -> T;
-    fn visit_array_access(&mut self, node: &Node) -> T;
-    fn visit_if_stmnt(&mut self, node: &Node) -> T;
-    fn visit_else_stmnt(&mut self, node: &Node) -> T;
+    // fn visit_array(&mut self, node: &Node) -> T;
+    // fn visit_array_access(&mut self, node: &Node) -> T;
+    
+    // Precedence 3
+    fn visit_term(&mut self, node: &Node) -> T;
+    fn visit_factor(&mut self, node: &Node) -> T;
+    fn visit_expression(&mut self, node: &Node) -> T;
+    
+    // Precedence 4
+    fn visit_binary_op(&mut self, node: &Node) -> T;
+    fn visit_relational_expression(&mut self, node: &Node) -> T;
+    fn visit_logical_expression(&mut self, node: &Node) -> T;
+    
+    // Precedence 5
+    fn visit_not_op(&mut self, node: &Node) -> T;
+    fn visit_neg_op(&mut self, node: &Node) -> T;
+    
+    // Precedence 6
+    fn visit_assignment(&mut self, node: &Node) -> T;
+    fn visit_declaration(&mut self, node: &Node) -> T;
+    // fn visit_function_call(&mut self, node: &Node) -> T;
+    // fn visit_function_decl(&mut self, node: &Node) -> T;
+    // fn visit_param_decl(&mut self, node: &Node) -> T;
+
+    // Precedence 7
+    // fn visit_repeat_stmnt(&mut self, node: &Node) -> T;
+    // fn visit_break_stmnt(&mut self, node: &Node) -> T;
+    // fn visit_if_stmnt(&mut self, node: &Node) -> T;
+    // fn visit_else_stmnt(&mut self, node: &Node) -> T;
+
+    // Precedence 8
+    fn visit_lambda(&mut self, node: &Node) -> T;
+
+    // Precedence 9
+    fn visit_eof(&mut self, node: &Node) -> T;
 }
 #[derive(Debug, Clone)]
 pub enum Node {
@@ -134,6 +150,16 @@ pub enum Node {
 impl Node {
     pub fn accept<T>(&self, visitor: &mut dyn Visitor<T>) -> T {
         match self {
+            // Node::IfStmnt { .. } => visitor.visit_if_stmnt(self),
+            // Node::ElseStmnt { .. } => visitor.visit_else_stmnt(self),
+            // Node::FnDeclStmnt { .. } => visitor.visit_function_decl(self),
+            // Node::ParamDeclNode { .. } => visitor.visit_param_decl(self),
+            // Node::FunctionCall { .. } => visitor.visit_function_call(self),
+            // Node::RepeatStmnt { .. } => visitor.visit_repeat_stmnt(self),
+            // Node::BreakStmnt(_) => visitor.visit_break_stmnt(self),
+            // Node::Array { .. } => visitor.visit_array(self),
+            // Node::ArrayAccessExpr { .. } => visitor.visit_array_access(self),
+            
             Node::Undefined() => visitor.visit_eof(self),
             Node::Identifier(..) => visitor.visit_identifier(self),
             Node::Assignment { .. } => visitor.visit_assignment(self),
@@ -144,23 +170,17 @@ impl Node {
             Node::NegOp(..) => visitor.visit_neg_op(self),
             Node::NotOp(..) => visitor.visit_not_op(self),
             Node::Bool(..) => visitor.visit_bool(self),
-            Node::IfStmnt { .. } => visitor.visit_if_stmnt(self),
-            Node::ElseStmnt { .. } => visitor.visit_else_stmnt(self),
             Node::RelationalExpression { .. } => visitor.visit_relational_expression(self),
             Node::LogicalExpression { .. } => visitor.visit_logical_expression(self),
-            Node::FnDeclStmnt { .. } => visitor.visit_function_decl(self),
-            Node::ParamDeclNode { .. } => visitor.visit_param_decl(self),
-            Node::FunctionCall { .. } => visitor.visit_function_call(self),
             Node::Program(..) => visitor.visit_program(self),
-            Node::RepeatStmnt { .. } => visitor.visit_repeat_stmnt(self),
-            Node::BreakStmnt(_) => visitor.visit_break_stmnt(self),
-            Node::Array { .. } => visitor.visit_array(self),
-            Node::ArrayAccessExpr { .. } => visitor.visit_array_access(self),
             Node::Int(..) => visitor.visit_number(self),
             Node::Double(..) => visitor.visit_number(self),
-            Node::DotOp { .. } => visitor.visit_binary_op(self),
             Node::Lambda { .. } => visitor.visit_lambda(self),
             Node::BinaryOperation(..) => visitor.visit_binary_op(self),
+            _ => {
+                dbg!(self);
+                panic!("Not implemented")
+            }
         }
     }
 }
