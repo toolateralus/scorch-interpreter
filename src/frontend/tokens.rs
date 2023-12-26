@@ -67,12 +67,10 @@ pub enum TokenFamily {
 }
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum TokenKind {
-    Undefined = 0,
     // values
     Number,
     String,
     Bool,
-    Boolean,
 
     // identifiers
     Identifier,

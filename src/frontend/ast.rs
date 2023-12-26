@@ -148,33 +148,46 @@ pub enum Node {
 impl Node {
     pub fn accept<T>(&self, visitor: &mut dyn Visitor<T>) -> T {
         match self {
-            // Node::IfStmnt { .. } => visitor.visit_if_stmnt(self),
-            // Node::ElseStmnt { .. } => visitor.visit_else_stmnt(self),
+            // functions
             // Node::FnDeclStmnt { .. } => visitor.visit_function_decl(self),
             // Node::ParamDeclNode { .. } => visitor.visit_param_decl(self),
             // Node::FunctionCall { .. } => visitor.visit_function_call(self),
+            // Node::Lambda { .. } => visitor.visit_lambda(self),
+            
+            // control flow keywords
             // Node::RepeatStmnt { .. } => visitor.visit_repeat_stmnt(self),
             // Node::BreakStmnt(_) => visitor.visit_break_stmnt(self),
+            // Node::IfStmnt { .. } => visitor.visit_if_stmnt(self),
+            // Node::ElseStmnt { .. } => visitor.visit_else_stmnt(self),
+            
+            // arrays
             // Node::Array { .. } => visitor.visit_array(self),
             // Node::ArrayAccessExpr { .. } => visitor.visit_array_access(self),
             
-            Node::Undefined() => visitor.visit_eof(self),
-            Node::Identifier(..) => visitor.visit_identifier(self),
-            Node::Assignment { .. } => visitor.visit_assignment(self),
-            Node::DeclStmt { .. } => visitor.visit_declaration(self),
-            Node::Block(..) => visitor.visit_block(self),
-            Node::Expression(..) => visitor.visit_expression(self),
-            Node::String(..) => visitor.visit_string(self),
-            Node::NegOp(..) => visitor.visit_neg_op(self),
-            Node::NotOp(..) => visitor.visit_not_op(self),
-            Node::Bool(..) => visitor.visit_bool(self),
-            Node::RelationalExpression { .. } => visitor.visit_relational_expression(self),
-            Node::LogicalExpression { .. } => visitor.visit_logical_expression(self),
             Node::Program(..) => visitor.visit_program(self),
+            Node::Block(..) => visitor.visit_block(self),
+            
+            Node::BinaryOperation(..) => visitor.visit_binary_op(self),
+            Node::Expression(..) => visitor.visit_expression(self),
+            
+            Node::DeclStmt { .. } => visitor.visit_declaration(self),
+            Node::Assignment { .. } => visitor.visit_assignment(self),
+            
+            Node::Identifier(..) => visitor.visit_identifier(self),
+            Node::Undefined() => visitor.visit_eof(self),
+            
+            Node::String(..) => visitor.visit_string(self),
+            Node::Bool(..) => visitor.visit_bool(self),
             Node::Int(..) => visitor.visit_number(self),
             Node::Double(..) => visitor.visit_number(self),
-            Node::Lambda { .. } => visitor.visit_lambda(self),
-            Node::BinaryOperation(..) => visitor.visit_binary_op(self),
+            
+            Node::NegOp(..) => visitor.visit_neg_op(self),
+            Node::NotOp(..) => visitor.visit_not_op(self),
+            
+            Node::RelationalExpression { .. } => visitor.visit_relational_expression(self),
+            Node::LogicalExpression { .. } => visitor.visit_logical_expression(self),
+            
+            
             _ => {
                 dbg!(self);
                 panic!("Not implemented")

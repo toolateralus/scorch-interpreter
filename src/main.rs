@@ -8,8 +8,10 @@ use ::std::env;
 use std::fs;
 use inkwell::context::Context;
 use frontend::tokens::TokenProcessor;
+use inkwell::module;
 
-use crate::llvm::lowering::LLVMLoweringVisitor;
+use crate::llvm::context::SymbolTable;
+use crate::llvm::lowering::LLVMVisitor;
 
 fn main() {
     let flags_map = parse_cmd_line_args();
@@ -22,24 +24,17 @@ fn main() {
     tokenizer.tokenize(&file_contents);
     let ast_root = frontend::parser::parse_program(&tokenizer.tokens);
     
-    let mut symbol_table = llvm::context::SymbolTable {
+    let mut context = Context::create();
+    let mut symbol_table = SymbolTable{
         symbols: HashMap::new(),
         functions: HashMap::new(),
         structs: HashMap::new(),
     };
-    
-    let context = Context::create();
-    let builder = context.create_builder();
-    
-    let mut visitor = &mut LLVMLoweringVisitor {
-        context: &context,
-        builder: &builder,
-        symbol_table: &mut symbol_table,
-    };
+ 
+    let mut visitor = LLVMVisitor::new(&mut context, &mut symbol_table);
     
     dbg!(&ast_root);
-    
-    let result = ast_root.accept(visitor);
+    let result = ast_root.accept(&mut visitor);
     
     println!("Result:");
     dbg!(&result);

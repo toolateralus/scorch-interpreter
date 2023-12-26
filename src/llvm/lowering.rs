@@ -1,19 +1,37 @@
+use std::collections::HashMap;
+
 use crate::frontend::ast::{Node, Visitor};
 use crate::frontend::tokens::TokenKind;
 use inkwell::builder::Builder;
-use inkwell::context::Context;
+use inkwell::context::{Context, self};
+
 use inkwell::module::Module;
-use inkwell::values::{BasicValueEnum, VectorValue};
+use inkwell::values::BasicValueEnum;
 
 use super::context::SymbolTable;
 
-pub struct LLVMLoweringVisitor<'ctx> {
+pub struct LLVMVisitor<'ctx> {
     pub context: &'ctx Context,
-    pub builder: &'ctx Builder<'ctx>,
+    pub builder: Builder<'ctx>,
+    pub module: Module<'ctx>,
     pub symbol_table: &'ctx mut SymbolTable<'ctx>,
 }
-impl<'ctx> Visitor<BasicValueEnum<'ctx>> for LLVMLoweringVisitor<'ctx> {
+
+impl<'ctx> LLVMVisitor<'ctx> {
+    pub(crate) fn new(context: &'ctx Context, symbol_table: &'ctx mut SymbolTable<'ctx>) -> LLVMVisitor<'ctx> {
+        LLVMVisitor {
+            context,
+            builder: context.create_builder(),
+            module: context.create_module("program"),
+            symbol_table,
+        }
+    }
+}
+impl<'ctx> Visitor<BasicValueEnum<'ctx>> for LLVMVisitor<'ctx> {
+    
     fn visit_block(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+        
+        
         let Node::Block(statements) = node else {
             dbg!(node);
             panic!("Expected Block node");
@@ -25,8 +43,9 @@ impl<'ctx> Visitor<BasicValueEnum<'ctx>> for LLVMLoweringVisitor<'ctx> {
         result.unwrap()
     }
     fn visit_program(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
-        if let Node::Program(statements) = &node {
-            let mut result : Option<BasicValueEnum<'ctx>> = None;
+        
+        if let Node::Program(statements) = node {
+            let mut result: Option<BasicValueEnum<'ctx>> = None;
             for statement in statements {
                 result = Some(statement.accept(self));
             }
@@ -80,7 +99,7 @@ impl<'ctx> Visitor<BasicValueEnum<'ctx>> for LLVMLoweringVisitor<'ctx> {
             Node::RelationalExpression{lhs, op, rhs} => {
                 let left = lhs.accept(self);
                 let right = rhs.accept(self);
-
+                
                 match op {
                     TokenKind::LeftAngle => BasicValueEnum::IntValue(
                         self.builder
@@ -102,7 +121,7 @@ impl<'ctx> Visitor<BasicValueEnum<'ctx>> for LLVMLoweringVisitor<'ctx> {
                             )
                             .unwrap(),
                     ),
-                    TokenKind::LeftAngle => BasicValueEnum::IntValue(
+                    TokenKind::RightAngle => BasicValueEnum::IntValue(
                         self.builder
                             .build_int_compare(
                                 inkwell::IntPredicate::SGT,
@@ -207,7 +226,7 @@ impl<'ctx> Visitor<BasicValueEnum<'ctx>> for LLVMLoweringVisitor<'ctx> {
     }
     fn visit_declaration(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
         match node {
-            Node::DeclStmt { target_type, id, expression, mutable } => {
+            Node::DeclStmt { target_type: _, id, expression, mutable: _ } => {
                 let value = expression.accept(self);
                 self.symbol_table.add_symbol(id.clone(), value);
                 value
@@ -215,20 +234,20 @@ impl<'ctx> Visitor<BasicValueEnum<'ctx>> for LLVMLoweringVisitor<'ctx> {
             _ => panic!("Expected Declaration node"),
         }
     }
-    fn visit_lambda(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+    fn visit_lambda(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
         todo!()
     }
-    fn visit_eof(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+    fn visit_eof(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
         todo!()
     }
     
-    fn visit_identifier(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+    fn visit_identifier(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
         todo!()
     }
-    fn visit_binary_op(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+    fn visit_binary_op(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
         todo!()
     }
-    fn visit_assignment(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+    fn visit_assignment(&mut self, _node: &Node) -> BasicValueEnum<'ctx> {
         todo!()
     }
 }
