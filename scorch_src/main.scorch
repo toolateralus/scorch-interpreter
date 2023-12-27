@@ -1,5 +1,10 @@
-String::add_hi: Fn() -> String {
-	println(this)
-	break this + " hi"
-}
-"yo,".add_hi().add_hi()
+typedef Person | 
+    var name: String
+    age: Int
+    friends : Array
+|
+
+
+the_nameless_one := Person::new()
+
+assert('the nameless one' == the_nameless_one.name, 'the nameless one has a name.. failed to get string field.')
