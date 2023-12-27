@@ -7,9 +7,7 @@ repeat i < 10000 {
     result = true
 }
 
-println('Test: Cached repeat with condition.')
-println('Expected result: true.')
-println('Value: Is i == 2500? ', result && i == 2500)
+assert(result && i == 2500, 'Test: Cached repeat with condition failed.')
 
 repeat z < 250000 {
     if z == 249999 {
@@ -18,8 +16,7 @@ repeat z < 250000 {
     }
 } 
 
-println('Test: Implicitly declared iterator repeat with condition.')
-println('Expected result: true.')
+assert(result1, 'Test: Implicitly declared iterator repeat with condition failed.')
 
 repeat {
     break
@@ -27,4 +24,4 @@ repeat {
 }
 
 result2 = true
-println('test: repeat without condition passed')
+assert(result2, 'Test: Repeat without condition failed.')
