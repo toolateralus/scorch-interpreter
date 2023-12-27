@@ -6,7 +6,7 @@ struct Vec2 |
     y := 0.0
 |
 
-vector2 := Vec2 { 0.0, 1250.050 }
+vector2 := new Vec2 { 0.0, 1250.050 }
 
 assert_eq(0.0, vector2.x, 'Vec2.x failed to equal expected value')
 assert_eq(1250.050, vector2.y, 'Vec2.y failed to equal expected value')
@@ -14,12 +14,12 @@ assert_eq(1250.050, vector2.y, 'Vec2.y failed to equal expected value')
 
 // complex type
 struct Vec3 |
-    xy := Vec2{0.0, 0.0}
+    xy := new Vec2{0.0, 0.0}
     z := 0.0
 |
 
-vector3 := Vec3 {
-    Vec2 {
+vector3 := new Vec3 {
+    new Vec2 {
         0.0,
         1250.050
     },
