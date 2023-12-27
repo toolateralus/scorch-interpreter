@@ -1,5 +1,5 @@
 typedef Vec2 |
-    x := 0.0
+    zzz := 0.0
     y := 0.0
 |
 

@@ -61,6 +61,13 @@ pub struct Variable {
     pub m_type: Rc<Type>,
 }
 impl Variable {
+    pub fn set_value(&self, value: &Value) -> Rc<Variable> {
+        Rc::new(Variable {
+            mutable: self.mutable,
+            value: value.clone(),
+            m_type: Rc::clone(&self.m_type),
+        })
+    }
     pub fn new(mutable: bool, value: Value, m_type: Rc<Type>) -> Self {
         Variable {
             mutable,
@@ -103,8 +110,19 @@ impl Context {
         }
     }
     pub fn insert_variable(&mut self, name: &str, value: Rc<Variable>) -> () {
-        let name_str = name.to_string();
-        self.variables.insert(name_str, value);
+        self.variables.insert(String::from(name), value);
+    }
+    pub fn seek_overwrite_in_parents<'ctx>(&mut self, name: &str, value: &'ctx Value) -> Result<Rc<RefCell<Context>>, ()> {
+        match self.variables.get(name) {
+            Some(var) => {
+                self.variables.insert(String::from(name), var.set_value(value));
+                Ok(Rc::new(RefCell::new(self.clone())))
+            }
+            None => match &self.parent {
+                Some(parent) => parent.borrow_mut().seek_overwrite_in_parents(name, value),
+                None => Err(())
+            },
+        }
     }
 }
 #[derive(Debug, Clone)]

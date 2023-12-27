@@ -281,7 +281,7 @@ impl Visitor<Value> for Interpreter {
                 match ctx.find_variable(&id) {
                     Some(_) => {
                         dbg!(node);
-                        panic!("redefinition of variable");
+                        panic!("redefinition of variable {id}");
                     }
                     None => {
                         ctx.insert_variable(&id, Rc::new(var));
@@ -306,9 +306,9 @@ impl Visitor<Value> for Interpreter {
                     }
                 };
                 
+                let mut context = self.context.borrow_mut();
                 
-                
-                match self.context.borrow_mut().find_variable(&str_id) {
+                match context.find_variable(&str_id) {
                     Some(mut value) => {
                         if value.mutable == false {
                             dbg!(node);
@@ -323,16 +323,10 @@ impl Visitor<Value> for Interpreter {
                             panic!("expected : {}, got : {}", expected_typename, new_typename);
                         }
                         
-                        value = Rc::new(Variable::new(
-							value.mutable,
-							val,
-							Rc::clone(&value.m_type)
-						));
-                        
-                        if TypeChecker::validate(value.borrow()) == false {
+                        let Ok(_) = context.seek_overwrite_in_parents(&str_id, &val) else {
                             dbg!(node);
-                            panic!("Type mismatch");
-                        }
+                            panic!("variable {:?} not found", id);
+                        };
                     }
                     None => {
                         dbg!(node);
@@ -746,7 +740,7 @@ impl Visitor<Value> for Interpreter {
         if !*assignment {
             return element.value.clone();
         }
-
+        
         // assignment
         if let Some(expr) = expression {
             let expr_result = expr.accept(self);
@@ -760,7 +754,9 @@ impl Visitor<Value> for Interpreter {
                 Value::Array(mutable, elements),
                 Rc::clone(&var.m_type),
             );
-            self.context.borrow_mut().insert_variable(id, Rc::new(var2));
+            let Ok(ctx) = self.context.borrow_mut().seek_overwrite_in_parents(id, &var2.value) else {
+                panic!("variable {:?} not found", id);
+            };
             return Value::None();
         }
         

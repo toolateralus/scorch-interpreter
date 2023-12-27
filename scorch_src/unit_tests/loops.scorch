@@ -3,8 +3,6 @@ var result1 := false
 var result2 := false
 var i := 0
 
-
-// todo: find out why medium loops (>= 10,000 on my computer) cause stack overflow only during testing.
 repeat i < 10000 {
     result = true
 }

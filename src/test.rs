@@ -18,20 +18,20 @@ fn fields_vars_literals() {
 #[test]
 fn loops() {
     let ctx = super::execute_from_file(String::from("scorch_src/unit_tests/loops.scorch"));
-
-    let value = ctx.borrow_mut().variables["result"].clone();
-    if let super::runtime::types::Value::Bool(v) = value.value {
-        assert_eq!(v, true, "test failed: {}", "loop one");
+    
+    let value = ctx.borrow_mut().find_variable("result");
+    if let super::runtime::types::Value::Bool(v) = value.to_owned().unwrap().value {
+        assert_eq!(v, true, "test failed: {} {}", "loop one", v);
     }
-
-    let value = ctx.borrow_mut().variables["result1"].clone();
-    if let super::runtime::types::Value::Bool(v) = value.value {
-        assert_eq!(v, true, "test failed: {}", "loop two");
+    
+    let value = ctx.borrow_mut().find_variable("result1").clone();
+    if let super::runtime::types::Value::Bool(v) = value.to_owned().unwrap().value {
+        assert_eq!(v, true, "test failed: {} {}", "loop two", v);
     }
-
+    
     let value = ctx.borrow_mut().variables["result2"].clone();
-    if let super::runtime::types::Value::Bool(v) = value.value {
-        assert_eq!(v, true, "test failed: {}", "loop two");
+    if let super::runtime::types::Value::Bool(v) = value.to_owned().value {
+        assert_eq!(v, true, "test failed: {} {}", "loop two", v);
     }
 }
 
