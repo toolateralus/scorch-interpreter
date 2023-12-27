@@ -1,12 +1,34 @@
 x := 100.0
+
+assert(100.0 == x, 'x failed to equal expected value')
+
 vvz := -10
+
+assert(-10 == vvz, 'x failed to equal expected value')
+
 not_true := !true
+
+assert(false == not_true, 'not_true failed to equal expected value')
+
 not_false := !false
+
+assert(true == not_false, 'not_false failed to equal expected value')
+
 my_Bool := true
 
+assert(true == my_Bool, 'my_Bool failed to equal expected value')
+
 first_name := 'Cyitlec'
+
+assert('Cyitlec' == first_name, 'first_name failed to equal expected value')
+
 last_name := 'Kivals'
+
+assert('Kivals' == last_name, 'last_name failed to equal expected value')
+
 full_name := first_name + ' ' + last_name
+
+assert('Cyitlec Kivals' == full_name, 'full_name failed to equal expected value')
 
 birthplace := 'The
 Most
@@ -15,5 +37,15 @@ American
 City 
 in 
 America'
+
+assert('The
+Most
+American
+American 
+City 
+in 
+America' == birthplace, 'birthplace failed to equal expected value, instead got' + tostr(birthplace))
+
 age := 'mid 20s'
+
 height := '6 feet, 3.758168 inches'
