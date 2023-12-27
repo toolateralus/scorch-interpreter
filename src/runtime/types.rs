@@ -16,7 +16,7 @@ pub enum Value {
     String(String),
     Return(Option<Box<Value>>),
     Function(Rc<Function>),
-    Array(bool, Vec<Variable>),
+    Array(bool, Rc<RefCell<Vec<Variable>>>),
     Struct {
         typename: String,
         context: Box<Context>,
@@ -61,12 +61,8 @@ pub struct Variable {
     pub m_type: Rc<Type>,
 }
 impl Variable {
-    pub fn set_value(&self, value: &Value) -> Rc<Variable> {
-        Rc::new(Variable {
-            mutable: self.mutable,
-            value: value.clone(),
-            m_type: Rc::clone(&self.m_type),
-        })
+    pub fn set_value(&mut self, value: &Value) -> () {
+        self.value = value.clone();
     }
     pub fn new(mutable: bool, value: Value, m_type: Rc<Type>) -> Self {
         Variable {
@@ -79,7 +75,7 @@ impl Variable {
 
 pub struct Context {
     pub parent: Option<Rc<RefCell<Context>>>,
-    pub variables: HashMap<String, Rc<Variable>>,
+    pub variables: HashMap<String, Rc<RefCell<Variable>>>,
 }
 
 impl std::fmt::Debug for Context {
@@ -100,28 +96,28 @@ impl Clone for Context {
 }
 
 impl Context {
-    pub fn find_variable(&self, name: &str) -> Option<Rc<Variable>> {
+    pub fn find_variable(&self, name: &str) -> Option<Rc<RefCell<Variable>>> {
         match self.variables.get(name) {
-            Some(var) => Some(var.clone()),
+            Some(var) => Some(Rc::clone(&var)),
             None => match &self.parent {
                 Some(parent) => parent.borrow().find_variable(name),
                 None => None,
             },
         }
     }
-    pub fn insert_variable(&mut self, name: &str, value: Rc<Variable>) -> () {
+    pub fn insert_variable(&mut self, name: &str, value: Rc<RefCell<Variable>>) -> () {
         self.variables.insert(String::from(name), value);
     }
     pub fn seek_overwrite_in_parents<'ctx>(
         &mut self,
         name: &str,
         value: &'ctx Value,
-    ) -> Result<Rc<RefCell<Context>>, ()> {
+    ) -> Result<(), ()> {
         match self.variables.get(name) {
             Some(var) => {
-                self.variables
-                    .insert(String::from(name), var.set_value(value));
-                Ok(Rc::new(RefCell::new(self.clone())))
+                var.borrow_mut().set_value(value);
+                self.variables.insert(String::from(name), Rc::clone(&var));
+                Ok(())
             }
             None => match &self.parent {
                 Some(parent) => parent.borrow_mut().seek_overwrite_in_parents(name, value),

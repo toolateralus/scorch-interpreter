@@ -1,121 +1,27 @@
-try_print_iter := (z : Int, vertices : Array)  {
-              
-    if z == 1000 {
-        println(z)
-        println(vertices)
-    }
-    if z == 2000 {
-        println(z)
-        println(vertices)
-    }
-    if z == 3000 {
-        println(z)
-        println(vertices)
-    }
-    if z == 4000 {
-        println(z)
-        println(vertices)
-    }
-    if z == 5000 {
-        println(z)
-        println(vertices)
-    }
-    if z == 6000 {
-        println(z)
-        println(vertices)
-    }
-    if z == 7000 {
-        println(z)
-        println(vertices)
-    }
-    if z == 8000 {
-        println(z)
-        println(vertices)
-    }
-    if z == 9000 {
-        println(z)
-        println(vertices)
-    }
-    if z == 10000 {
-        println(z)
-        println(vertices)
-    }
-    if z == 11000 {
-        println(z)
-        println(vertices)
-    }
-    if z == 12000 {
-        println(z)
-        println(vertices)
-    }
-    if z == 13000 {
-        println(z)
-        println(vertices)
-    }
-    if z == 14000 {
-        println(z)
-        println(vertices)
-    }
-    if z == 15000 {
-        println(z)
-        println(vertices)
-    }
-    if z == 16000 {
-        println(z)
-    }
-    if z == 17000 {
-        println(z)
-    }
-    if z == 18000 {
-        println(z)
-    }
-    if z == 19000 {
-        println(z)
-    }
-    if z == 20000 {
-        println(z)
-    }
-    if z == 21000 {
-        println(z)
-    }
-    if z == 22000 {
-        println(z)
-    }
-    if z == 23000 {
-        println(z)
-    }
-    if z == 24000 {
-        println(z)
-    }
-    if z == 25000 {
-        println(z)
-    }
-    if z == 26000 {
-        println(z)
-    }
-    if z == 27000 {
-        println(z)
-    }
-    if z == 28000 {
-        println(z)
-    }
-    if z == 29000 {
-        println(z)
-    }
-    if z == 30000 {
-        println(z)
-    }
-}
-
 struct Vec3 |
     x := 0.0
     y := 0.0
-    z := 0.0
+    var z := 0.0
 |
 
-var vertices := []
+var arrays := []
 
+println('arrays len : ', len(arrays))
 
-repeat z < 30000 {
-    try_print_iter(z, vertices)
+const start := time()
+
+repeat z < 1000 {
+    repeat i < 500 {
+        arrays = push(arrays, push([], new Vec3(0.0, 0.0, 0.0)))
+    }
 }
+
+
+const end := time()
+const delta := end - start
+
+delta = floor(delta)
+
+println('time spent: ', delta, 'ms')
+println('arrays len : ', len(arrays))
+println('arrays len : ', len(arrays))

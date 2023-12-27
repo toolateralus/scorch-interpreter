@@ -22,9 +22,9 @@ use util::*;
 
 fn main() -> () {
     let flags_map = parse_cmd_line_args();
-
+    
     let flags = util::Flags::new(flags_map);
-
+    
     let file = format!("{}/{}", flags.proj_root, "scorch_src/main.scorch");
 
     if flags.cli {

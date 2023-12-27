@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -13,6 +14,7 @@ pub struct Interpreter {
     pub builtin: HashMap<String, BuiltInFunction>,
     pub type_checker: TypeChecker,
 }
+
 impl Interpreter {
     pub fn new() -> Interpreter {
         let builtins = super::std_builtins::get_builtin_functions();
@@ -37,7 +39,7 @@ impl Interpreter {
                 };
                 return builtin.call(&mut ctx, &self.type_checker, args);
             };
-            function = match &fn_ptr.value {
+            function = match &fn_ptr.borrow_mut().value {
                 Value::Function(func) => Some(func.clone()),
                 _ => panic!("Expected function"),
             };
@@ -64,7 +66,7 @@ impl Interpreter {
             } else {
                 self.context.borrow_mut().insert_variable(
                     &param.name,
-                    Rc::new(Variable::new(false, arg.clone(), Rc::clone(&param.m_type))),
+                    Rc::new(RefCell::new(Variable::new(false, arg.clone(), Rc::clone(&param.m_type)))),
                 );
             }
         }
@@ -84,15 +86,15 @@ impl Interpreter {
         {
             let ctx = self.context.borrow_mut();
             if let Node::Identifier(id) = lhs.as_ref() {
-                let var = ctx.find_variable(id);
-                let Some(var) = var else {
+                let tempvar = ctx.find_variable(id);
+                let Some(var) = tempvar else {
                     dbg!(lhs, rhs);
                     panic!("Expected Struct node");
                 };
                 let Value::Struct {
                     typename: _,
                     context,
-                } = &var.value
+                } = &var.borrow_mut().value
                 else {
                     dbg!(lhs, rhs);
                     panic!("Expected Struct node");
@@ -101,12 +103,13 @@ impl Interpreter {
                     dbg!(lhs, rhs);
                     panic!("Expected Struct node");
                 };
-                let var = context.find_variable(id);
-                let Some(var) = var else {
+                
+                let Some(var) = context.find_variable(id) else {
                     dbg!(lhs, rhs);
                     panic!("Expected Struct node");
                 };
-                return var.value.clone();
+                
+                return var.borrow_mut().value.clone();
             };
         }
 
@@ -285,7 +288,7 @@ impl Visitor<Value> for Interpreter {
                         panic!("redefinition of variable {id}");
                     }
                     None => {
-                        ctx.insert_variable(&id, Rc::new(var));
+                        ctx.insert_variable(&id, Rc::new(RefCell::new(var)));
                     }
                 }
             }
@@ -309,31 +312,11 @@ impl Visitor<Value> for Interpreter {
 
                 let mut context = self.context.borrow_mut();
 
-                match context.find_variable(&str_id) {
-                    Some(value) => {
-                        if value.mutable == false {
-                            dbg!(node);
-                            panic!("Cannot assign to immutable variable");
-                        }
-
-                        let expected_typename = value.m_type.name.clone();
-                        let new_typename = self.type_checker.from_value(&val).unwrap().name.clone();
-
-                        if expected_typename != "Dynamic" && new_typename != expected_typename {
-                            dbg!(node);
-                            panic!("expected : {}, got : {}", expected_typename, new_typename);
-                        }
-
-                        let Ok(_) = context.seek_overwrite_in_parents(&str_id, &val) else {
-                            dbg!(node);
-                            panic!("variable {:?} not found", id);
-                        };
-                    }
-                    None => {
-                        dbg!(node);
-                        panic!("Variable not found");
-                    }
-                }
+                let Ok(_) = context.seek_overwrite_in_parents(&str_id, &val) else {
+                    dbg!(node);
+                    panic!("variable {:?} not found", id);
+                };
+                
                 return Value::None();
             }
             _ => {
@@ -354,7 +337,7 @@ impl Visitor<Value> for Interpreter {
             panic!("Expected Identifier");
         };
         match ctx.find_variable(id) {
-            Some(value) => value.value.clone(),
+            Some(value) => value.borrow_mut().value.clone(),
             None => {
                 dbg!(node);
                 panic!("Variable not found");
@@ -616,7 +599,7 @@ impl Visitor<Value> for Interpreter {
             };
             self.context
                 .borrow_mut()
-                .insert_variable(&id, Rc::new(function));
+                .insert_variable(&id, Rc::new(RefCell::new(function)));
         } else {
             panic!("Expected FunctionDecl node");
         };
@@ -677,8 +660,8 @@ impl Visitor<Value> for Interpreter {
                 let var = Variable::new(*elements_mutable, val, m_type);
                 values.push(var);
             }
-
-            return Value::Array(*mutability, values);
+            
+            return Value::Array(*mutability, Rc::new(RefCell::new(values)));
         } else {
             panic!("Expected List node");
         }
@@ -693,71 +676,58 @@ impl Visitor<Value> for Interpreter {
             } => (id, index, expression, assignment),
             _ => panic!("Expected ArrayAccessExpr node"),
         };
-        let var: Rc<Variable>;
-
+        
+        let mut var : Option<Rc<RefCell<Variable>>> = None;
+        
         {
             let ctx = self.context.borrow_mut();
-            let v = match ctx.find_variable(id) {
-                Some(var) => var,
-                None => panic!("variable {:?} not found", id),
-            };
-            var = v;
-        }
-
-        let (mutable, mut elements) = match var.value.clone() {
+            var = ctx.find_variable(id);
+        }   
+        
+        let Some(var) = var else {
+            panic!("Variable {:?} not found", id);
+        };
+        
+        let var = var.borrow_mut();
+        
+        let (mutable, elements) = match &var.value {
             Value::Array(mutable, elements) => (mutable, elements),
-            _ => {
-                dbg!(node);
-                panic!("Expected Array node");
-            }
+            _ => panic!("Expected Array node"),
         };
 
-        let value_node = index.accept(self);
-
-        if !mutable && *assignment {
-            panic!("Cannot assign to immutable array");
-        }
-
-        let index_value = match value_node {
+        let index_value = match index.accept(self) {
             Value::Double(index_value) => index_value as usize,
             Value::Int(index_value) => index_value as usize,
-            _ => panic!("Expected numerical index value, got {:?}", value_node),
+            _ => panic!("Expected numerical index value"),
         };
-
-        if elements.len() < index_value as usize {
-            panic!(
-                "Array index out of bounds :: {}[{}]",
-                id, index_value as usize
-            );
+        
+        let mut elements = elements.borrow_mut();
+        
+        if elements.len() <= index_value {
+            panic!("Array index out of bounds :: {}[{}]", id, index_value);
         }
 
-        let element = &mut elements[index_value as usize];
-
+        let element = &mut elements[index_value];
+        
         // read
         if !*assignment {
             return element.value.clone();
         }
-
+        
         // assignment
         if let Some(expr) = expression {
             let expr_result = expr.accept(self);
-            element.value = expr_result;
+            element.value = expr_result.clone();
             if !TypeChecker::validate(&element) {
                 dbg!(&element);
-                panic!("invalid type");
+                panic!("Invalid type");
             }
-            let var2 = Variable::new(
-                var.mutable,
-                Value::Array(mutable, elements),
-                Rc::clone(&var.m_type),
-            );
-            let Ok(_ctx) = self
-                .context
-                .borrow_mut()
-                .seek_overwrite_in_parents(id, &var2.value)
-            else {
-                panic!("variable {:?} not found", id);
+            let mut ctx = self.context.borrow_mut();
+            
+            let Ok(_) = ctx.seek_overwrite_in_parents(id, &element.value) else {
+                panic!("Variable {:?} not found", id);
             };
+            
             return Value::None();
         }
 
@@ -817,7 +787,7 @@ impl Visitor<Value> for Interpreter {
             parent: Some(Rc::clone(&self.context)),
             variables: HashMap::new(),
         };
-
+        
         let _struct = if let Some(_struct) = self.type_checker.structs.get_mut(id) {
             _struct
         } else {
@@ -851,7 +821,7 @@ impl Visitor<Value> for Interpreter {
             }
 
             let var = Variable::new(true, value, Rc::clone(&t));
-            struct_ctx.insert_variable(&field.0, Rc::new(var));
+            struct_ctx.insert_variable(&field.0, Rc::new(RefCell::new(var)));
         }
 
         Value::Struct {

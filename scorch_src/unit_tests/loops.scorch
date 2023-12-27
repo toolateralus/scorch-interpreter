@@ -7,7 +7,7 @@ repeat i < 10000 {
     result = true
 }
 
-assert(result && i == 2500, 'Test: Cached repeat with condition failed.')
+assert(result && i == 10000, 'Test: Cached repeat with condition failed, expected 10000 got ' + tostr(i))
 
 repeat z < 250000 {
     if z == 249999 {
