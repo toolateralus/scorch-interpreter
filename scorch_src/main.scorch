@@ -1,1 +1,29 @@
-x := 'lol swag'.println()
+typedef Person |
+    favorite_food : String
+    favorite_color: String
+    artistic_muse: String
+    favorite_animal: String
+    favorite_movie: String
+    favorite_book: String
+    favorite_song: String
+|
+
+pers := Person {
+    "Banana",
+    "Yellow",
+    "Banana",
+    "Banana",
+    "The Banana",
+    "The Banana",
+    "The Sound of Bananas",
+}
+
+println(pers)
+println('who am i?')
+
+input := readln()
+
+if input == 'xaryu' {
+    println('correct')
+}
+

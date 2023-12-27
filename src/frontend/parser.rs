@@ -1082,6 +1082,12 @@ fn prs_operand(tokens: &Vec<Token>, index: &mut usize) -> Node {
                 
                 loop {
                     let token = get_current(tokens, index);
+                    
+                    if token.kind == TokenKind::Newline {
+                        *index += 1;
+                        continue;
+                    }
+                    
                     // paramless.
                     if token.kind == TokenKind::CloseCurly {
                         *index += 1;
