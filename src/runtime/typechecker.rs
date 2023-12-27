@@ -25,13 +25,13 @@ impl Type {
 }
 
 pub struct TypeChecker {
-    types: HashMap<String, Rc<Type>>,
-    pub typedefs: HashMap<String, Box<Struct>>,
+    pub types: HashMap<String, Rc<Type>>,
+    pub structs: HashMap<String, Box<Struct>>,
 }
 impl TypeChecker {
     pub fn new() -> Self {
         Self {
-            typedefs: HashMap::new(),
+            structs: HashMap::new(),
             types: HashMap::from([
                 
                 (
@@ -122,7 +122,7 @@ impl TypeChecker {
         val.m_type.validate(&val.value)
     }
     pub fn get(&self, name: &str) -> Option<Rc<Type>> {
-        match self.typedefs.get(name) {
+        match self.structs.get(name) {
             Some(t) => Some(Rc::clone(&t.type_)),
             None => match self.types.get(name) {
                 Some(t) => Some(Rc::clone(t)),
@@ -134,8 +134,8 @@ impl TypeChecker {
     pub fn from_value(&self, val: &Value) -> Option<Rc<Type>> {
         
         if let Value::Struct { typename: name, .. } = &val {
-            let typedef = self.typedefs.get(name)?;
-            return Some(Rc::clone(&typedef.type_));
+            let struct_decl = self.structs.get(name)?;
+            return Some(Rc::clone(&struct_decl.type_));
         }
         
         self.get(_get_type_name(val))

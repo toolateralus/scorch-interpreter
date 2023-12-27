@@ -744,7 +744,7 @@ fn parse_keyword_ops(keyword: &Token, index: &mut usize, next_token: &Token, tok
             dbg!(keyword);
             panic!("else statements must follow an if.");
         }
-        TokenKind::Typedef => parse_type_def(index, next_token, tokens),
+        TokenKind::Struct => parse_type_def(index, next_token, tokens),
         _ => {
             dbg!(keyword);
             panic!("keyword is likely misused or not yet implemented.");
@@ -752,7 +752,7 @@ fn parse_keyword_ops(keyword: &Token, index: &mut usize, next_token: &Token, tok
     }
 }
 fn parse_type_def(index: &mut usize, identifier: &Token, tokens: &Vec<Token>) -> Result<Node, ()> {
-    *index += 2; // consume 'typedef && identifier'
+    *index += 2; // consume 'struct && identifier'
     
     let id = identifier.value.clone();
     let token = get_current(tokens, index);
@@ -806,7 +806,7 @@ fn parse_type_def(index: &mut usize, identifier: &Token, tokens: &Vec<Token>) ->
         }
     }
     Ok(
-        Node::TypeDef {
+        Node::StructDecl {
             id,
             block: Box::new(
                 Node::Block(statements)
@@ -1176,7 +1176,7 @@ fn parse_struct_init(tokens: &Vec<Token>, index: &mut usize, identifier: &Token)
     
         args.push(arg);
     }
-    Node::TypedefInit {
+    Node::Struct {
         id: identifier.value.clone(),
         args,
     }

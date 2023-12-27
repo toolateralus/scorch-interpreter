@@ -127,8 +127,8 @@ pub enum Node {
     Int(i32),
     Double(f64),
     Lambda { params: Vec<Box<Node>>, block: Box<Node> },
-    TypeDef { id: String, block: Box<Node> },
-    TypedefInit { id: String, args: Vec<Node> },
+    StructDecl { id: String, block: Box<Node> },
+    Struct { id: String, args: Vec<Node> },
 }
 impl Node {
     pub fn accept<T>(&self, visitor: &mut dyn Visitor<T>) -> T {
@@ -157,8 +157,8 @@ impl Node {
             Node::Int(..) => visitor.visit_number(self),
             Node::Double(..) => visitor.visit_number(self),
             Node::Lambda { .. } => visitor.visit_lambda(self),
-            Node::TypeDef { .. } => visitor.visit_struct_def(self),
-            Node::TypedefInit { id: _, args: _ } => visitor.visit_struct_init(self),
+            Node::StructDecl { .. } => visitor.visit_struct_def(self),
+            Node::Struct { id: _, args: _ } => visitor.visit_struct_init(self),
             Node::BinaryOperation { .. } => visitor.visit_binary_op(self),
             Node::ArrayAccessExpr { .. } => visitor.visit_array_access(self),
         }

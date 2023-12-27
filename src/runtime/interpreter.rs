@@ -766,7 +766,7 @@ impl Visitor<Value> for Interpreter {
         todo!()
     }
     fn visit_struct_def(&mut self, node: &Node) -> Value {
-        if let Node::TypeDef {id, block} = node{
+        if let Node::StructDecl {id, block} = node{
             let Node::Block(_statements) = block.as_ref() else {
                 panic!("Expected block")
             };
@@ -793,18 +793,18 @@ impl Visitor<Value> for Interpreter {
                 fields.push((id.clone(), t));
             }
             
-            let typedef = Struct {
+            let _struct = Struct {
                 name: id.to_string(),
                 fields, // todo : pre-evaluate default values for fields and just copy that context into new structs instead of what we do now.
                 type_: Rc::new(_new_type)
             };
             
-            self.type_checker.typedefs.insert(id.to_string(), Box::new(typedef));
+            self.type_checker.structs.insert(id.to_string(), Box::new(_struct));
         }
         Value::None()
     }
     fn visit_struct_init(&mut self, node: &Node) -> Value {
-        let Node::TypedefInit { id, args } = node else {
+        let Node::Struct { id, args } = node else {
             panic!("Expected StructInit node");
         };
         
@@ -813,13 +813,13 @@ impl Visitor<Value> for Interpreter {
             variables: HashMap::new(),
         };
         
-        let typedef = if let Some(typedef) = self.type_checker.typedefs.get_mut(id) {
-            typedef
+        let _struct = if let Some(_struct) = self.type_checker.structs.get_mut(id) {
+            _struct
         } else {
             panic!("Struct {} not found", id);
         };
         
-        let fields = typedef.fields.clone();
+        let fields = _struct.fields.clone();
         
         
         if fields.len() != args.len() {

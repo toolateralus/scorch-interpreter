@@ -46,7 +46,7 @@ pub fn create_tokenizer() -> Tokenizer {
         (String::from("if"), TokenKind::If),
         (String::from("else"), TokenKind::Else),
 
-        (String::from("typedef"), TokenKind::Typedef),
+        (String::from("struct"), TokenKind::Struct),
         (String::from("repeat"), TokenKind::Repeat),
     ]);
     
@@ -139,7 +139,7 @@ pub enum TokenKind {
     
     Assignment, // =
     Break,
-    Typedef,
+    Struct,
 }
 #[derive(Debug, Clone)]
 pub struct Token {

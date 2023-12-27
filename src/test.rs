@@ -36,6 +36,15 @@ fn loops() {
 }
 
 #[test]
+fn structs() {
+    let ctx = super::execute_from_file(String::from("scorch_src/unit_tests/structs.scorch"));
+    let status = Rc::clone(&ctx.borrow_mut().variables["status"]);
+    if let Value::String(str_status) = &status.value {
+        assert!(str_status == "passed", "test failed: {}", str_status);
+    }
+}
+
+#[test]
 fn functions() {
     let ctx = super::execute_from_file(String::from("scorch_src/unit_tests/functions.scorch"));
     let status = Rc::clone(&ctx.borrow_mut().variables["status"]);
