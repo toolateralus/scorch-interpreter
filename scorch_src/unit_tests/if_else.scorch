@@ -20,4 +20,32 @@ if true {
 }
 
 
+xx := false
+xy := true
 
+if xx != xy {
+    status = pass_status
+} else {
+    status = fail_status
+}
+
+if xx == xy {
+    status = fail_status
+} else {
+    status = pass_status
+}
+
+xxy := 5
+xyy := 10
+
+if xxy < xyy && (xx != xy) {
+    status = pass_status
+} else {
+    status = fail_status
+}
+
+if xxy > xyy && (xx != xy) {
+    status = fail_status
+} else {
+    status = pass_status
+}
