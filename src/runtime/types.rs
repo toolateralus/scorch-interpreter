@@ -27,7 +27,7 @@ pub enum Value {
 pub struct Typedef {
     pub name: String,
     pub fields: Vec<(String, Rc<Type>)>,
-    pub(crate) type_: Type,
+    pub type_: Rc<Type>,
 }
 
 impl Value {

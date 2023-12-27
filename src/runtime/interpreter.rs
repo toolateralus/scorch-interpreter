@@ -722,6 +722,7 @@ impl Visitor<Value> for Interpreter {
                 validator: Box::new(|_value| 
                     true
                 ),
+                attribute: Attr::Struct,
             };
             
             let mut fields = Vec::<(String, Rc<Type>)>::new();
@@ -730,13 +731,18 @@ impl Visitor<Value> for Interpreter {
                 let Node::DeclStmt { target_type, id, .. } = statement.as_ref() else {
                     panic!("Expected declaration")
                 };
-                fields.push((id.clone(), self.type_checker.get(&target_type).unwrap()));
+                
+                let Some(t) = self.type_checker.get(&target_type) else {
+                    panic!("{} not a valid type", target_type);
+                };
+                
+                fields.push((id.clone(), t));
             }
             
             let typedef = Typedef {
                 name: id.to_string(),
                 fields,
-                type_: _new_type
+                type_: Rc::new(_new_type)
             };
             
             self.type_checker.typedefs.insert(id.to_string(), Box::new(typedef));
@@ -768,7 +774,7 @@ impl Visitor<Value> for Interpreter {
             let value = arg.accept(self);
             
             let Some(t) = self.type_checker.from_value(&value) else {
-                panic!("doesn't match to a valid type");
+                panic!("type error: cannot find a type that matches value : {:#?}", value);
             };
             
             if field.1.as_ref().name != t.name {

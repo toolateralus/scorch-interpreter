@@ -1,5 +1,22 @@
+typedef Attributes |
+    target: String = 0
+|
 typedef Person | 
-    var name: Person
+    var _attr : Attributes
+    var name: Int
     age: Int
     friends : Array
 |
+
+
+me := Person {
+    Attributes {
+        "me"
+    }
+    1
+    2
+    [1, 2, 3]
+}
+
+
+println(me)

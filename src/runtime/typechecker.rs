@@ -3,10 +3,19 @@ use std::{collections::HashMap, rc::Rc};
 
 use super::{types::{Variable, Typedef}, interpreter::Interpreter};
 
+
+#[derive(Debug, PartialEq)]
+pub enum Attr {
+    Struct,
+    Value,
+    Array,
+}
+
 #[derive(Debug)]
 pub struct Type {
     pub name: String,
     pub validator: Box<fn(&Value) -> bool>,
+    pub attribute: Attr,
 }
 
 impl Type {
@@ -33,6 +42,7 @@ impl TypeChecker {
                             Value::Int(..) => true,
                             _ => false,
                         }),
+                        attribute: Attr::Value,
                     }),
                 ),
                 (
@@ -43,6 +53,7 @@ impl TypeChecker {
                             Value::Double(_) => true,
                             _ => false,
                         }),
+                        attribute: Attr::Value,
                     }),
                 ),
                 (
@@ -52,6 +63,7 @@ impl TypeChecker {
                         validator: Box::new(|v| match v {
                             _ => true, // :D
                         }),
+                        attribute: Attr::Value,
                     }),
                 ),
                 (
@@ -62,6 +74,7 @@ impl TypeChecker {
                             Value::String(_) => true,
                             _ => false,
                         }),
+                        attribute: Attr::Value,
                     }),
                 ),
                 (
@@ -72,6 +85,7 @@ impl TypeChecker {
                             Value::Bool(_) => true,
                             _ => false,
                         }),
+                        attribute: Attr::Value,
                     }),
                 ),
                 (
@@ -83,6 +97,7 @@ impl TypeChecker {
                             Value::List(..) => true,
                             _ => false,
                         }),
+                        attribute: Attr::Value,
                     }),
                 ),
                 (
@@ -93,6 +108,7 @@ impl TypeChecker {
                             Value::Function(..) => true,
                             _ => false,
                         }),
+                        attribute: Attr::Value,
                     }),
                 ),
             ]),
@@ -107,12 +123,22 @@ impl TypeChecker {
         val.m_type.validate(&val.value)
     }
     pub fn get(&self, name: &str) -> Option<Rc<Type>> {
-        match self.types.get(name) {
-            Some(t) => Some(Rc::clone(t)),
-            None => None,
+        match self.typedefs.get(name) {
+            Some(t) => Some(Rc::clone(&t.type_)),
+            None => match self.types.get(name) {
+                Some(t) => Some(Rc::clone(t)),
+                None => None,
+            },
         }
+        
     }
     pub fn from_value(&self, val: &Value) -> Option<Rc<Type>> {
+        
+        if let Value::Struct { name, .. } = &val {
+            let typedef = self.typedefs.get(name)?;
+            return Some(Rc::clone(&typedef.type_));
+        }
+        
         self.get(_get_type_name(val))
     }
 }

@@ -15,9 +15,9 @@ pub fn print_ln(context : &mut Context, type_checker : &TypeChecker, args: Vec<V
                 return tostr(context, type_checker, newargs);
             }
             Value::Array(mutable, elements) => {
-                let mutable_str = if mutable { "mutable" } else { "immutable" };
+                let mutable_str = if mutable { "var" } else { "const" };
                 
-                println!("{} array, length {}", mutable_str, elements.len());
+                println!("{} Array<T> : length {}", mutable_str, elements.len());
                 
                 // for element in elements.iter() {
                 //     print_ln(Vec::from([element.value.clone()]));
@@ -32,10 +32,10 @@ pub fn print_ln(context : &mut Context, type_checker : &TypeChecker, args: Vec<V
                 name,
                 context,
             } => {
-                println!("struct {:#?}", name);
-                for (k, member) in context.variables.iter() {
-                    println!("{} : {:?}", k, member.value)
-                }
+                println!("global::{}", name);
+                // for (k, member) in context.variables.iter() {
+                //     println!("{} : {:?}", k, member.value)
+                // }
             },
             Value::Return(_) => panic!("Cannot print return value"),
         }
