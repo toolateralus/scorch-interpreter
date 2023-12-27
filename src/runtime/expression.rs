@@ -21,6 +21,7 @@ impl Interpreter {
         
         let typename = "Int".to_string();
       
+        self.push_ctx();
         
         {
             let mut ctx = self.context.borrow_mut();
@@ -54,6 +55,7 @@ impl Interpreter {
             panic!("{} isnt a type", typename)
         };
         
+        
         loop {
             let condition_result = match condition.as_ref() {
                 Some(expression) => {
@@ -67,10 +69,13 @@ impl Interpreter {
                 None => panic!("Expected condition in conditional repeat statement"),
             };
             
-            self.push_ctx();
             
             if condition_result {
+                
+                self.push_ctx();
                 let result = block.accept(self);
+                self.pop_ctx();
+                
                 match result {
                     Value::Int(..)
                     | Value::Double(..)
@@ -87,6 +92,8 @@ impl Interpreter {
                     _ => {}
                 }
             } else {
+                // pop iterator ctx.
+                self.pop_ctx();
                 return Value::None();
             }
             
@@ -96,10 +103,12 @@ impl Interpreter {
             
             let variable = Rc::new(Variable::new(true, value, Rc::clone(&m_type)));
             
+            
             self.context.borrow_mut().insert_variable(&id, variable);
             
-            self.pop_ctx();
         }
+        
+        
     }
     pub fn visit_conditionless_repeat_stmnt(&mut self, block: &Box<Node>) -> Value {
         loop {
