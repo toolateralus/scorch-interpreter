@@ -77,25 +77,20 @@ impl Interpreter {
                 dbg!(lhs, rhs);
                 panic!("Expected Struct node");
             };
-            let Value::Struct { name, context } = &var.value else {
+            let Value::Struct { name:_, context } = &var.value else {
                 dbg!(lhs, rhs);
                 panic!("Expected Struct node");
             };
-            let mut context = context;
-            
             let Node::Identifier(id) = rhs.as_ref() else {
                 dbg!(lhs, rhs);
                 panic!("Expected Struct node");
             };
-            
             let var = context.find_variable(id);
-            
             let Some(var) = var else {
                 dbg!(lhs, rhs);
                 panic!("Expected Struct node");
             };
-            
-            return var.value.clone();
+            return var.value.clone(); // todo: fix memory management
         };
         
         let Node::FunctionCall { id: func_id, arguments } = rhs.as_ref() else {

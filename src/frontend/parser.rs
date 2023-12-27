@@ -5,7 +5,7 @@ use super::{
 };
 
 // function helpers
-pub fn prs_parameters(tokens: &Vec<Token>, index: &mut usize) -> Vec<Node> {
+pub fn parse_parameters(tokens: &Vec<Token>, index: &mut usize) -> Vec<Node> {
     *index += 1; // discard open_paren
 
     let mut params = Vec::new();
@@ -24,7 +24,7 @@ pub fn prs_parameters(tokens: &Vec<Token>, index: &mut usize) -> Vec<Node> {
             panic!("Expected variable name in parameter declaration");
         }
 
-        let varname = prs_operand(tokens, index);
+        let varname = parse_operand(tokens, index);
 
         token = get_current(tokens, index);
         //parsing colon
@@ -45,7 +45,7 @@ pub fn prs_parameters(tokens: &Vec<Token>, index: &mut usize) -> Vec<Node> {
 
         // parsing type
         // varname: ^Typename
-        let typename = prs_operand(tokens, index);
+        let typename = parse_operand(tokens, index);
 
         // consume comma if there is one.
         if get_current(tokens, index).kind == TokenKind::Comma {
@@ -62,7 +62,7 @@ pub fn prs_parameters(tokens: &Vec<Token>, index: &mut usize) -> Vec<Node> {
 
     params
 }
-pub fn prs_arguments(tokens: &Vec<Token>, index: &mut usize) -> Vec<Node> {
+pub fn parse_arguments(tokens: &Vec<Token>, index: &mut usize) -> Vec<Node> {
     *index += 1; // discard open_paren
     
     let mut args = Vec::new();
@@ -75,7 +75,7 @@ pub fn prs_arguments(tokens: &Vec<Token>, index: &mut usize) -> Vec<Node> {
             break;
         }
         // accumulate parameter expressions
-        let arg = prs_expression(tokens, index);
+        let arg = parse_expression(tokens, index);
         
         // skip commas
         if get_current(tokens, index).kind == TokenKind::Comma {
@@ -86,7 +86,7 @@ pub fn prs_arguments(tokens: &Vec<Token>, index: &mut usize) -> Vec<Node> {
     }
     args
 }
-pub fn prs_fn_decl(
+pub fn parse_fn_decl(
     params: &Vec<Node>,
     tokens: &Vec<Token>,
     index: &mut usize,
@@ -96,8 +96,8 @@ pub fn prs_fn_decl(
 ) -> Option<Result<Node, ()>> {
     let token = get_current(tokens, index);
     let kind = token.kind;
-    if kind == TokenKind::OpenCurly {
-        let body = prs_block(tokens, index);
+    if kind == TokenKind::OpenCurlyBrace {
+        let body = parse_block(tokens, index);
         let node = Node::FnDeclStmnt {
             id: id.clone(),
             body: Box::new(body),
@@ -133,8 +133,8 @@ pub fn create_default_value_for_type(target_type: &String, mutable: bool) -> Nod
     };
     default_value_expression
 }
-fn prs_fn_call(index: &mut usize, tokens: &Vec<Token>, token: &String) -> Result<Node, ()> {
-    let arguments = prs_arguments(tokens, index);
+fn parse_fn_call(index: &mut usize, tokens: &Vec<Token>, token: &String) -> Result<Node, ()> {
+    let arguments = parse_arguments(tokens, index);
     let node = Node::FunctionCall {
         id: token.clone(),
         arguments: Option::Some(arguments),
@@ -159,7 +159,7 @@ pub fn new_array(
     }
 }
 
-pub fn prs_array_initializer(tokens: &Vec<Token>, index: &mut usize) -> Vec<Box<Node>> {
+pub fn parse_array_initializer(tokens: &Vec<Token>, index: &mut usize) -> Vec<Box<Node>> {
     let mut args = Vec::new();
     loop {
         let token = get_current(tokens, index);
@@ -169,7 +169,7 @@ pub fn prs_array_initializer(tokens: &Vec<Token>, index: &mut usize) -> Vec<Box<
             break;
         }
         // accumulate parameter expressions
-        let arg = prs_expression(tokens, index);
+        let arg = parse_expression(tokens, index);
 
         // skip commas
         if get_current(tokens, index).kind == TokenKind::Comma {
@@ -179,8 +179,8 @@ pub fn prs_array_initializer(tokens: &Vec<Token>, index: &mut usize) -> Vec<Box<
     }
     args
 }
-pub fn prs_array_access(index: &mut usize, tokens: &Vec<Token>, id: &str) -> Result<Node, ()> {
-    let accessor = prs_expression(tokens, index);
+pub fn parse_array_access(index: &mut usize, tokens: &Vec<Token>, id: &str) -> Result<Node, ()> {
+    let accessor = parse_expression(tokens, index);
     let mut token = consume_newlines(index, tokens);
 
     if token.kind == TokenKind::CloseBracket {
@@ -212,7 +212,7 @@ pub fn prs_array_access(index: &mut usize, tokens: &Vec<Token>, id: &str) -> Res
                 node = Node::ArrayAccessExpr {
                     id,
                     index_expr,
-                    expression: Option::Some(Box::new(prs_expression(tokens, index))),
+                    expression: Option::Some(Box::new(parse_expression(tokens, index))),
                     assignment: true,
                 };
             }
@@ -241,7 +241,7 @@ pub fn consume_newlines<'a>(index: &mut usize, tokens: &'a Vec<Token>) -> &'a To
 pub fn consume_normal_expr_delimiter(tokens: &Vec<Token>, index: &mut usize) {
     let current = get_current(tokens, index).kind;
     match current {
-        TokenKind::OpenCurly | TokenKind::Comma => {
+        TokenKind::OpenCurlyBrace | TokenKind::Comma => {
             dbg!(current);
             panic!("expected newline or ) token");
         }
@@ -258,14 +258,14 @@ pub fn consume_normal_expr_delimiter(tokens: &Vec<Token>, index: &mut usize) {
 }
 
 // keywords
-fn prs_repeat_stmnt(next: &Token, index: &mut usize, tokens: &Vec<Token>) -> Result<Node, ()> {
+fn parse_repeat_stmnt(next: &Token, index: &mut usize, tokens: &Vec<Token>) -> Result<Node, ()> {
     // style::
     // repeat i < 200 {...}
     if next.family == TokenFamily::Identifier {
         let id = next.value.clone();
         *index += 1; // skip repeat, leaev identifier in expression.
-        let condition = prs_expression(tokens, index);
-        let block = prs_block(tokens, index);
+        let condition = parse_expression(tokens, index);
+        let block = parse_block(tokens, index);
         let node = Node::RepeatStmnt {
             iterator_id: Option::Some(id),
             condition: Option::Some(Box::new(condition)),
@@ -277,7 +277,7 @@ fn prs_repeat_stmnt(next: &Token, index: &mut usize, tokens: &Vec<Token>) -> Res
     *index += 1; // skip repeat
                  // style::
                  // repeat {... }
-    let block = prs_block(tokens, index);
+    let block = parse_block(tokens, index);
 
     //*index += 1;
 
@@ -287,11 +287,11 @@ fn prs_repeat_stmnt(next: &Token, index: &mut usize, tokens: &Vec<Token>) -> Res
         block: Box::new(block),
     })
 }
-fn prs_if_else(tokens: &Vec<Token>, index: &mut usize) -> Node {
+fn parse_if_else(tokens: &Vec<Token>, index: &mut usize) -> Node {
     *index += 1; // discard 'if'
-    let if_condition = prs_expression(tokens, index);
+    let if_condition = parse_expression(tokens, index);
 
-    if get_current(tokens, index).kind != TokenKind::OpenCurly {
+    if get_current(tokens, index).kind != TokenKind::OpenCurlyBrace {
         dbg!(get_current(tokens, index));
         dbg!(if_condition);
         panic!("If expected open brace after condition");
@@ -299,13 +299,13 @@ fn prs_if_else(tokens: &Vec<Token>, index: &mut usize) -> Node {
 
     *index += 1; // skip open brace
 
-    let if_block = prs_block(tokens, index);
+    let if_block = parse_block(tokens, index);
 
     let else_or_end = consume_newlines(index, tokens);
 
     // if, no else.
     if else_or_end.kind == TokenKind::Else {
-        let else_node = prs_else(tokens, index);
+        let else_node = parse_else(tokens, index);
         return Node::IfStmnt {
             condition: Box::new(if_condition),
             block: Box::new(if_block),
@@ -320,18 +320,18 @@ fn prs_if_else(tokens: &Vec<Token>, index: &mut usize) -> Node {
         };
     }
 }
-fn prs_else(tokens: &Vec<Token>, index: &mut usize) -> Node {
+fn parse_else(tokens: &Vec<Token>, index: &mut usize) -> Node {
     *index += 1; // discard 'else'
 
     let _ = consume_newlines(index, tokens);
 
     // if else with no comparison -> if ... {} else {}
-    if get_current(tokens, index).kind == TokenKind::OpenCurly {
-        let else_block = prs_block(tokens, index);
+    if get_current(tokens, index).kind == TokenKind::OpenCurlyBrace {
+        let else_block = parse_block(tokens, index);
 
         // Check for another else after this block
         if get_current(tokens, index).kind == TokenKind::Else {
-            let nested_else = prs_else(tokens, index);
+            let nested_else = parse_else(tokens, index);
             return Node::ElseStmnt {
                 condition: Option::None,
                 block: Box::new(else_block),
@@ -347,11 +347,11 @@ fn prs_else(tokens: &Vec<Token>, index: &mut usize) -> Node {
     }
     // if else with comparison -> if ... {} else ... {}
     else {
-        let else_condition = prs_expression(tokens, index);
+        let else_condition = parse_expression(tokens, index);
         let cur = get_current(tokens, index);
 
         match cur.kind {
-            TokenKind::OpenCurly | TokenKind::CloseParenthesis => {
+            TokenKind::OpenCurlyBrace | TokenKind::CloseParenthesis => {
                 *index += 1; // skip open brace
             }
             _ => {
@@ -359,10 +359,10 @@ fn prs_else(tokens: &Vec<Token>, index: &mut usize) -> Node {
             }
         }
 
-        let else_block = prs_block(tokens, index);
+        let else_block = parse_block(tokens, index);
 
         if get_current(tokens, index).kind == TokenKind::Else {
-            let nested_else = prs_else(tokens, index);
+            let nested_else = parse_else(tokens, index);
             return Node::ElseStmnt {
                 condition: Option::Some(Box::new(else_condition)),
                 block: Box::new(else_block),
@@ -379,7 +379,7 @@ fn prs_else(tokens: &Vec<Token>, index: &mut usize) -> Node {
 }
 
 // declarations
-fn prs_decl(
+fn parse_decl(
     token: &Token,
     index: &mut usize,
     tokens: &Vec<Token>,
@@ -395,14 +395,14 @@ fn prs_decl(
     match operator.kind {
         // varname := default;
         // declaring a variable with implicit type.
-        TokenKind::ColonEquals => prs_implicit_decl(index, tokens, &id, mutable),
+        TokenKind::ColonEquals => parse_implicit_decl(index, tokens, &id, mutable),
         // declaraing a variable with explicit type.
-        TokenKind::Colon => prs_explicit_decl(index, tokens, token, id, mutable),
+        TokenKind::Colon => parse_explicit_decl(index, tokens, token, id, mutable),
         // assigning a value to an already declared variable.
         TokenKind::Assignment => {
             *index += 1;
             let id = Node::Identifier(token.value.clone());
-            let expression = prs_expression(tokens, index);
+            let expression = parse_expression(tokens, index);
             consume_normal_expr_delimiter(tokens, index);
             Ok(Node::AssignStmnt {
                 id: Box::new(id),
@@ -411,14 +411,14 @@ fn prs_decl(
         }
         TokenKind::OpenBracket => {
             *index += 1; // discard [
-            Ok(prs_array_access(index, tokens, token.value.as_str()).unwrap())
+            Ok(parse_array_access(index, tokens, token.value.as_str()).unwrap())
         }
 
         // function call
         TokenKind::OpenParenthesis => {
             // silly mode. extracting functions results in these super stupid types like Result<Node, ()>
             // instead of using an Option. why.
-            let Ok(node) = prs_fn_call(index, tokens, &token.value.clone()) else {
+            let Ok(node) = parse_fn_call(index, tokens, &token.value.clone()) else {
                 panic!("Expected function call node");
             };
             Ok(node)
@@ -431,7 +431,7 @@ fn prs_decl(
         }
     }
 }
-fn prs_implicit_decl(
+fn parse_implicit_decl(
     index: &mut usize,
     tokens: &Vec<Token>,
     id: &String,
@@ -439,7 +439,7 @@ fn prs_implicit_decl(
 ) -> Result<Node, ()> {
     *index += 1;
 
-    if let Some(value) = prs_function_decl_stmnt(tokens, index, id, mutable) {
+    if let Some(value) = parse_function_decl_stmnt(tokens, index, id, mutable) {
         return value;
     }
 
@@ -448,7 +448,7 @@ fn prs_implicit_decl(
     }
 
     // implicit variable declaration
-    let value = prs_expression(tokens, index);
+    let value = parse_expression(tokens, index);
     
     consume_normal_expr_delimiter(tokens, index);
 
@@ -459,14 +459,14 @@ fn prs_implicit_decl(
         mutable,
     })
 }
-fn prs_function_decl_stmnt(
+fn parse_function_decl_stmnt(
     tokens: &Vec<Token>,
     index: &mut usize,
     id: &String,
     mutable: bool,
 ) -> Option<Result<Node, ()>> {
-    if get_current(tokens, index).kind == TokenKind::OpenCurly {
-        let body = prs_block(tokens, index);
+    if get_current(tokens, index).kind == TokenKind::OpenCurlyBrace {
+        let body = parse_block(tokens, index);
         //dbg!(&body);
         let node = Node::FnDeclStmnt {
             id: id.clone(),
@@ -487,8 +487,8 @@ fn prs_function_decl_stmnt(
         // if this is a function definition
         let mut temp_index = *index + 2;
         if get_current(tokens, &mut temp_index).kind == TokenKind::Colon {
-            let params = prs_parameters(tokens, index);
-            let body = prs_block(tokens, index);
+            let params = parse_parameters(tokens, index);
+            let body = parse_block(tokens, index);
             let node = Node::FnDeclStmnt {
                 id: id.clone(),
                 body: Box::new(body),
@@ -501,7 +501,7 @@ fn prs_function_decl_stmnt(
     }
     None
 }
-fn prs_explicit_decl(
+fn parse_explicit_decl(
     index: &mut usize,
     tokens: &Vec<Token>,
     _token: &Token,
@@ -518,7 +518,7 @@ fn prs_explicit_decl(
 
     if target_type == "Fn" {
         *index += 1;
-        let params = prs_parameters(tokens, index);
+        let params = parse_parameters(tokens, index);
 
         // function explict return type function, explicit args.
         // foo : (a : String) -> String = {}
@@ -541,7 +541,7 @@ fn prs_explicit_decl(
 
             *index += 1;
 
-            let Some(val) = prs_fn_decl(
+            let Some(val) = parse_fn_decl(
                 &params,
                 tokens,
                 index,
@@ -588,7 +588,7 @@ fn prs_explicit_decl(
 
     // varname : type = ^default;
 
-    let expression = prs_expression(tokens, index);
+    let expression = parse_expression(tokens, index);
     consume_normal_expr_delimiter(tokens, index);
     Ok(Node::DeclStmt {
         target_type,
@@ -598,7 +598,7 @@ fn prs_explicit_decl(
     })
 }
 
-fn prs_lambda(tokens: &Vec<Token>, index: &mut usize) -> Node {
+fn parse_lambda(tokens: &Vec<Token>, index: &mut usize) -> Node {
     if get_current(tokens, index).kind == TokenKind::LogicalOr {
         *index += 1;
         
@@ -608,7 +608,7 @@ fn prs_lambda(tokens: &Vec<Token>, index: &mut usize) -> Node {
             panic!("Expected lambda token");
         }
         
-        let block = prs_block(tokens, index);
+        let block = parse_block(tokens, index);
         
         Node::Lambda {
             params: Vec::new(),
@@ -625,7 +625,7 @@ fn prs_lambda(tokens: &Vec<Token>, index: &mut usize) -> Node {
                 break;
             }
                 
-            let expr = Box::new(prs_expression(tokens, index));
+            let expr = Box::new(parse_expression(tokens, index));
             
             params.push(expr);
         }
@@ -636,7 +636,7 @@ fn prs_lambda(tokens: &Vec<Token>, index: &mut usize) -> Node {
             panic!("Expected lambda token");
         }
                     
-        let block = prs_block(tokens, index);
+        let block = parse_block(tokens, index);
         
         Node::Lambda {
             params,
@@ -645,7 +645,7 @@ fn prs_lambda(tokens: &Vec<Token>, index: &mut usize) -> Node {
     }
 }
 
-pub fn prs_program(tokens: &Vec<Token>) -> Node {
+pub fn parse_program(tokens: &Vec<Token>) -> Node {
     let mut index = 0;
     let mut statements = Vec::new();
     while index < tokens.len() {
@@ -653,7 +653,7 @@ pub fn prs_program(tokens: &Vec<Token>) -> Node {
         if token.kind == TokenKind::Eof {
             break;
         }
-        let statement = prs_statement(tokens, &mut index);
+        let statement = parse_statement(tokens, &mut index);
 
         match statement {
             Ok(node) => statements.push(Box::new(node)),
@@ -667,7 +667,7 @@ pub fn prs_program(tokens: &Vec<Token>) -> Node {
     }
     Node::Program(statements)
 }
-fn prs_block(tokens: &Vec<Token>, index: &mut usize) -> Node {
+fn parse_block(tokens: &Vec<Token>, index: &mut usize) -> Node {
     *index += 1;
     let mut statements = Vec::new();
     while *index < tokens.len() {
@@ -676,7 +676,7 @@ fn prs_block(tokens: &Vec<Token>, index: &mut usize) -> Node {
             *index += 1;
             break;
         }
-        let statement = prs_statement(tokens, index);
+        let statement = parse_statement(tokens, index);
 
         match statement {
             Ok(node) => statements.push(Box::new(node)),
@@ -692,7 +692,7 @@ fn prs_block(tokens: &Vec<Token>, index: &mut usize) -> Node {
     }
     Node::Block(statements)
 }
-fn prs_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
+fn parse_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
     if *index >= tokens.len() {
         return Err(());
     }
@@ -709,23 +709,23 @@ fn prs_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
     // NOTE:: token is the current, but must also be discarded.
     // any branch of this must move the index forward at least once.
     match first.family {
-        TokenFamily::Keyword => prs_keyword_ops(first, index, second, tokens),
+        TokenFamily::Keyword => parse_keyword_ops(first, index, second, tokens),
         TokenFamily::Identifier => {
             match second.kind {
                 TokenKind::ColonEquals |
                 TokenKind::Colon |
                 TokenKind::Assignment => {
-                    return prs_decl(first, index, tokens, false);
+                    return parse_decl(first, index, tokens, false);
                 }
                 _ => {
-                    let node = prs_expression(tokens, index);
+                    let node = parse_expression(tokens, index);
                     Ok(node)
                 }
             } 
         }
         TokenFamily::Operator |
         TokenFamily::Value => {
-            Ok(prs_expression(tokens, index))
+            Ok(parse_expression(tokens, index))
         }
         _ => {
             dbg!(first);
@@ -733,25 +733,25 @@ fn prs_statement(tokens: &Vec<Token>, index: &mut usize) -> Result<Node, ()> {
         }
     }
 }
-fn prs_keyword_ops(keyword: &Token, index: &mut usize, next_token: &Token, tokens: &Vec<Token>) -> Result<Node, ()> {
+fn parse_keyword_ops(keyword: &Token, index: &mut usize, next_token: &Token, tokens: &Vec<Token>) -> Result<Node, ()> {
     match keyword.kind {
-        TokenKind::Const => prs_const(index, next_token, tokens, keyword),
-        TokenKind::Var => prs_var(index, next_token, tokens, keyword),
-        TokenKind::Break => prs_break(index, next_token, tokens),
-        TokenKind::Repeat => prs_repeat_stmnt(next_token, index, tokens),
-        TokenKind::If => Ok(prs_if_else(tokens, index)),
+        TokenKind::Const => parse_const(index, next_token, tokens, keyword),
+        TokenKind::Var => parse_var(index, next_token, tokens, keyword),
+        TokenKind::Break => parse_break(index, next_token, tokens),
+        TokenKind::Repeat => parse_repeat_stmnt(next_token, index, tokens),
+        TokenKind::If => Ok(parse_if_else(tokens, index)),
         TokenKind::Else => {
             dbg!(keyword);
             panic!("else statements must follow an if.");
         }
-        TokenKind::Typedef => prs_type_def(index, next_token, tokens),
+        TokenKind::Typedef => parse_type_def(index, next_token, tokens),
         _ => {
             dbg!(keyword);
             panic!("keyword is likely misused or not yet implemented.");
         }
     }
 }
-fn prs_type_def(index: &mut usize, identifier: &Token, tokens: &Vec<Token>) -> Result<Node, ()> {
+fn parse_type_def(index: &mut usize, identifier: &Token, tokens: &Vec<Token>) -> Result<Node, ()> {
     *index += 2; // consume 'typedef && identifier'
     
     let id = identifier.value.clone();
@@ -786,7 +786,7 @@ fn prs_type_def(index: &mut usize, identifier: &Token, tokens: &Vec<Token>) -> R
             break;
         }
 
-        let statement = prs_decl(token, index, tokens, mutable);
+        let statement = parse_decl(token, index, tokens, mutable);
 
         match statement {
             Ok(node) => statements.push(Box::new(node)),
@@ -814,11 +814,11 @@ fn prs_type_def(index: &mut usize, identifier: &Token, tokens: &Vec<Token>) -> R
         }
     )
 }
-fn prs_var(index: &mut usize, second: &Token, tokens: &Vec<Token>, first: &Token) -> Result<Node, ()> {
+fn parse_var(index: &mut usize, second: &Token, tokens: &Vec<Token>, first: &Token) -> Result<Node, ()> {
     // consume 'var'
     *index += 1;
     let varname = second;
-    match prs_decl(varname, index, tokens, true) {
+    match parse_decl(varname, index, tokens, true) {
         Ok(node) => Ok(node),
         Err(_) => {
             dbg!(first);
@@ -826,23 +826,23 @@ fn prs_var(index: &mut usize, second: &Token, tokens: &Vec<Token>, first: &Token
         }
     }
 }
-fn prs_break(index: &mut usize, second: &Token, tokens: &Vec<Token>) -> Result<Node, ()> {
+fn parse_break(index: &mut usize, second: &Token, tokens: &Vec<Token>) -> Result<Node, ()> {
     *index += 1;
     // discard break
     if second.kind == TokenKind::Newline {
         Ok(Node::BreakStmnt(Option::None))
     } else if second.kind != TokenKind::CloseCurly {
-        let value = prs_expression(tokens, index);
+        let value = parse_expression(tokens, index);
         Ok(Node::BreakStmnt(Option::Some(Box::new(value))))
     } else {
         panic!("break statements must be followed by a newline or a return value.");
     }
 }
-fn prs_const(index: &mut usize, second: &Token, tokens: &Vec<Token>, first: &Token) -> Result<Node, ()> {
+fn parse_const(index: &mut usize, second: &Token, tokens: &Vec<Token>, first: &Token) -> Result<Node, ()> {
     // consume 'const'
     *index += 1;
     let varname = second;
-    match prs_decl(varname, index, tokens, false) {
+    match parse_decl(varname, index, tokens, false) {
         Ok(node) => Ok(node),
         Err(_) => {
             dbg!(first);
@@ -850,15 +850,15 @@ fn prs_const(index: &mut usize, second: &Token, tokens: &Vec<Token>, first: &Tok
         }
     }
 }
-fn prs_expression(tokens: &Vec<Token>, index: &mut usize) -> Node {
-    let mut left = prs_logical(tokens, index);
+fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Node {
+    let mut left = parse_logical(tokens, index);
     loop {
         let token = get_current(tokens, index);
         match token.kind {
             TokenKind::LogicalAnd |
             TokenKind::LogicalOr => {
                 *index += 1;
-                let right = prs_logical(tokens, index);
+                let right = parse_logical(tokens, index);
                 left = Node::LogicalExpression {
                     lhs: Box::new(left),
                     op: token.kind,
@@ -869,7 +869,7 @@ fn prs_expression(tokens: &Vec<Token>, index: &mut usize) -> Node {
             // the tokens are expected to be consumed by the caller of this function.
             TokenKind::CloseParenthesis
             | TokenKind::CloseBracket
-            | TokenKind::OpenCurly
+            | TokenKind::OpenCurlyBrace
             | TokenKind::CloseCurly // for struct init, questonable
             | TokenKind::Pipe
             | TokenKind::Newline
@@ -888,13 +888,13 @@ fn prs_expression(tokens: &Vec<Token>, index: &mut usize) -> Node {
     }
     Node::Expression(Box::new(left))
 }
-fn prs_logical(tokens: &Vec<Token>, index: &mut usize) -> Node {
-    let mut left = prs_relational(tokens, index);
+fn parse_logical(tokens: &Vec<Token>, index: &mut usize) -> Node {
+    let mut left = parse_relational(tokens, index);
     while let Some(token) = tokens.get(*index) {
         match token.kind {
             TokenKind::LogicalAnd | TokenKind::LogicalOr => {
                 *index += 1;
-                let right = prs_relational(tokens, index);
+                let right = parse_relational(tokens, index);
                 left = Node::LogicalExpression {
                     lhs: Box::new(left),
                     op: token.kind,
@@ -906,8 +906,8 @@ fn prs_logical(tokens: &Vec<Token>, index: &mut usize) -> Node {
     }
     left
 }
-fn prs_relational(tokens: &Vec<Token>, index: &mut usize) -> Node {
-    let mut left = prs_bin_op(tokens, index);
+fn parse_relational(tokens: &Vec<Token>, index: &mut usize) -> Node {
+    let mut left = parse_bin_op(tokens, index);
     while let Some(token) = tokens.get(*index) {
         match token.kind {
             TokenKind::Equals
@@ -917,7 +917,7 @@ fn prs_relational(tokens: &Vec<Token>, index: &mut usize) -> Node {
             | TokenKind::LeftAngle
             | TokenKind::RightAngle => {
                 *index += 1;
-                let right = prs_bin_op(tokens, index);
+                let right = parse_bin_op(tokens, index);
                 left = Node::RelationalExpression {
                     lhs: Box::new(left),
                     op: token.kind,
@@ -929,13 +929,13 @@ fn prs_relational(tokens: &Vec<Token>, index: &mut usize) -> Node {
     }
     left
 }
-fn prs_bin_op(tokens: &Vec<Token>, index: &mut usize) -> Node {
-    let mut left = prs_term(tokens, index);
+fn parse_bin_op(tokens: &Vec<Token>, index: &mut usize) -> Node {
+    let mut left = parse_term(tokens, index);
     while let Some(token) = tokens.get(*index) {
         match token.kind {
             TokenKind::Add => {
                 *index += 1;
-                let right = prs_term(tokens, index);
+                let right = parse_term(tokens, index);
                 left = Node::BinaryOperation { 
                     op: TokenKind::Add,
                     lhs: Box::new(left),
@@ -944,7 +944,7 @@ fn prs_bin_op(tokens: &Vec<Token>, index: &mut usize) -> Node {
             }
             TokenKind::Subtract => {
                 *index += 1;
-                let right = prs_term(tokens, index);
+                let right = parse_term(tokens, index);
                 left = Node::BinaryOperation { 
                     op: TokenKind::Subtract,
                     lhs: Box::new(left),
@@ -956,18 +956,18 @@ fn prs_bin_op(tokens: &Vec<Token>, index: &mut usize) -> Node {
     }
     left
 }
-fn prs_term(tokens: &Vec<Token>, index: &mut usize) -> Node {
-    let mut left = prs_unary(tokens, index);
+fn parse_term(tokens: &Vec<Token>, index: &mut usize) -> Node {
+    let mut left = parse_unary(tokens, index);
     while let Some(token) = tokens.get(*index) {
         match token.kind {
             TokenKind::Multiply => {
                 *index += 1;
-                let right = prs_unary(tokens, index);
+                let right = parse_unary(tokens, index);
                 left = Node::BinaryOperation { lhs: Box::new(left), op: TokenKind::Multiply, rhs: Box::new(right)};
             }
             TokenKind::Divide => {
                 *index += 1;
-                let right = prs_unary(tokens, index);
+                let right = parse_unary(tokens, index);
                 left = Node::BinaryOperation { lhs: Box::new(left), op: TokenKind::Divide, rhs: Box::new(right) };
             }
             _ => break,
@@ -975,12 +975,12 @@ fn prs_term(tokens: &Vec<Token>, index: &mut usize) -> Node {
     }
     left
 }
-fn prs_unary(tokens : &Vec<Token>, index: &mut usize) -> Node {
+fn parse_unary(tokens : &Vec<Token>, index: &mut usize) -> Node {
     let op = get_current(tokens, index);
     match op.kind {
         TokenKind::Subtract => {
             *index += 1;
-            let node = prs_compound(tokens, index);
+            let node = parse_compound(tokens, index);
             if let Node::NegOp(_node) = node {
                 panic!("Double not operations are not allowed");
             }
@@ -988,19 +988,19 @@ fn prs_unary(tokens : &Vec<Token>, index: &mut usize) -> Node {
         }
         TokenKind::Not => {
             *index += 1;
-            let node = prs_compound(tokens, index);
+            let node = parse_compound(tokens, index);
             if let Node::NotOp(_node) = node {
                 panic!("Double not operations are not allowed");
             }
             Node::NotOp(Box::new(node))
         }
         _ => {
-            prs_compound(tokens, index)
+            parse_compound(tokens, index)
         }
     }
 }
-fn prs_compound(tokens: &Vec<Token>, index: &mut usize) -> Node {
-    let mut left = prs_operand(tokens, index);
+fn parse_compound(tokens: &Vec<Token>, index: &mut usize) -> Node {
+    let mut left = parse_operand(tokens, index);
 	loop {
 		let op = get_current(tokens, index);
 		match op.kind {
@@ -1009,12 +1009,12 @@ fn prs_compound(tokens: &Vec<Token>, index: &mut usize) -> Node {
 				return Node::BinaryOperation {
 					lhs: Box::new(left),
 					op: TokenKind::Dot,
-					rhs: Box::new(prs_compound(tokens, index)),
+					rhs: Box::new(parse_compound(tokens, index)),
 				};
 			}
 			TokenKind::OpenParenthesis => {
 				if let Node::Identifier(id) = &left {   
-					match prs_fn_call(index, tokens, &id) {
+					match parse_fn_call(index, tokens, &id) {
 						Ok(node) => {
 							left = node;
 						}
@@ -1030,7 +1030,7 @@ fn prs_compound(tokens: &Vec<Token>, index: &mut usize) -> Node {
 				// id[]
 				if let Node::Identifier(id) = left {
 					*index += 1; // move past [
-					match prs_array_access(index, tokens, &id) {
+					match parse_array_access(index, tokens, &id) {
 						Ok(node) => {
 							left = node;
 						}
@@ -1050,7 +1050,7 @@ fn prs_compound(tokens: &Vec<Token>, index: &mut usize) -> Node {
 		}
 	}
 }
-fn prs_operand(tokens: &Vec<Token>, index: &mut usize) -> Node {
+fn parse_operand(tokens: &Vec<Token>, index: &mut usize) -> Node {
     if let Some(identifier) = tokens.get(*index) {
         *index += 1;
         let node = match identifier.kind {
@@ -1072,48 +1072,35 @@ fn prs_operand(tokens: &Vec<Token>, index: &mut usize) -> Node {
                 
                 let token = get_current(tokens, index);
                 
-                if token.kind != TokenKind::OpenCurly {
-                    return iden;
-                } else {
-                    *index += 1; // discard open_paren
+                if token.kind == TokenKind::OpenCurlyBrace {
+                    *index += 1; // discard '{'
+                    parse_struct_init(tokens, index, identifier)
+                } else if token.kind == TokenKind::DubColon {
+                    iden
+                    //*index += 1; // discard '::'
+                    //let next = get_current(tokens, index);
+                   
+                    // todo :: implement. pretty complicated syntax actually.
+                    // // associated block, functions & methods defined here.
+                    // if next.kind == TokenKind::OpenCurlyBrace {
+                        
+                    // } 
+                    // // associated function call
+                    // else if next.kind == TokenKind::Identifier {
+                        
+                    // }
+                }
+                else {
+                    iden
                 }
                 
-                let mut args = Vec::new();
-                
-                loop {
-                    let token = get_current(tokens, index);
-                    
-                    if token.kind == TokenKind::Newline {
-                        *index += 1;
-                        continue;
-                    }
-                    
-                    // paramless.
-                    if token.kind == TokenKind::CloseCurly {
-                        *index += 1;
-                        break;
-                    }
-                    // accumulate parameter expressions
-                    let arg = prs_expression(tokens, index);
-                    
-                    // skip commas
-                    if get_current(tokens, index).kind == TokenKind::Comma {
-                        *index += 1;
-                    }
-                    
-                    args.push(arg);
-                }
-                Node::TypedefInit {
-                    id: identifier.value.clone(),
-                    args,
-                }
             },
             TokenKind::String => {
                 let id = Node::String(identifier.value.clone());
                 id
             }
             TokenKind::OpenBracket => {
-                let init = prs_array_initializer(tokens, index);
+                let init = parse_array_initializer(tokens, index);
                 
                 // todo: this is a hack. we need to know if the array is mutable or not by normal means.
                 let array_mutable = true;
@@ -1121,16 +1108,16 @@ fn prs_operand(tokens: &Vec<Token>, index: &mut usize) -> Node {
                 return new_array("Dynamic".to_string(), init.len(), init.clone(), array_mutable, elements_mutable);
             }
             TokenKind::LogicalOr => {
-                let lambda = prs_lambda(tokens, index);
+                let lambda = parse_lambda(tokens, index);
                 lambda
             }
             TokenKind::Pipe => {
-                prs_lambda(tokens, index)
+                parse_lambda(tokens, index)
             }
             TokenKind::OpenParenthesis => {
                 // todo: add value tuples maybe an epic syntax
                 
-                let node = prs_expression(tokens, index);
+                let node = parse_expression(tokens, index);
                 if let Some(token) = tokens.get(*index) {
                     if token.kind != TokenKind::CloseParenthesis {
                         dbg!(token);
@@ -1147,7 +1134,7 @@ fn prs_operand(tokens: &Vec<Token>, index: &mut usize) -> Node {
             // todo: add a way to have a set of keywords be also operands
             TokenKind::Repeat => {
                 let next = get_current(tokens, index);
-                let stmnt = prs_repeat_stmnt(next, index, tokens);
+                let stmnt = parse_repeat_stmnt(next, index, tokens);
                 stmnt.unwrap()
             }
             _ => {
@@ -1158,5 +1145,37 @@ fn prs_operand(tokens: &Vec<Token>, index: &mut usize) -> Node {
         node
     } else {
         panic!("Unexpected end of tokens")
+    }
+}
+
+fn parse_struct_init(tokens: &Vec<Token>, index: &mut usize, identifier: &Token) -> Node {
+    let mut args = Vec::new();
+                
+    loop {
+        let token = get_current(tokens, index);
+    
+        if token.kind == TokenKind::Newline {
+            *index += 1;
+            continue;
+        }
+    
+        // paramless.
+        if token.kind == TokenKind::CloseCurly {
+            *index += 1;
+            break;
+        }
+        // accumulate parameter expressions
+        let arg = parse_expression(tokens, index);
+    
+        // skip commas
+        if get_current(tokens, index).kind == TokenKind::Comma {
+            *index += 1;
+        }
+    
+        args.push(arg);
+    }
+    Node::TypedefInit {
+        id: identifier.value.clone(),
+        args,
     }
 }

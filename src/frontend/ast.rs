@@ -154,17 +154,13 @@ impl Node {
             Node::RepeatStmnt { .. } => visitor.visit_repeat_stmnt(self),
             Node::BreakStmnt( .. ) => visitor.visit_break_stmnt(self),
             Node::Array { .. } => visitor.visit_array(self),
-            Node::ArrayAccessExpr { .. } => visitor.visit_array_access(self),
             Node::Int(..) => visitor.visit_number(self),
             Node::Double(..) => visitor.visit_number(self),
             Node::Lambda { .. } => visitor.visit_lambda(self),
             Node::TypeDef { .. } => visitor.visit_type_def(self),
             Node::TypedefInit { id: _, args: _ } => visitor.visit_struct_init(self),
-            Node::ArrayAccessExpr { .. } => visitor.visit_array_access(self),
-            Node::Int(_) => visitor.visit_number(self),
-            Node::Double(_) => visitor.visit_number(self),
             Node::BinaryOperation { .. } => visitor.visit_binary_op(self),
-            Node::Lambda { params: _, block: _ } => visitor.visit_lambda(self)
+            Node::ArrayAccessExpr { .. } => visitor.visit_array_access(self),
         }
     }
 }

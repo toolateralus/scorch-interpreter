@@ -4,11 +4,7 @@ typedef Person |
     friends : Array
 |
 
-pers := Person{'hi i am xaryu! LOL!', 0, []}
 
+the_nameless_one := Person::new()
 
-authenticate : Fn(person : Dynamic) -> Bool {
-    println(person)
-}
-
-authenticate(pers.name)
+assert('the nameless one' == the_nameless_one.name, 'the nameless one has a name.. failed to get string field.')

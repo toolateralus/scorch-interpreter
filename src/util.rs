@@ -54,7 +54,7 @@ pub fn run_cli() {
         tokenizer.tokenize(&input.as_str());
         let tokens = &tokenizer.tokens;
 
-        let ast_root = parser::prs_program(&tokens);
+        let ast_root = parser::parse_program(&tokens);
         ast_root.accept(&mut interpreter);
         input.clear();
     }
@@ -68,7 +68,7 @@ pub fn execute_from_file(filename: String) -> Box<Context> {
     tokenizer.tokenize(&contents.as_str());
 
     let tokens = tokenizer.tokens;
-    let ast_root = parser::prs_program(&tokens);
+    let ast_root = parser::parse_program(&tokens);
     let mut interpreter = Interpreter::new();
 
     ast_root.accept(&mut interpreter);
@@ -87,7 +87,7 @@ pub fn execute_file_then_dump(filename: String) {
     let tokens = tokenizer.tokens;
     println!("Tokens:");
     dbg!(&tokens);
-    let ast_root = parser::prs_program(&tokens);
+    let ast_root = parser::parse_program(&tokens);
     println!("AST Root:");
     dbg!(&ast_root);
     let mut interpreter = Interpreter::new();
