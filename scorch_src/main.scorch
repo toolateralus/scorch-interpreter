@@ -4,7 +4,7 @@ struct Vec3 |
     z := 0.0
 |
 
-const vertices := 
+var vertices := 
 [
     Vec3{0.0, 0.0, 0.0}
     Vec3{1.0, 0.0, 0.0}
@@ -19,7 +19,21 @@ const vertices :=
 
 repeat {
     
-    repeat i < len(vertices) {
-        println(vertices[i])
+    if len(vertices) < 250 {
+        wait(15.0)
+        vertices = push(vertices, Vec3{0.5, 0.5, 0.5})
+        println('pushed! length: ' + tostr(len(vertices)))    
+    } else {
+        repeat {
+            if len(vertices) > 0 {
+                wait(10.0)
+                vertices = pop(vertices)
+                println('popped! length: ' + tostr(len(vertices)))       
+            } else {
+                break
+            }
+        }
     }
+    
+    
 }

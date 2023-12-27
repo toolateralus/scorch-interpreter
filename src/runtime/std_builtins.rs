@@ -59,6 +59,7 @@ pub fn length(_context : &mut Context, _type_checker : &TypeChecker, args: Vec<V
             return Value::Int(elements.len() as i32);
         }
         _ => {
+            dbg!(arg);
             panic!("Cannot get length of value");
         }
     }
@@ -150,27 +151,25 @@ pub fn tostr(_context : &mut Context, _type_checker : &TypeChecker, args: Vec<Va
     };
     Value::String(result)
 }
-pub fn push(_context : &mut Context, type_checker : &TypeChecker, args: Vec<Value>) -> Value {
+pub fn push(_context : &mut Context, type_checker : &TypeChecker, mut args: Vec<Value>) -> Value {
     if args.len() < 2 {
         panic!("push expected 2 arguments");
     }
-    let arg = &args[0];
+    let arg = args.remove(0);
     
-    match &arg {
-        Value::Array(mutable, elements) => {
-            if *mutable {
-                let mut new_array = elements.clone();
-
-                for i in 0..(args.len()) {
-                    let value = &args[i];
-                    let Some(t) = type_checker.from_value(value) else {
+    match arg {
+        Value::Array(mutable, mut elements) => {
+            if mutable {
+                for value in args {
+                    if let Some(t) = type_checker.from_value(&value) {
+                        let var = Variable::new(mutable, value, Rc::clone(&t));
+                        elements.push(var);
+                    } else {
                         panic!("invalid type for array");
-                    };
-                    let var = Variable::new(*mutable, value.clone(), Rc::clone(&t));
-                    new_array.push(var);
+                    }
                 }
                 
-                return Value::Array(*mutable, new_array);
+                return Value::Array(mutable, elements);
 
             } else {
                 panic!("Cannot push to immutable array");
@@ -191,7 +190,7 @@ pub fn pop(_context : &mut Context, _type_checker : &TypeChecker, args: Vec<Valu
             if *mutable {
                 let mut new_array = elements.clone();
                 let popped_value = new_array.pop().expect("array is empty");
-                return popped_value.value;
+                return Value::Array(*mutable, new_array);
             } else {
                 panic!("Cannot pop from immutable array");
             }

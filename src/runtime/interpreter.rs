@@ -200,23 +200,19 @@ impl Visitor<Value> for Interpreter {
         if condition_result {
             
             self.push_ctx();
-            
-            let stmnts = match &**true_block {
-                Node::Block(stmnts) => stmnts,
-                _ => panic!("Expected Block node"),
-            };
-            
-            for stmnt in stmnts {
-                let value = stmnt.accept(self);
-                if let Value::Return(_) = value {
-                    return value;
-                }
+            let returned = true_block.accept(self);
+            match returned {
+                Value::Return(_) => return returned,
+                _ => {}
             }
-            
             self.pop_ctx();
             
         } else if let Some(else_stmnt) = else_block {
-            else_stmnt.accept(self);
+            let returned = else_stmnt.accept(self);
+            match returned {
+                Value::Return(_) => return returned,
+                _ => {}
+            }
         }
 
         Value::None()
@@ -241,7 +237,13 @@ impl Visitor<Value> for Interpreter {
 
         if condition_result {
             self.push_ctx();
-            true_block.accept(self);
+            let returned = true_block.accept(self);
+            
+            match returned {
+                Value::Return(_) => return returned,
+                _ => {}
+            }
+            
             self.pop_ctx();
         } else if let Some(else_statement) = else_stmnt {
             else_statement.accept(self);
