@@ -1001,7 +1001,7 @@ fn parse_unary(tokens : &Vec<Token>, index: &mut usize) -> Node {
 }
 
 fn parse_dot(tokens: &Vec<Token>, index: &mut usize) -> Node {
-    let mut left = parse_accessor(tokens, index);
+    let left = parse_accessor(tokens, index);
 	loop {
 		let op = get_current(tokens, index);
 		match op.kind {

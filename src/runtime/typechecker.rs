@@ -1,7 +1,7 @@
-use crate::{runtime::types::Value, frontend::ast::Node};
+use crate::runtime::types::Value;
 use std::{collections::HashMap, rc::Rc};
 
-use super::{types::{Variable, Typedef}, interpreter::Interpreter};
+use super::types::{Variable, Typedef};
 
 
 #[derive(Debug, PartialEq)]
@@ -97,7 +97,7 @@ impl TypeChecker {
                             Value::List(..) => true,
                             _ => false,
                         }),
-                        attribute: Attr::Value,
+                        attribute: Attr::Array,
                     }),
                 ),
                 (

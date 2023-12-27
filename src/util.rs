@@ -1,5 +1,7 @@
+use std::cell::RefCell;
 use std::fs::File;
 use std::io::{self, Read, Write};
+use std::rc::Rc;
 
 use crate::frontend::*;
 use crate::*;
@@ -59,7 +61,7 @@ pub fn run_cli() {
         input.clear();
     }
 }
-pub fn execute_from_file(filename: String) -> Box<Context> {
+pub fn execute_from_file(filename: String) -> Rc<RefCell<Context>> {
     let mut tokenizer = tokens::create_tokenizer();
     let mut file = File::open(filename).expect("Failed to open file");
     let mut contents = String::new();
@@ -74,7 +76,7 @@ pub fn execute_from_file(filename: String) -> Box<Context> {
     ast_root.accept(&mut interpreter);
 
     let ctx = interpreter.context;
-    return Box::new(ctx);
+    return ctx;
 }
 pub fn execute_file_then_dump(filename: String) {
     let mut tokenizer = tokens::create_tokenizer();

@@ -71,10 +71,26 @@ impl Variable {
     }
 }
 
-#[derive(Debug, Clone)]
 pub struct Context {
     pub parent: Option<Rc<RefCell<Context>>>,
     pub variables: HashMap<String, Rc<Variable>>,
+}
+
+impl std::fmt::Debug for Context {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Context")
+            .field("parent", &self.parent.as_ref().map(|p| p.as_ptr()))
+            .field("variables", &self.variables)
+            .finish()
+    }
+}
+
+impl Clone for Context {
+    fn clone(&self) -> Self {
+        let parent = self.parent.clone();
+        let variables = self.variables.clone();
+        Context { parent, variables }
+    }
 }
 
 impl Context {
@@ -142,10 +158,10 @@ pub trait ContextHelpers {
     fn add_range(&self, _args: &HashMap<String, Value>) -> ();
 }
 impl Context {
-    pub fn new() -> Context {
-        Context {
+    pub fn new() -> Rc<RefCell<Context>> {
+        Rc::new(RefCell::new(Context {
             parent: Option::None,
             variables: HashMap::new(),
-        }
+        }))
     }
 }
