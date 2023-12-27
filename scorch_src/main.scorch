@@ -1,29 +1,14 @@
-typedef Person |
-    favorite_food : String
-    favorite_color: String
-    artistic_muse: String
-    favorite_animal: String
-    favorite_movie: String
-    favorite_book: String
-    favorite_song: String
+typedef Person | 
+    var name: String
+    age: Int
+    friends : Array
 |
 
-pers := Person {
-    "Banana",
-    "Yellow",
-    "Banana",
-    "Banana",
-    "The Banana",
-    "The Banana",
-    "The Sound of Bananas",
+pers := Person{'', 0, []}
+
+
+authenticate : Fn(person : Dynamic) -> Bool {
+    println(person)
 }
 
-println(pers)
-println('who am i?')
-
-input := readln()
-
-if input == 'xaryu' {
-    println('correct')
-}
-
+authenticate(pers)

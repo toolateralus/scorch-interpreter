@@ -1118,7 +1118,7 @@ fn prs_operand(tokens: &Vec<Token>, index: &mut usize) -> Node {
                 // todo: this is a hack. we need to know if the array is mutable or not by normal means.
                 let array_mutable = true;
                 let elements_mutable = false;    
-                return new_array("Array".to_string(), init.len(), init.clone(), array_mutable, elements_mutable);
+                return new_array("Dynamic".to_string(), init.len(), init.clone(), array_mutable, elements_mutable);
             }
             TokenKind::LogicalOr => {
                 let lambda = prs_lambda(tokens, index);

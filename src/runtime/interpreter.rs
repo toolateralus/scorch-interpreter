@@ -683,9 +683,9 @@ impl Visitor<Value> for Interpreter {
         panic!("Expected expression in array assignment");
     }
     
-
+    
     fn visit_lambda(&mut self, _node: &Node) -> Value {
-        Value::None()
+        todo!()
     }
 
     fn visit_type_def(&mut self, node: &Node) -> Value {
@@ -701,13 +701,13 @@ impl Visitor<Value> for Interpreter {
                 ),
             };
             
-            let mut fields = HashMap::new();
+            let mut fields = Vec::<(String, Rc<Type>)>::new();
             
             for statement in _statements {
-                let Node::DeclStmt { target_type, id, expression, mutable } = statement.as_ref() else {
+                let Node::DeclStmt { target_type, id, .. } = statement.as_ref() else {
                     panic!("Expected declaration")
                 };
-                fields.insert(id.clone(), self.type_checker.get(&target_type).unwrap());
+                fields.push((id.clone(), self.type_checker.get(&target_type).unwrap()));
             }
             
             let typedef = Typedef {
@@ -725,9 +725,7 @@ impl Visitor<Value> for Interpreter {
             panic!("Expected StructInit node");
         };
         
-        let context = self.context.clone();
-        
-        self.context = Context::new();
+        let mut struct_ctx = Context::new();
         
         let typedef = if let Some(typedef) = self.type_checker.typedefs.get_mut(id) {
             typedef
@@ -737,12 +735,15 @@ impl Visitor<Value> for Interpreter {
         
         let fields = typedef.fields.clone();
         
+        
         if fields.len() != args.len() {
             panic!("{id} constructor:  number of arguments does not match the number of fields");
         }
         
         for (field, arg) in fields.iter().zip(args.iter()) {
+            
             let value = arg.accept(self);
+            
             let Some(t) = self.type_checker.from_value(&value) else {
                 panic!("doesn't match to a valid type");
             };
@@ -752,15 +753,12 @@ impl Visitor<Value> for Interpreter {
             }
             
             let var = Variable::new(true, value, Rc::clone(&t));
-            self.context.insert_variable(&field.0, Rc::new(var));
+            struct_ctx.insert_variable(&field.0, Rc::new(var));
         }
-        let fields = self.context.variables.clone();
-        
-        self.context = context;
         
         Value::Struct {
             name: id.clone(),
-            fields,
+            context: Box::new(struct_ctx),
         }
     }
 }

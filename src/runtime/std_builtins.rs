@@ -30,10 +30,10 @@ pub fn print_ln(context : &mut Context, type_checker : &TypeChecker, args: Vec<V
             }
             Value::Struct {
                 name,
-                fields,
+                context,
             } => {
                 println!("struct {:#?}", name);
-                for (k, member) in fields {
+                for (k, member) in context.variables.iter() {
                     println!("{} : {:?}", k, member.value)
                 }
             },
