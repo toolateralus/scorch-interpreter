@@ -58,7 +58,7 @@ pub enum Node {
         op: TokenKind,
         rhs: Box<Node>,
     },
-    
+
     // todo: do the same with Unary operations :
     // we can have a special noed for these instead of
     // weaving it in with factors.
@@ -126,23 +126,32 @@ pub enum Node {
     },
     Int(i32),
     Double(f64),
-    Lambda { params: Vec<Box<Node>>, block: Box<Node> },
-    StructDecl { id: String, block: Box<Node> },
-    Struct { id: String, args: Vec<Node> },
+    Lambda {
+        params: Vec<Box<Node>>,
+        block: Box<Node>,
+    },
+    StructDecl {
+        id: String,
+        block: Box<Node>,
+    },
+    Struct {
+        id: String,
+        args: Vec<Node>,
+    },
 }
 impl Node {
     pub fn accept<T>(&self, visitor: &mut dyn Visitor<T>) -> T {
         match self {
             Node::Undefined() => visitor.visit_eof(self),
-            Node::Identifier( .. ) => visitor.visit_identifier(self),
+            Node::Identifier(..) => visitor.visit_identifier(self),
             Node::AssignStmnt { .. } => visitor.visit_assignment(self),
             Node::DeclStmt { .. } => visitor.visit_declaration(self),
-            Node::Block( .. ) => visitor.visit_block(self),
-            Node::Expression( .. ) => visitor.visit_expression(self),
-            Node::String( .. ) => visitor.visit_string(self),
-            Node::NegOp( .. ) => visitor.visit_neg_op(self),
-            Node::NotOp( .. ) => visitor.visit_not_op(self),
-            Node::Bool( .. ) => visitor.visit_bool(self),
+            Node::Block(..) => visitor.visit_block(self),
+            Node::Expression(..) => visitor.visit_expression(self),
+            Node::String(..) => visitor.visit_string(self),
+            Node::NegOp(..) => visitor.visit_neg_op(self),
+            Node::NotOp(..) => visitor.visit_not_op(self),
+            Node::Bool(..) => visitor.visit_bool(self),
             Node::IfStmnt { .. } => visitor.visit_if_stmnt(self),
             Node::ElseStmnt { .. } => visitor.visit_else_stmnt(self),
             Node::RelationalExpression { .. } => visitor.visit_relational_expression(self),
@@ -150,9 +159,9 @@ impl Node {
             Node::FnDeclStmnt { .. } => visitor.visit_function_decl(self),
             Node::ParamDeclNode { .. } => visitor.visit_param_decl(self),
             Node::FunctionCall { .. } => visitor.visit_function_call(self),
-            Node::Program( .. ) => visitor.visit_program(self),
+            Node::Program(..) => visitor.visit_program(self),
             Node::RepeatStmnt { .. } => visitor.visit_repeat_stmnt(self),
-            Node::BreakStmnt( .. ) => visitor.visit_break_stmnt(self),
+            Node::BreakStmnt(..) => visitor.visit_break_stmnt(self),
             Node::Array { .. } => visitor.visit_array(self),
             Node::Int(..) => visitor.visit_number(self),
             Node::Double(..) => visitor.visit_number(self),

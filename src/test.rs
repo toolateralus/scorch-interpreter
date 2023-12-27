@@ -18,17 +18,17 @@ fn fields_vars_literals() {
 #[test]
 fn loops() {
     let ctx = super::execute_from_file(String::from("scorch_src/unit_tests/loops.scorch"));
-    
+
     let value = ctx.borrow_mut().find_variable("result");
     if let super::runtime::types::Value::Bool(v) = value.to_owned().unwrap().value {
         assert_eq!(v, true, "test failed: {} {}", "loop one", v);
     }
-    
+
     let value = ctx.borrow_mut().find_variable("result1").clone();
     if let super::runtime::types::Value::Bool(v) = value.to_owned().unwrap().value {
         assert_eq!(v, true, "test failed: {} {}", "loop two", v);
     }
-    
+
     let value = ctx.borrow_mut().find_variable("result2").clone();
     if let super::runtime::types::Value::Bool(v) = value.to_owned().unwrap().value {
         assert_eq!(v, true, "test failed: {} {}", "loop two", v);
@@ -112,7 +112,7 @@ fn arithmetic() {
 #[test]
 fn arrays() {
     let ctx = super::execute_from_file(String::from("scorch_src/unit_tests/arrays.scorch"));
-    
+
     let _test_code_string = "empty_implicit 			:= []
     empty_explicit 			:= Array = []
     single_float_implicit 	:= [1.0]
@@ -131,13 +131,13 @@ fn arrays() {
         Value::Array(_, elements) => assert_eq!(elements.len(), 0, "test failed: empty_implicit"),
         _ => panic!("test failed: empty_implicit"),
     }
-    
+
     let t1 = ctx.borrow_mut().variables["empty_explicit"].clone();
     match &t1.value {
         Value::Array(_, elements) => assert_eq!(elements.len(), 0, "test failed: empty_explicit"),
         _ => panic!("test failed: empty_explicit"),
     }
-    
+
     let t2 = ctx.borrow_mut().variables["single_float_implicit"].clone();
     match &t2.value {
         Value::Array(_, elements) => {
@@ -153,7 +153,7 @@ fn arrays() {
         }
         _ => panic!("test failed: single_float_implicit"),
     }
-    
+
     let t3 = ctx.borrow_mut().variables["single_float_explicit"].clone();
     match &t3.value {
         Value::Array(_, elements) => {

@@ -1,8 +1,7 @@
 use crate::runtime::types::Value;
 use std::{collections::HashMap, rc::Rc};
 
-use super::types::{Variable, Struct};
-
+use super::types::{Struct, Variable};
 
 #[derive(Debug, PartialEq)]
 pub enum Attr {
@@ -33,7 +32,6 @@ impl TypeChecker {
         Self {
             structs: HashMap::new(),
             types: HashMap::from([
-                
                 (
                     String::from("Int"),
                     Rc::new(Type {
@@ -113,8 +111,6 @@ impl TypeChecker {
             ]),
         }
     }
-
-   
 }
 
 impl TypeChecker {
@@ -129,28 +125,26 @@ impl TypeChecker {
                 None => None,
             },
         }
-        
     }
     pub fn from_value(&self, val: &Value) -> Option<Rc<Type>> {
-        
         if let Value::Struct { typename: name, .. } = &val {
             let struct_decl = self.structs.get(name)?;
             return Some(Rc::clone(&struct_decl.type_));
         }
-        
+
         self.get(_get_type_name(val))
     }
 }
 pub fn _get_type_name<'a>(arg: &'a Value) -> &'a str {
     let arg_type_name = match arg {
-        Value::Array( .. ) => "Array",
-        Value::None()    => "None",
-        Value::Int( .. )   => "Int",
-        Value::Bool( .. )   => "Bool",
-        Value::String( .. ) => "String",
-        Value::Double( .. ) => "Double",
-        Value::Function( .. ) => "Fn",
-        Value::Return( .. ) => todo!(),
+        Value::Array(..) => "Array",
+        Value::None() => "None",
+        Value::Int(..) => "Int",
+        Value::Bool(..) => "Bool",
+        Value::String(..) => "String",
+        Value::Double(..) => "Double",
+        Value::Function(..) => "Fn",
+        Value::Return(..) => todo!(),
         Value::Struct { .. } => "Struct",
     };
     arg_type_name

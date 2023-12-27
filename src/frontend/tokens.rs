@@ -20,13 +20,11 @@ pub fn create_tokenizer() -> Tokenizer {
         (String::from("<"), TokenKind::LeftAngle),
         (String::from(">"), TokenKind::RightAngle),
         (String::from("&&"), TokenKind::LogicalAnd),
-        
         (String::from("->"), TokenKind::Arrow),
         (String::from(":="), TokenKind::ColonEquals),
         (String::from("|"), TokenKind::Pipe),
         (String::from("."), TokenKind::Dot),
         (String::from("=>"), TokenKind::Lambda),
-        
         (String::from("||"), TokenKind::LogicalOr),
         (String::from("+"), TokenKind::Add),
         (String::from("-"), TokenKind::Subtract),
@@ -35,23 +33,19 @@ pub fn create_tokenizer() -> Tokenizer {
         (String::from("%"), TokenKind::Modulo),
         (String::from("!"), TokenKind::Not),
     ]);
-    
+
     let keywords = HashMap::from([
         (String::from("const"), TokenKind::Const),
         (String::from("var"), TokenKind::Var),
-        
         (String::from("return"), TokenKind::Return),
         (String::from("break"), TokenKind::Break),
-        
         (String::from("if"), TokenKind::If),
         (String::from("else"), TokenKind::Else),
-        
         (String::from("new"), TokenKind::New),
-        
         (String::from("struct"), TokenKind::Struct),
         (String::from("repeat"), TokenKind::Repeat),
     ]);
-    
+
     let tokenizer = Tokenizer {
         operators,
         keywords,
@@ -81,25 +75,25 @@ pub enum TokenKind {
     String,
     Bool,
     Boolean,
-    
+
     // identifiers
     Identifier,
-    
+
     // operators
     Add,
     Subtract,
     Multiply,
     Divide,
-    Modulo, // todo: 
-    
+    Modulo, // todo:
+
     Equals,
     NotEquals,
     LessThanEquals,
     GreaterThanEquals,
-    
+
     LeftAngle,
     RightAngle,
-    
+
     LogicalAnd,
     LogicalOr,
     Not,
@@ -125,20 +119,20 @@ pub enum TokenKind {
 
     Return, // todo: design return. idk how we should do this @Cooper-Pilot
     Eof,
-    
-    DubColon, // :: 
-    
+
+    DubColon, // ::
+
     // special operators
-    Dot, // . 
-    Pipe, // |
+    Dot,    // .
+    Pipe,   // |
     Lambda, // =
-    Arrow, // ->
-    
+    Arrow,  // ->
+
     ColonEquals, // :=
-    
+
     Const,
     Var,
-    
+
     Assignment, // =
     Break,
     Struct,
@@ -191,9 +185,8 @@ impl TokenProcessor for Tokenizer {
             let mut current = self.source.chars().nth(self.index).unwrap();
             let mut size_at_last_newline = 0;
             if current == '\'' || current == '\"' {
-                
                 let start = current;
-                
+
                 let mut string = String::new();
                 loop {
                     if current == '\n' || current == '\r' {
@@ -245,7 +238,16 @@ impl TokenProcessor for Tokenizer {
                 let mut digit: String = String::new();
                 digit.push(current);
                 while self.consume(&mut current) {
-                    if current.is_digit(10) || (self.index + 1 < self.length && current == '.' && self.source.chars().nth(self.index + 1).unwrap().is_digit(10)){
+                    if current.is_digit(10)
+                        || (self.index + 1 < self.length
+                            && current == '.'
+                            && self
+                                .source
+                                .chars()
+                                .nth(self.index + 1)
+                                .unwrap()
+                                .is_digit(10))
+                    {
                         digit.push(current);
                     } else {
                         break;

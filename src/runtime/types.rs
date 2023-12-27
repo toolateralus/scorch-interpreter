@@ -19,7 +19,7 @@ pub enum Value {
     Array(bool, Vec<Variable>),
     Struct {
         typename: String,
-        context: Box<Context>
+        context: Box<Context>,
     },
 }
 
@@ -112,15 +112,20 @@ impl Context {
     pub fn insert_variable(&mut self, name: &str, value: Rc<Variable>) -> () {
         self.variables.insert(String::from(name), value);
     }
-    pub fn seek_overwrite_in_parents<'ctx>(&mut self, name: &str, value: &'ctx Value) -> Result<Rc<RefCell<Context>>, ()> {
+    pub fn seek_overwrite_in_parents<'ctx>(
+        &mut self,
+        name: &str,
+        value: &'ctx Value,
+    ) -> Result<Rc<RefCell<Context>>, ()> {
         match self.variables.get(name) {
             Some(var) => {
-                self.variables.insert(String::from(name), var.set_value(value));
+                self.variables
+                    .insert(String::from(name), var.set_value(value));
                 Ok(Rc::new(RefCell::new(self.clone())))
             }
             None => match &self.parent {
                 Some(parent) => parent.borrow_mut().seek_overwrite_in_parents(name, value),
-                None => Err(())
+                None => Err(()),
             },
         }
     }
@@ -153,7 +158,12 @@ impl BuiltInFunction {
     pub fn new(func: Box<dyn FnMut(&mut Context, &TypeChecker, Vec<Value>) -> Value>) -> Self {
         BuiltInFunction { func }
     }
-    pub fn call(&mut self, context : &mut Context, type_checker : &TypeChecker, args: Vec<Value>) -> Value {
+    pub fn call(
+        &mut self,
+        context: &mut Context,
+        type_checker: &TypeChecker,
+        args: Vec<Value>,
+    ) -> Value {
         (self.func)(context, type_checker, args)
     }
 }
