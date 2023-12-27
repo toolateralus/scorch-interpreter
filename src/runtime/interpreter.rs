@@ -24,7 +24,7 @@ impl Interpreter {
             type_checker: TypeChecker::new(),
         }
     }
-    fn try_find_and_execute_fn(
+    pub fn try_find_and_execute_fn(
         &mut self,
         arguments: &Option<Vec<Node>>,
         id: &String,
@@ -86,7 +86,7 @@ impl Interpreter {
         Value::None()
     }
     
-    fn dot_op(&mut self, lhs: &Box<Node>, rhs: &Box<Node>) -> Value {
+    pub fn dot_op(&mut self, lhs: &Box<Node>, rhs: &Box<Node>) -> Value {
         {
             let ctx = self.context.borrow_mut();
             if let Node::Identifier(id) = lhs.as_ref() {
@@ -128,14 +128,14 @@ impl Interpreter {
         self.try_find_and_execute_fn(&Some(args), func_id)
     }
 
-    fn push_ctx(&mut self) {
+    pub fn push_ctx(&mut self) {
         let current = self.context.clone();
             
         self.context = Context::new();
             
         self.context.borrow_mut().parent = Some(Rc::clone(&current));
     }
-    fn pop_ctx(&mut self) {
+    pub fn pop_ctx(&mut self) {
         let current = self.context.clone();
             
         self.context = match current.borrow_mut().parent.take() {

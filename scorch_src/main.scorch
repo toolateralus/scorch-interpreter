@@ -21,19 +21,8 @@ flunction("5")
 flunction(Vec2 {0.0, 0.0})
 
 
-if true {
-    break
-}
-
 repeat {
     i = i + 1
-    t = time()
-    delta = (t - start).tostr()
-    
-    println(delta)
-    
-    repeat i < 25000 {
-        x = Vec2 {0.0, 0.0}
-        println(x.x)
-    }
+    x = Vec2{0.0, 0.0}
+    println(i)
 }

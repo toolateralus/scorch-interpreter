@@ -68,7 +68,9 @@ impl Interpreter {
             };
             
             if condition_result {
+                self.push_ctx();
                 let result = block.accept(self);
+                self.pop_ctx();
                 match result {
                     Value::Int(..)
                     | Value::Double(..)

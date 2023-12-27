@@ -29,8 +29,8 @@ fn loops() {
         assert_eq!(v, true, "test failed: {} {}", "loop two", v);
     }
     
-    let value = ctx.borrow_mut().variables["result2"].clone();
-    if let super::runtime::types::Value::Bool(v) = value.to_owned().value {
+    let value = ctx.borrow_mut().find_variable("result2").clone();
+    if let super::runtime::types::Value::Bool(v) = value.to_owned().unwrap().value {
         assert_eq!(v, true, "test failed: {} {}", "loop two", v);
     }
 }
