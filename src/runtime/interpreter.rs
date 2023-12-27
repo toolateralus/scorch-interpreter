@@ -91,7 +91,7 @@ impl Interpreter {
                     dbg!(lhs, rhs);
                     panic!("Expected Struct node");
                 };
-                let Value::Struct { name:_, context } = &var.value else {
+                let Value::Struct { typename:_, context } = &var.value else {
                     dbg!(lhs, rhs);
                     panic!("Expected Struct node");
                 };
@@ -630,7 +630,6 @@ impl Visitor<Value> for Interpreter {
             panic!("Expected BreakStmnt node");
         }
     }
-    
     fn visit_array(&mut self, node: &Node) -> Value {
         if let Node::Array {
             typename: _,
@@ -735,12 +734,10 @@ impl Visitor<Value> for Interpreter {
         
         panic!("Expected expression in array assignment");
     }
-    
     fn visit_lambda(&mut self, _node: &Node) -> Value {
         todo!()
     }
-    
-    fn visit_type_def(&mut self, node: &Node) -> Value {
+    fn visit_struct_def(&mut self, node: &Node) -> Value {
         if let Node::TypeDef {id, block} = node{
             let Node::Block(_statements) = block.as_ref() else {
                 panic!("Expected block")
@@ -768,9 +765,9 @@ impl Visitor<Value> for Interpreter {
                 fields.push((id.clone(), t));
             }
             
-            let typedef = Typedef {
+            let typedef = Struct {
                 name: id.to_string(),
-                fields,
+                fields, // todo : pre-evaluate default values for fields and just copy that context into new structs instead of what we do now.
                 type_: Rc::new(_new_type)
             };
             
@@ -820,7 +817,7 @@ impl Visitor<Value> for Interpreter {
         }
         
         Value::Struct {
-            name: id.clone(),
+            typename: id.clone(),
             context: Box::new(struct_ctx),
         }
     }

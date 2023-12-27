@@ -23,13 +23,8 @@ pub fn print_ln(context : &mut Context, type_checker : &TypeChecker, args: Vec<V
                 //     print_ln(Vec::from([element.value.clone()]));
                 // }
             }
-            Value::List(elements) => {
-                for element in elements.try_borrow().unwrap().iter() {
-                    print_ln(context, type_checker, Vec::from([element.value.clone()]));
-                }
-            }
             Value::Struct {
-                name,
+                typename: name,
                 context,
             } => {
                 println!("global::{}", name);

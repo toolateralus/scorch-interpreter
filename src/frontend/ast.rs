@@ -28,7 +28,7 @@ pub trait Visitor<T> {
     fn visit_array_access(&mut self, node: &Node) -> T;
     fn visit_if_stmnt(&mut self, node: &Node) -> T;
     fn visit_else_stmnt(&mut self, node: &Node) -> T;
-    fn visit_type_def(&mut self, node: &Node) -> T;
+    fn visit_struct_def(&mut self, node: &Node) -> T;
     fn visit_struct_init(&mut self, node: &Node) -> T;
 }
 #[derive(Debug, Clone)]
@@ -157,7 +157,7 @@ impl Node {
             Node::Int(..) => visitor.visit_number(self),
             Node::Double(..) => visitor.visit_number(self),
             Node::Lambda { .. } => visitor.visit_lambda(self),
-            Node::TypeDef { .. } => visitor.visit_type_def(self),
+            Node::TypeDef { .. } => visitor.visit_struct_def(self),
             Node::TypedefInit { id: _, args: _ } => visitor.visit_struct_init(self),
             Node::BinaryOperation { .. } => visitor.visit_binary_op(self),
             Node::ArrayAccessExpr { .. } => visitor.visit_array_access(self),

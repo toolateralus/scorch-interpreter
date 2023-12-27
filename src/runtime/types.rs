@@ -17,14 +17,13 @@ pub enum Value {
     Return(Option<Box<Value>>),
     Function(Rc<Function>),
     Array(bool, Vec<Variable>),
-    List(Rc<RefCell<Vec<Variable>>>),
     Struct {
-        name: String,
+        typename: String,
         context: Box<Context>
     },
 }
 
-pub struct Typedef {
+pub struct Struct {
     pub name: String,
     pub fields: Vec<(String, Rc<Type>)>,
     pub type_: Rc<Type>,

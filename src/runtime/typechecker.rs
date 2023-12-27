@@ -1,7 +1,7 @@
 use crate::runtime::types::Value;
 use std::{collections::HashMap, rc::Rc};
 
-use super::types::{Variable, Typedef};
+use super::types::{Variable, Struct};
 
 
 #[derive(Debug, PartialEq)]
@@ -26,7 +26,7 @@ impl Type {
 
 pub struct TypeChecker {
     types: HashMap<String, Rc<Type>>,
-    pub typedefs: HashMap<String, Box<Typedef>>,
+    pub typedefs: HashMap<String, Box<Struct>>,
 }
 impl TypeChecker {
     pub fn new() -> Self {
@@ -94,7 +94,6 @@ impl TypeChecker {
                         name: String::from("Array"),
                         validator: Box::new(|v| match v {
                             Value::Array(..) => true,
-                            Value::List(..) => true,
                             _ => false,
                         }),
                         attribute: Attr::Array,
@@ -134,7 +133,7 @@ impl TypeChecker {
     }
     pub fn from_value(&self, val: &Value) -> Option<Rc<Type>> {
         
-        if let Value::Struct { name, .. } = &val {
+        if let Value::Struct { typename: name, .. } = &val {
             let typedef = self.typedefs.get(name)?;
             return Some(Rc::clone(&typedef.type_));
         }
@@ -144,8 +143,7 @@ impl TypeChecker {
 }
 pub fn _get_type_name<'a>(arg: &'a Value) -> &'a str {
     let arg_type_name = match arg {
-        Value::Array( .. ) |
-        Value::List(..) => "Array",
+        Value::Array( .. ) => "Array",
         Value::None()    => "None",
         Value::Int( .. )   => "Int",
         Value::Bool( .. )   => "Bool",
