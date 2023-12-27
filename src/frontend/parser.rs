@@ -679,7 +679,7 @@ fn parse_block(tokens: &Vec<Token>, index: &mut usize) -> Node {
     let mut statements = Vec::new();
     while *index < tokens.len() {
         let token = consume_newlines(index, tokens);
-        if token.kind == TokenKind::CloseCurly {
+        if token.kind == TokenKind::CloseCurlyBrace {
             *index += 1;
             break;
         }
@@ -838,7 +838,7 @@ fn parse_break(index: &mut usize, second: &Token, tokens: &Vec<Token>) -> Result
     // discard break
     if second.kind == TokenKind::Newline {
         Ok(Node::BreakStmnt(Option::None))
-    } else if second.kind != TokenKind::CloseCurly {
+    } else if second.kind != TokenKind::CloseCurlyBrace {
         let value = parse_expression(tokens, index);
         Ok(Node::BreakStmnt(Option::Some(Box::new(value))))
     } else {
@@ -877,7 +877,7 @@ fn parse_expression(tokens: &Vec<Token>, index: &mut usize) -> Node {
             TokenKind::CloseParenthesis
             | TokenKind::CloseBracket
             | TokenKind::OpenCurlyBrace
-            | TokenKind::CloseCurly // for struct init, questonable
+            | TokenKind::CloseCurlyBrace // for struct init, questonable
             | TokenKind::Pipe
             | TokenKind::Newline
             | TokenKind::Comma
@@ -1078,31 +1078,29 @@ fn parse_operand(tokens: &Vec<Token>, index: &mut usize) -> Node {
             }
             TokenKind::Identifier => {
                 let iden = Node::Identifier(identifier.value.clone());
-                
+                iden
+            },
+            TokenKind::New => {
                 let token = get_current(tokens, index);
-                
-                if token.kind == TokenKind::OpenCurlyBrace {
-                    *index += 1; // discard '{'
-                    parse_struct_init(tokens, index, identifier)
-                } else if token.kind == TokenKind::DubColon {
-                    iden
-                    //*index += 1; // discard '::'
-                    //let next = get_current(tokens, index);
-                   
-                    // todo :: implement. pretty complicated syntax actually.
-                    // // associated block, functions & methods defined here.
-                    // if next.kind == TokenKind::OpenCurlyBrace {
-                        
-                    // } 
-                    // // associated function call
-                    // else if next.kind == TokenKind::Identifier {
-                        
-                    // }
+                if token.kind == TokenKind::Identifier {
+                    let structname = token.clone();
+                    
+                    *index += 1;
+                    
+                    let token = get_current(tokens, index);
+                    
+                    if token.kind != TokenKind::OpenCurlyBrace && token.kind != TokenKind::OpenParenthesis {
+                        dbg!(token);
+                        panic!("Expected open curly brace token");
+                    } else {
+                        *index += 1;
+                    }
+                    
+                    return parse_struct_init(tokens, index, &structname);
+                } else {
+                    dbg!(token);
+                    panic!("Expected identifier token");
                 }
-                else {
-                    iden
-                }
-                
             },
             TokenKind::String => {
                 let id = Node::String(identifier.value.clone());
@@ -1169,7 +1167,7 @@ fn parse_struct_init(tokens: &Vec<Token>, index: &mut usize, identifier: &Token)
         }
     
         // paramless.
-        if token.kind == TokenKind::CloseCurly {
+        if token.kind == TokenKind::CloseCurlyBrace || token.kind == TokenKind::CloseParenthesis {
             *index += 1;
             break;
         }

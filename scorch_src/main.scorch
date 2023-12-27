@@ -6,27 +6,25 @@ struct Vec3 |
 
 var vertices := 
 [
-    Vec3{0.0, 0.0, 0.0}
-    Vec3{1.0, 0.0, 0.0}
-    Vec3{0.0, 1.0, 0.0} 
-    Vec3{0.0, 0.0, 1.0} 
-    Vec3{1.0, 1.0, 0.0} 
-    Vec3{1.0, 0.0, 1.0} 
-    Vec3{0.0, 1.0, 1.0} 
-    Vec3{1.0, 1.0, 1.0}
-    Vec3{0.5, 0.5, 0.5}
+    new Vec3{0.0, 0.0, 0.0}
+    new Vec3{1.0, 0.0, 0.0}
+    new Vec3{0.0, 1.0, 0.0} 
+    new Vec3{0.0, 0.0, 1.0} 
+    new Vec3{1.0, 1.0, 0.0} 
+    new Vec3{1.0, 0.0, 1.0} 
+    new Vec3{0.0, 1.0, 1.0} 
+    new Vec3{1.0, 1.0, 1.0}
+    new Vec3{0.5, 0.5, 0.5}
 ]
 
 repeat {
     
     if len(vertices) < 250 {
-        wait(15.0)
-        vertices = push(vertices, Vec3{0.5, 0.5, 0.5})
+        vertices = push(vertices, new Vec3{0.5, 0.5, 0.5})
         println('pushed! length: ' + tostr(len(vertices)))    
     } else {
         repeat {
             if len(vertices) > 0 {
-                wait(10.0)
                 vertices = pop(vertices)
                 println('popped! length: ' + tostr(len(vertices)))       
             } else {

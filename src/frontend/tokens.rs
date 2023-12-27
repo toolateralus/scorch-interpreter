@@ -6,7 +6,7 @@ pub fn create_tokenizer() -> Tokenizer {
         (String::from("("), TokenKind::OpenParenthesis),
         (String::from(")"), TokenKind::CloseParenthesis),
         (String::from("{"), TokenKind::OpenCurlyBrace),
-        (String::from("}"), TokenKind::CloseCurly),
+        (String::from("}"), TokenKind::CloseCurlyBrace),
         (String::from("["), TokenKind::OpenBracket),
         (String::from("]"), TokenKind::CloseBracket),
         (String::from(","), TokenKind::Comma),
@@ -45,7 +45,9 @@ pub fn create_tokenizer() -> Tokenizer {
         
         (String::from("if"), TokenKind::If),
         (String::from("else"), TokenKind::Else),
-
+        
+        (String::from("new"), TokenKind::New),
+        
         (String::from("struct"), TokenKind::Struct),
         (String::from("repeat"), TokenKind::Repeat),
     ]);
@@ -109,7 +111,7 @@ pub enum TokenKind {
     CloseParenthesis,
 
     OpenCurlyBrace,
-    CloseCurly,
+    CloseCurlyBrace,
 
     OpenBracket,
     CloseBracket,
@@ -140,6 +142,7 @@ pub enum TokenKind {
     Assignment, // =
     Break,
     Struct,
+    New,
 }
 #[derive(Debug, Clone)]
 pub struct Token {
