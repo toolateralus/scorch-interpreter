@@ -1,3 +1,10 @@
+
+accessor_assignment		:= [1.0, 2.0]
+
+assert(len(accessor_assignment) == 2, 'accessor_assignment array failed to have length of 2')
+
+break 
+
 struct Vec3 |
     x := 0.0
     y := 0.0
@@ -12,10 +19,9 @@ const start := time()
 
 repeat z < 1000 {
     repeat i < 500 {
-        arrays = push(arrays, push([], new Vec3(0.0, 0.0, 0.0)))
+        arrays = push(arrays, push([], new Vec3 { 0.0, 0.0, 0.0 }))
     }
 }
-
 
 const end := time()
 const delta := end - start

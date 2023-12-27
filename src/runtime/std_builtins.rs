@@ -20,7 +20,11 @@ pub fn print_ln(context: &mut Context, type_checker: &TypeChecker, args: Vec<Val
             Value::Array(mutable, elements) => {
                 let mutable_str = if mutable { "var" } else { "const" };
 
-                println!("{} Array<T> : length {}", mutable_str, elements.borrow_mut().len());
+                println!(
+                    "{} Array<T> : length {}",
+                    mutable_str,
+                    elements.borrow_mut().len()
+                );
 
                 // for element in elements.iter() {
                 //     print_ln(Vec::from([element.value.clone()]));
@@ -142,7 +146,11 @@ pub fn tostr(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Valu
         }
         Value::Array(mutable, elements) => {
             let mutable_str = if *mutable { "mutable" } else { "immutable" };
-            format!("array : {} , length : {}", mutable_str, elements.borrow_mut().len())
+            format!(
+                "array : {} , length : {}",
+                mutable_str,
+                elements.borrow_mut().len()
+            )
         }
         _ => {
             dbg!(arg);
@@ -178,6 +186,16 @@ pub fn push(_context: &mut Context, type_checker: &TypeChecker, mut args: Vec<Va
         _ => {
             panic!("Cannot push to value");
         }
+    }
+}
+pub fn floor(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Value>) -> Value {
+    if args.len() != 1 {
+        panic!("floor expected 1 argument");
+    }
+    let arg = &args[0];
+    match arg {
+        Value::Double(val) => Value::Double(val.floor()),
+        _ => panic!("Cannot apply floor function to non-double value"),
     }
 }
 pub fn pop(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Value>) -> Value {
@@ -222,5 +240,6 @@ pub fn get_builtin_functions() -> HashMap<String, BuiltInFunction> {
         (String::from("len"), BuiltInFunction::new(Box::new(length))),
         (String::from("push"), BuiltInFunction::new(Box::new(push))),
         (String::from("pop"), BuiltInFunction::new(Box::new(pop))),
+        (String::from("floor"), BuiltInFunction::new(Box::new(floor))),
     ])
 }

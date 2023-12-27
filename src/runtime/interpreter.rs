@@ -66,7 +66,11 @@ impl Interpreter {
             } else {
                 self.context.borrow_mut().insert_variable(
                     &param.name,
-                    Rc::new(RefCell::new(Variable::new(false, arg.clone(), Rc::clone(&param.m_type)))),
+                    Rc::new(RefCell::new(Variable::new(
+                        false,
+                        arg.clone(),
+                        Rc::clone(&param.m_type),
+                    ))),
                 );
             }
         }
@@ -103,12 +107,12 @@ impl Interpreter {
                     dbg!(lhs, rhs);
                     panic!("Expected Struct node");
                 };
-                
+
                 let Some(var) = context.find_variable(id) else {
                     dbg!(lhs, rhs);
                     panic!("Expected Struct node");
                 };
-                
+
                 return var.borrow_mut().value.clone();
             };
         }
@@ -316,7 +320,7 @@ impl Visitor<Value> for Interpreter {
                     dbg!(node);
                     panic!("variable {:?} not found", id);
                 };
-                
+
                 return Value::None();
             }
             _ => {
@@ -660,7 +664,7 @@ impl Visitor<Value> for Interpreter {
                 let var = Variable::new(*elements_mutable, val, m_type);
                 values.push(var);
             }
-            
+
             return Value::Array(*mutability, Rc::new(RefCell::new(values)));
         } else {
             panic!("Expected List node");
@@ -676,20 +680,20 @@ impl Visitor<Value> for Interpreter {
             } => (id, index, expression, assignment),
             _ => panic!("Expected ArrayAccessExpr node"),
         };
-        
-        let mut var : Option<Rc<RefCell<Variable>>> = None;
-        
+
+        let mut var: Option<Rc<RefCell<Variable>>> = None;
+
         {
             let ctx = self.context.borrow_mut();
             var = ctx.find_variable(id);
-        }   
-        
+        }
+
         let Some(var) = var else {
             panic!("Variable {:?} not found", id);
         };
-        
+
         let var = var.borrow_mut();
-        
+
         let (mutable, elements) = match &var.value {
             Value::Array(mutable, elements) => (mutable, elements),
             _ => panic!("Expected Array node"),
@@ -700,24 +704,26 @@ impl Visitor<Value> for Interpreter {
             Value::Int(index_value) => index_value as usize,
             _ => panic!("Expected numerical index value"),
         };
-        
+
         let mut elements = elements.borrow_mut();
-        
+
         if elements.len() <= index_value {
             panic!("Array index out of bounds :: {}[{}]", id, index_value);
         }
 
         let element = &mut elements[index_value];
-        
+
         // read
         if !*assignment {
             return element.value.clone();
         }
-        
+
         // assignment
         if let Some(expr) = expression {
             let expr_result = expr.accept(self);
+            
             element.value = expr_result.clone();
+            
             if !TypeChecker::validate(&element) {
                 dbg!(&element);
                 panic!("Invalid type");
@@ -727,7 +733,7 @@ impl Visitor<Value> for Interpreter {
             let Ok(_) = ctx.seek_overwrite_in_parents(id, &element.value) else {
                 panic!("Variable {:?} not found", id);
             };
-            
+
             return Value::None();
         }
 
@@ -755,7 +761,6 @@ impl Visitor<Value> for Interpreter {
                     target_type, id, ..
                 } = statement.as_ref()
                 else {
-                    
                     panic!("Expected declaration, got {:#?}", statement);
                 };
 
@@ -787,7 +792,7 @@ impl Visitor<Value> for Interpreter {
             parent: Some(Rc::clone(&self.context)),
             variables: HashMap::new(),
         };
-        
+
         let _struct = if let Some(_struct) = self.type_checker.structs.get_mut(id) {
             _struct
         } else {

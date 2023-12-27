@@ -113,16 +113,17 @@ impl Context {
         name: &str,
         value: &'ctx Value,
     ) -> Result<(), ()> {
-        match self.variables.get(name) {
-            Some(var) => {
-                var.borrow_mut().set_value(value);
-                self.variables.insert(String::from(name), Rc::clone(&var));
+        if let Some(var) = self.variables.get_mut(name) {
+            if let Ok(mut v) = var.try_borrow_mut() {
+                v.set_value(value);
                 Ok(())
+            } else {
+                panic!("INTERNAL_INTERPRETER_ERROR::\n\t error : ->-> double borrow on variable {}, value : {:?} <-<- : error ", name, value.clone());
             }
-            None => match &self.parent {
-                Some(parent) => parent.borrow_mut().seek_overwrite_in_parents(name, value),
-                None => Err(()),
-            },
+        } else if let Some(parent) = &self.parent {
+            parent.borrow_mut().seek_overwrite_in_parents(name, value)
+        } else {
+            Err(())
         }
     }
 }
