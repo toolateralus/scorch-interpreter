@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -61,7 +62,8 @@ impl Interpreter {
             panic!("Number of arguments does not match the number of parameters");
         }
         
-        
+        self.push_ctx();
+            
         for (arg, param) in args.iter().zip(function.params.iter()) {
             if !param.m_type.validate(arg) {
                 panic!("Argument type does not match parameter type.\n provided argument: {:?} expected parameter : {:?}", arg, param)
@@ -72,8 +74,10 @@ impl Interpreter {
                 );
             }
         }
-
+        
         let ret = function.body.accept(self);
+        
+        self.pop_ctx();
         
         if let Value::Return(Some(return_value)) = ret {
             return *return_value;
@@ -122,6 +126,22 @@ impl Interpreter {
         args.insert(0, *lhs.clone());
         
         self.try_find_and_execute_fn(&Some(args), func_id)
+    }
+
+    fn push_ctx(&mut self) {
+        let current = self.context.clone();
+            
+        self.context = Context::new();
+            
+        self.context.borrow_mut().parent = Some(Rc::clone(&current));
+    }
+    fn pop_ctx(&mut self) {
+        let current = self.context.clone();
+            
+        self.context = match current.borrow_mut().parent.take() {
+            Some(parent) => Rc::clone(&parent),
+            None => panic!("Cannot pop root context"),
+        };
     }
 }
 impl Visitor<Value> for Interpreter {
@@ -178,17 +198,23 @@ impl Visitor<Value> for Interpreter {
         };
 
         if condition_result {
+            
+            self.push_ctx();
+            
             let stmnts = match &**true_block {
                 Node::Block(stmnts) => stmnts,
                 _ => panic!("Expected Block node"),
             };
-
+            
             for stmnt in stmnts {
                 let value = stmnt.accept(self);
                 if let Value::Return(_) = value {
                     return value;
                 }
             }
+            
+            self.pop_ctx();
+            
         } else if let Some(else_stmnt) = else_block {
             else_stmnt.accept(self);
         }
@@ -214,7 +240,9 @@ impl Visitor<Value> for Interpreter {
         };
 
         if condition_result {
+            self.push_ctx();
             true_block.accept(self);
+            self.pop_ctx();
         } else if let Some(else_statement) = else_stmnt {
             else_statement.accept(self);
         }
@@ -277,8 +305,11 @@ impl Visitor<Value> for Interpreter {
                         panic!("Expected Identifier node");
                     }
                 };
-                match self.context.borrow_mut().variables.get_mut(&str_id) {
-                    Some(value) => {
+                
+                
+                
+                match self.context.borrow_mut().find_variable(&str_id) {
+                    Some(mut value) => {
                         if value.mutable == false {
                             dbg!(node);
                             panic!("Cannot assign to immutable variable");
@@ -292,12 +323,13 @@ impl Visitor<Value> for Interpreter {
                             panic!("expected : {}, got : {}", expected_typename, new_typename);
                         }
                         
-                        *value = Rc::new(Variable::new(
+                        value = Rc::new(Variable::new(
 							value.mutable,
 							val,
 							Rc::clone(&value.m_type)
 						));
-                        if TypeChecker::validate(value) == false {
+                        
+                        if TypeChecker::validate(value.borrow()) == false {
                             dbg!(node);
                             panic!("Type mismatch");
                         }
