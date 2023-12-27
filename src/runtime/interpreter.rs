@@ -785,7 +785,8 @@ impl Visitor<Value> for Interpreter {
                     target_type, id, ..
                 } = statement.as_ref()
                 else {
-                    panic!("Expected declaration")
+                    
+                    panic!("Expected declaration, got {:#?}", statement);
                 };
 
                 let Some(t) = self.type_checker.get(&target_type) else {
