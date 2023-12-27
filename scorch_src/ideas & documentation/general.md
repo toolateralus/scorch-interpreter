@@ -1,4 +1,7 @@
 
+## !! This is pretty out of date !!
+[click here for the updated docs repo](https://github.com/toolateralus/scorch-lang-doc.git)
+
 ### types 
 - types are basic, `Double`, `String`, `Bool`, `None`, `Fn`, are basically the extent of it right now
 
