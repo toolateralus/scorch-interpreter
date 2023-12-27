@@ -906,7 +906,7 @@ fn parse_unary(tokens : &Vec<Token>, index: &mut usize) -> Node {
     match op.kind {
         TokenKind::Subtract => {
             *index += 1;
-            let node = parse_compound(tokens, index);
+            let node = parse_dot(tokens, index);
             if let Node::NegOp(_node) = node {
                 panic!("Double not operations are not allowed");
             }
@@ -914,62 +914,30 @@ fn parse_unary(tokens : &Vec<Token>, index: &mut usize) -> Node {
         }
         TokenKind::Not => {
             *index += 1;
-            let node = parse_compound(tokens, index);
+            let node = parse_dot(tokens, index);
             if let Node::NotOp(_node) = node {
                 panic!("Double not operations are not allowed");
             }
             Node::NotOp(Box::new(node))
         }
         _ => {
-            parse_compound(tokens, index)
+            parse_dot(tokens, index)
         }
     }
 }
 
-fn parse_compound(tokens: &Vec<Token>, index: &mut usize) -> Node {
-    let mut left = parse_operand(tokens, index);
+fn parse_dot(tokens: &Vec<Token>, index: &mut usize) -> Node {
+    let mut left = parse_accessor(tokens, index);
 	loop {
 		let op = get_current(tokens, index);
 		match op.kind {
 			TokenKind::Dot => {
 				*index += 1; // consume '.' operator.
-				return Node::DotOp {
+				left = Node::DotOp {
 					lhs: Box::new(left),
 					op: TokenKind::Dot,
-					rhs: Box::new(parse_compound(tokens, index)),
+					rhs: Box::new(parse_accessor(tokens, index)),
 				};
-			}
-			TokenKind::OpenParenthesis => {
-				if let Node::Identifier(id) = &left {   
-					match parse_fn_call(index, tokens, &id) {
-						Ok(node) => {
-							left = node;
-						}
-						Err(_) => {
-							panic!("Expected function call node");
-						}
-					}
-				} else {
-					panic!("Expected function call node");
-				}
-			}
-			TokenKind::OpenBracket => {
-				// id[]
-				if let Node::Identifier(id) = left {
-					*index += 1; // move past [
-					match parse_array_access(index, tokens, &id) {
-						Ok(node) => {
-							left = node;
-						}
-						Err(_) => {
-							panic!("Expected array access node");
-						}
-					}
-				}
-				else {
-					dbg!(left);
-					panic!("Expected array access node");
-				}
 			}
 			_ => {
 				return left;
@@ -977,7 +945,38 @@ fn parse_compound(tokens: &Vec<Token>, index: &mut usize) -> Node {
 		}
 	}
 }
-
+fn parse_accessor(tokens: &Vec<Token>, index: &mut usize) -> Node {
+    let left = parse_operand(tokens, index);
+	let op = get_current(tokens, index);
+	match op.kind {
+		TokenKind::OpenParenthesis => {
+			if let Node::Identifier(id) = &left {   
+				match parse_fn_call(index, tokens, &id) {
+					Ok(node) => node,
+					Err(_) => panic!("Expected function call node"),
+				}
+			} else {
+				panic!("Expected function call node");
+			}
+		}
+		TokenKind::OpenBracket => {
+			// id[]
+			if let Node::Identifier(id) = left {
+				*index += 1; // move past [
+				match parse_array_access(index, tokens, &id) {
+					Ok(node) => node,
+					Err(_) => panic!("Expected array access node"),
+				}
+			} else {
+				dbg!(left);
+				panic!("Expected array access node");
+			}
+		}
+		_ => {
+			return left;
+		}
+	}
+}
 fn parse_operand(tokens: &Vec<Token>, index: &mut usize) -> Node {
     if let Some(token) = tokens.get(*index) {
         *index += 1;

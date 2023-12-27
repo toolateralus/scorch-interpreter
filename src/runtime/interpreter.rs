@@ -458,6 +458,7 @@ impl Visitor<Value> for Interpreter {
     fn visit_binary_op(&mut self, node: &Node) -> Value {
         match node {
             Node::DotOp { lhs, op: _, rhs } => {
+				dbg!(node);
                 self.dot_op(lhs, rhs)
             },
             Node::AddOp(lhs, rhs)

@@ -1,4 +1,5 @@
-add_hi: Fn(s: String) -> String {
-	break s + " hi"
+String::add_hi: Fn() -> String {
+	println(this)
+	break this + " hi"
 }
-"yo,".println()
+"yo,".add_hi().add_hi()
