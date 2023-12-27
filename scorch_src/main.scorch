@@ -4,11 +4,11 @@ typedef Person |
     friends : Array
 |
 
-pers := Person{'', 0, []}
+pers := Person{'hi i am xaryu! LOL!', 0, []}
 
 
 authenticate : Fn(person : Dynamic) -> Bool {
     println(person)
 }
 
-authenticate(pers)
+authenticate(pers.name)
