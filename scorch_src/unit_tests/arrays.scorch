@@ -1,12 +1,36 @@
 empty_implicit 			:= []
+
+assert(len(empty_implicit) == 0, 'empty_implicit array failed to be empty')
+
+// # todo implement array comparison
+// # assert(len(empty_implicit) == 0, 'empty_implicit array failed to compare to []')
+
 empty_explicit 			: Array = []
+assert(len(empty_explicit) == 0, 'empty_explicit array failed to be empty')
+
 single_float_implicit 	:= [1.0]
+assert(len(single_float_implicit) == 1, 'single_float_implicit array failed to have length of 1')
+
 single_float_explicit 	: Array = [1.0]
+assert(len(single_float_explicit) == 1, 'single_float_explicit array failed to have length of 1')
 plural_float_implicit  	:= [1.0, 2.0]
+assert(len(plural_float_implicit) == 2, 'plural_float_implicit array failed to have length of 2')
 plural_float_explicit 	: Array = [1.0, 2.0]
+assert(len(plural_float_explicit) == 2, 'plural_float_explicit array failed to have length of 2')
 assignment 				:= single_float_implicit
+assert(len(assignment) == 1, 'assignment array failed to have length of 1')
+
 single_element_access 	:= single_float_implicit[0]
+assert(single_element_access == 1.0, 'single_element_access failed to equal expected value')
+
 first_element_access 	:= plural_float_implicit[0]
+assert(first_element_access == 1.0, 'first_element_access failed to equal expected value')
+
 second_element_access 	:= plural_float_implicit[1]
+assert(second_element_access == 2.0, 'second_element_access failed to equal expected value')
+
 accessor_assignment		:= [1.0, 2.0]
+assert(len(accessor_assignment) == 2, 'accessor_assignment array failed to have length of 2')
+
 accessor_assignment[0]	= 3.0
+assert(accessor_assignment[0] == 3.0, 'accessor_assignment[0] failed to equal expected value')
