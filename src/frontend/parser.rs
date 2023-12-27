@@ -1051,17 +1051,7 @@ fn parse_accessor(tokens: &Vec<Token>, index: &mut usize) -> Node {
 		}
 	}
 }
-				else {
-					dbg!(left);
-					panic!("Expected array access node");
-				}
-			}
-			_ => {
-				return left;
-			}
-		}
-	}
-}
+
 fn parse_operand(tokens: &Vec<Token>, index: &mut usize) -> Node {
     if let Some(identifier) = tokens.get(*index) {
         *index += 1;
