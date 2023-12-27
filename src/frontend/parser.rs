@@ -168,11 +168,18 @@ pub fn parse_array_initializer(tokens: &Vec<Token>, index: &mut usize) -> Vec<Bo
             *index += 1;
             break;
         }
+        
+        if token.kind == TokenKind::Newline {
+            *index += 1;
+        }
+        
         // accumulate parameter expressions
         let arg = parse_expression(tokens, index);
-
-        // skip commas
-        if get_current(tokens, index).kind == TokenKind::Comma {
+        
+        let cur = get_current(tokens, index).kind;
+        
+        // skip commas & newlines
+        if cur == TokenKind::Comma || cur == TokenKind::Newline {
             *index += 1;
         }
         args.push(Box::new(arg));
@@ -744,14 +751,14 @@ fn parse_keyword_ops(keyword: &Token, index: &mut usize, next_token: &Token, tok
             dbg!(keyword);
             panic!("else statements must follow an if.");
         }
-        TokenKind::Struct => parse_type_def(index, next_token, tokens),
+        TokenKind::Struct => parse_struct_decl(index, next_token, tokens),
         _ => {
             dbg!(keyword);
             panic!("keyword is likely misused or not yet implemented.");
         }
     }
 }
-fn parse_type_def(index: &mut usize, identifier: &Token, tokens: &Vec<Token>) -> Result<Node, ()> {
+fn parse_struct_decl(index: &mut usize, identifier: &Token, tokens: &Vec<Token>) -> Result<Node, ()> {
     *index += 2; // consume 'struct && identifier'
     
     let id = identifier.value.clone();

@@ -1,0 +1,25 @@
+struct Vec3 |
+    x := 0.0
+    y := 0.0
+    z := 0.0
+|
+
+const vertices := 
+[
+    Vec3{0.0, 0.0, 0.0}
+    Vec3{1.0, 0.0, 0.0}
+    Vec3{0.0, 1.0, 0.0} 
+    Vec3{0.0, 0.0, 1.0} 
+    Vec3{1.0, 1.0, 0.0} 
+    Vec3{1.0, 0.0, 1.0} 
+    Vec3{0.0, 1.0, 1.0} 
+    Vec3{1.0, 1.0, 1.0}
+    Vec3{0.5, 0.5, 0.5}
+]
+
+repeat {
+    
+    repeat i < len(vertices) {
+        println(vertices[i])
+    }
+}

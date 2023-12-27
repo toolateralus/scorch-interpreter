@@ -67,10 +67,10 @@ impl Interpreter {
                 None => panic!("Expected condition in conditional repeat statement"),
             };
             
+            self.push_ctx();
+            
             if condition_result {
-                self.push_ctx();
                 let result = block.accept(self);
-                self.pop_ctx();
                 match result {
                     Value::Int(..)
                     | Value::Double(..)
@@ -97,6 +97,8 @@ impl Interpreter {
             let variable = Rc::new(Variable::new(true, value, Rc::clone(&m_type)));
             
             self.context.borrow_mut().insert_variable(&id, variable);
+            
+            self.pop_ctx();
         }
     }
     pub fn visit_conditionless_repeat_stmnt(&mut self, block: &Box<Node>) -> Value {
