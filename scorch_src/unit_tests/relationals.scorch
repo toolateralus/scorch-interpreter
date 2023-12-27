@@ -1,14 +1,47 @@
 rel_t1 := 5 < 10
+
+assert(rel_t1 == true, '5 < 10 returned true')
+
 rel_t2 := 5 > 10
+
+assert(rel_t2 == false, '5 > 10 returned true')
+
 rel_t3 := 5 <= 10
+
+assert(rel_t3 == true, '5 <= 10 returned false')
+
 rel_t4 := 5 >= 10
+
+assert(rel_t4 == false, '5 >= 10 returned true')
+
 rel_t5 := 5 == 10
+
+assert(rel_t5 == false, '5 == 10 returned true')
+
 rel_t6 := 5 != 10
+
+assert(rel_t6 == true, '5 != 10 returned false')
+
 rel_t7 := 5 == 5
+
+assert(rel_t7 == true, '5 == 5 returned false')
+
 rel_t8 := 5 != 5
+
+assert(rel_t8 == false, '5 != 5 returned true')
+
 rel_t9  := 5 <= 5
+
+assert(rel_t9 == true, '5 <= 5 returned false')
+
 rel_t10 := 5 >= 5
+
+assert(rel_t10 == true, '5 >= 5 returned false')
+
 rel_t11 := 5 < 5
+
+assert(rel_t11 == false, '5 < 5 returned true')
+
 rel_t12 := ((5 < 5) && (5 > 5))
 
-
+assert(rel_t12 == false, '5 < 5 && 5 > 5 returned true')
