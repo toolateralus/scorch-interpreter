@@ -66,7 +66,7 @@ impl Interpreter {
                     } else {
                         dbg!(expression);
                         panic!("Expected boolean condition");
-                    }
+                        }
                 }
                 None => panic!("Expected condition in conditional repeat statement"),
             };
@@ -94,22 +94,29 @@ impl Interpreter {
             } else {
                 // pop iterator ctx.
                 let value = Value::Int(iter);
-                self.context
-                    .borrow_mut()
-                    .seek_overwrite_in_parents(&id, &value);
+                
+                self.assign_var(id, &value);
+                
                 self.pop_ctx();
                 return Value::None();
             }
-
+            
             iter += 1;
-
+            
             let value = Value::Int(iter);
-
-            self.context
-                .borrow_mut()
-                .seek_overwrite_in_parents(&id, &value);
+            
+            self.assign_var(id, &value);
         }
     }
+    
+    // this will seek parent contexts if & when the variable is not found in the current context.
+    // this cannot be used to add new variables to a context.
+    pub fn assign_var<'ctx>(&mut self, id: &str, value: &'ctx Value) {
+        let Ok(_) = self.context.borrow_mut().seek_overwrite_in_parents(&id, &value) else {
+            panic!("assignment error : {} not found.", id);
+        };
+    }
+    
     pub fn visit_conditionless_repeat_stmnt(&mut self, block: &Box<Node>) -> Value {
         loop {
             let _result = block.accept(self);

@@ -1,14 +1,8 @@
 
-accessor_assignment		:= [1.0, 2.0]
-
-assert(len(accessor_assignment) == 2, 'accessor_assignment array failed to have length of 2')
-
-break 
-
 struct Vec3 |
     x := 0.0
     y := 0.0
-    var z := 0.0
+    z := 0.0
 |
 
 var arrays := []
@@ -24,10 +18,11 @@ repeat z < 1000 {
 }
 
 const end := time()
+
 const delta := end - start
 
 delta = floor(delta)
 
 println('time spent: ', delta, 'ms')
-println('arrays len : ', len(arrays))
+
 println('arrays len : ', len(arrays))

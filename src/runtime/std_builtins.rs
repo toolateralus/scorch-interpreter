@@ -1,11 +1,42 @@
+use super::context::Context;
+use super::typechecker::TypeChecker;
 use std::{collections::HashMap, rc::Rc};
+use super::types::{BuiltInFunction, Value, Variable};
 
-use super::{
-    typechecker::TypeChecker,
-    types::{BuiltInFunction, Context, Value, Variable},
-};
+pub fn get_builtin_functions() -> HashMap<String, BuiltInFunction> {
+    HashMap::from([
+        (
+            String::from("println"),
+            BuiltInFunction::new(Box::new(print_ln)),
+        ),
+        (
+            String::from("readln"),
+            BuiltInFunction::new(Box::new(readln)),
+        ),
+        (String::from("wait"), BuiltInFunction::new(Box::new(wait))),
+        (String::from("tostr"), BuiltInFunction::new(Box::new(tostr))),
+        (String::from("time"), BuiltInFunction::new(Box::new(time))),
+        (
+            String::from("assert"),
+            BuiltInFunction::new(Box::new(assert)),
+        ),
+        (
+            String::from("assert_eq"),
+            BuiltInFunction::new(Box::new(assert_eq)),
+        ),
+        (String::from("len"), BuiltInFunction::new(Box::new(length))),
+        (String::from("push"), BuiltInFunction::new(Box::new(push))),
+        (String::from("pop"), BuiltInFunction::new(Box::new(pop))),
+        (String::from("floor"), BuiltInFunction::new(Box::new(floor))),
+    ])
+}
 
+// IO
 pub fn print_ln(context: &mut Context, type_checker: &TypeChecker, args: Vec<Value>) -> Value {
+
+
+
+
     for arg in args {
         match arg {
             Value::Int(val) => print!("{}\n", val),
@@ -44,6 +75,29 @@ pub fn print_ln(context: &mut Context, type_checker: &TypeChecker, args: Vec<Val
     }
     Value::None()
 }
+pub fn readln(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Value>) -> Value {
+    if args.len() != 0 {
+        panic!("readln expected 0 arguments");
+    }
+    let mut input = String::new();
+    std::io::stdin()
+        .read_line(&mut input)
+        .expect("failed to read from stdin");
+    Value::String(input.replace("\n", ""))
+}
+
+// System
+pub fn time(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Value>) -> Value {
+    if args.len() != 0 {
+        panic!("time expected 0 arguments");
+    }
+
+    let time = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .expect("Time went backwards");
+
+    Value::Double(time.as_secs_f64())
+}
 pub fn wait(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Value>) -> Value {
     if args.len() != 1 {
         panic!("wait expected 1 argument :: ms wait duration");
@@ -55,6 +109,8 @@ pub fn wait(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Value
     }
     Value::None()
 }
+
+// Vectors & Arrays
 pub fn length(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Value>) -> Value {
     if args.len() != 1 {
         panic!("length takes one array argument");
@@ -71,17 +127,55 @@ pub fn length(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Val
         }
     }
 }
-pub fn time(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Value>) -> Value {
-    if args.len() != 0 {
-        panic!("time expected 0 arguments");
+
+pub fn push(_context: &mut Context, type_checker: &TypeChecker, mut args: Vec<Value>) -> Value {
+    if args.len() < 2 {
+        panic!("push expected 2 arguments");
     }
+    let arg = args.remove(0);
 
-    let time = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .expect("Time went backwards");
+    match arg {
+        Value::Array(mutable, mut elements) => {
+            if mutable {
+                for value in args {
+                    if let Some(t) = type_checker.from_value(&value) {
+                        let var = Variable::new(mutable, value, Rc::clone(&t));
+                        elements.borrow_mut().push(var);
+                    } else {
+                        panic!("invalid type for array");
+                    }
+                }
 
-    Value::Double(time.as_secs_f64())
+                return Value::Array(mutable, elements);
+            } else {
+                panic!("Cannot push to immutable array");
+            }
+        }
+        _ => {
+            panic!("Cannot push to value");
+        }
+    }
 }
+pub fn pop(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Value>) -> Value {
+    if args.len() != 1 {
+        panic!("pop expected 1 argument");
+    }
+    let arg = &args[0];
+    match &arg {
+        Value::Array(mutable, elements) => {
+            if *mutable {
+                return elements.borrow_mut().pop().unwrap().value;
+            } else {
+                panic!("Cannot pop from immutable array");
+            }
+        }
+        _ => {
+            panic!("Cannot pop from non-array value");
+        }
+    }
+}
+
+// Testing
 pub fn assert_eq(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Value>) -> Value {
     if args.len() != 3 {
         panic!("assert expected 3 arguments");
@@ -108,16 +202,8 @@ pub fn assert(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Val
     assert!(condition, "{}", message);
     Value::None()
 }
-pub fn readln(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Value>) -> Value {
-    if args.len() != 0 {
-        panic!("readln expected 0 arguments");
-    }
-    let mut input = String::new();
-    std::io::stdin()
-        .read_line(&mut input)
-        .expect("failed to read from stdin");
-    Value::String(input.replace("\n", ""))
-}
+
+// Conversions
 pub fn tostr(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Value>) -> Value {
     if args.len() != 1 {
         panic!("tostr expected 1 argument");
@@ -160,34 +246,6 @@ pub fn tostr(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Valu
     };
     Value::String(result)
 }
-pub fn push(_context: &mut Context, type_checker: &TypeChecker, mut args: Vec<Value>) -> Value {
-    if args.len() < 2 {
-        panic!("push expected 2 arguments");
-    }
-    let arg = args.remove(0);
-
-    match arg {
-        Value::Array(mutable, mut elements) => {
-            if mutable {
-                for value in args {
-                    if let Some(t) = type_checker.from_value(&value) {
-                        let var = Variable::new(mutable, value, Rc::clone(&t));
-                        elements.borrow_mut().push(var);
-                    } else {
-                        panic!("invalid type for array");
-                    }
-                }
-
-                return Value::Array(mutable, elements);
-            } else {
-                panic!("Cannot push to immutable array");
-            }
-        }
-        _ => {
-            panic!("Cannot push to value");
-        }
-    }
-}
 pub fn floor(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Value>) -> Value {
     if args.len() != 1 {
         panic!("floor expected 1 argument");
@@ -198,48 +256,5 @@ pub fn floor(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Valu
         _ => panic!("Cannot apply floor function to non-double value"),
     }
 }
-pub fn pop(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Value>) -> Value {
-    if args.len() != 1 {
-        panic!("pop expected 1 argument");
-    }
-    let arg = &args[0];
-    match &arg {
-        Value::Array(mutable, elements) => {
-            if *mutable {
-                return elements.borrow_mut().pop().unwrap().value;
-            } else {
-                panic!("Cannot pop from immutable array");
-            }
-        }
-        _ => {
-            panic!("Cannot pop from non-array value");
-        }
-    }
-}
-pub fn get_builtin_functions() -> HashMap<String, BuiltInFunction> {
-    HashMap::from([
-        (
-            String::from("println"),
-            BuiltInFunction::new(Box::new(print_ln)),
-        ),
-        (
-            String::from("readln"),
-            BuiltInFunction::new(Box::new(readln)),
-        ),
-        (String::from("wait"), BuiltInFunction::new(Box::new(wait))),
-        (String::from("tostr"), BuiltInFunction::new(Box::new(tostr))),
-        (String::from("time"), BuiltInFunction::new(Box::new(time))),
-        (
-            String::from("assert"),
-            BuiltInFunction::new(Box::new(assert)),
-        ),
-        (
-            String::from("assert_eq"),
-            BuiltInFunction::new(Box::new(assert_eq)),
-        ),
-        (String::from("len"), BuiltInFunction::new(Box::new(length))),
-        (String::from("push"), BuiltInFunction::new(Box::new(push))),
-        (String::from("pop"), BuiltInFunction::new(Box::new(pop))),
-        (String::from("floor"), BuiltInFunction::new(Box::new(floor))),
-    ])
-}
+
+

@@ -14,7 +14,6 @@ use ::std::collections::HashMap;
 use ::std::env;
 
 use runtime::interpreter::*;
-use runtime::types::Context;
 
 use frontend::tokens::*;
 

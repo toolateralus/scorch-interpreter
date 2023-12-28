@@ -1,5 +1,6 @@
-pub(crate) mod expression;
-pub(crate) mod interpreter;
-pub(crate) mod std_builtins;
-pub(crate) mod typechecker;
-pub(crate) mod types;
+pub mod expression;
+pub mod interpreter;
+pub mod std_builtins;
+pub mod typechecker;
+pub mod types;
+pub mod context;

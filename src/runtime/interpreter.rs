@@ -1,11 +1,9 @@
-use std::borrow::Borrow;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
-
 use crate::frontend::ast::*;
 use crate::frontend::tokens::*;
-
+use super::context::Context;
 use super::typechecker::*;
 use super::types::*;
 
@@ -26,9 +24,9 @@ impl Interpreter {
     }
     pub fn try_find_and_execute_fn(&mut self, arguments: &Option<Vec<Node>>, id: &String) -> Value {
         let args = Function::extract_args(self, arguments);
-
+        
         let function: Option<Rc<Function>>;
-
+        
         {
             let mut ctx = self.context.borrow_mut();
             // function pointer
@@ -39,12 +37,13 @@ impl Interpreter {
                 };
                 return builtin.call(&mut ctx, &self.type_checker, args);
             };
+            
             function = match &fn_ptr.borrow_mut().value {
                 Value::Function(func) => Some(func.clone()),
                 _ => panic!("Expected function"),
             };
         }
-
+        
         let Some(function) = function else {
             dbg!(id);
             panic!("Function not found");
@@ -313,14 +312,9 @@ impl Visitor<Value> for Interpreter {
                         panic!("Expected Identifier node");
                     }
                 };
-
-                let mut context = self.context.borrow_mut();
-
-                let Ok(_) = context.seek_overwrite_in_parents(&str_id, &val) else {
-                    dbg!(node);
-                    panic!("variable {:?} not found", id);
-                };
-
+                
+                self.assign_var(&str_id, &val);
+                
                 return Value::None();
             }
             _ => {

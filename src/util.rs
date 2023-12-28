@@ -5,6 +5,7 @@ use std::rc::Rc;
 
 use crate::frontend::*;
 use crate::*;
+use crate::runtime::context::Context;
 
 pub struct Flags {
     pub proj_root: String,
