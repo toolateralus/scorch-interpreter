@@ -1,10 +1,8 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::hash::RandomState;
 use std::rc::Rc;
-use crate::frontend::ast::*;
-use crate::frontend::parser::generate_random_function_name;
-use crate::frontend::tokens::*;
+use scorch_parser::ast::*;
+use scorch_parser::lexer::*;
 use super::context::Context;
 use super::std_builtins::BuiltInFunction;
 use super::typechecker::*;

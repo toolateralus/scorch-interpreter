@@ -3,7 +3,7 @@ use std::fs::File;
 use std::io::{self, Read, Write};
 use std::rc::Rc;
 
-use crate::frontend::*;
+use scorch_parser::*;
 use crate::*;
 use crate::runtime::context::Context;
 
@@ -39,7 +39,7 @@ pub fn get_project_root() -> String {
 }
 
 pub fn run_cli() {
-    let mut tokenizer = tokens::create_tokenizer();
+    let mut tokenizer = lexer::create_tokenizer();
     let mut interpreter = Interpreter::new();
 
     let mut input = String::new();
@@ -63,7 +63,7 @@ pub fn run_cli() {
     }
 }
 pub fn execute_from_file(filename: String) -> Rc<RefCell<Context>> {
-    let mut tokenizer = tokens::create_tokenizer();
+    let mut tokenizer = lexer::create_tokenizer();
     let mut file = File::open(filename).expect("Failed to open file");
     let mut contents = String::new();
     file.read_to_string(&mut contents)
@@ -80,7 +80,7 @@ pub fn execute_from_file(filename: String) -> Rc<RefCell<Context>> {
     return ctx;
 }
 pub fn execute_file_then_dump(filename: String) {
-    let mut tokenizer = tokens::create_tokenizer();
+    let mut tokenizer = lexer::create_tokenizer();
     let mut file = File::open(filename).expect("Failed to open file");
     let mut contents = String::new();
 

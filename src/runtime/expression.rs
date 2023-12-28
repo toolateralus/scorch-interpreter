@@ -2,9 +2,9 @@ use core::panic;
 use std::{cell::RefCell, rc::Rc};
 
 use super::{typechecker::TypeChecker, types::Instance};
+use scorch_parser::{ast::Node, lexer::TokenKind};
 
 use crate::{
-    frontend::{ast::Node, tokens::TokenKind},
     runtime::interpreter::Interpreter,
     runtime::types::{Parameter, Value},
 };

@@ -1,9 +1,8 @@
-use std::{cell::RefCell, rc::Rc, borrow::Borrow};
+use std::{cell::RefCell, rc::Rc};
 
-use crate::{
-    frontend::{ast::{Node, Visitor}, parser::generate_random_function_name},
-    runtime::interpreter::Interpreter,
-};
+use scorch_parser::{ast::{Node, Visitor}, parser::generate_random_function_name};
+
+use crate::runtime::interpreter::Interpreter;
 
 use super::{typechecker::Type, context::Context};
 
