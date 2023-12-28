@@ -46,15 +46,13 @@ pub fn get_builtin_functions() -> HashMap<String, BuiltInFunction> {
         (String::from("push"), BuiltInFunction::new(Box::new(push))),
         (String::from("pop"), BuiltInFunction::new(Box::new(pop))),
         (String::from("floor"), BuiltInFunction::new(Box::new(floor))),
+        (String::from("abs"), BuiltInFunction::new(Box::new(abs))),
     ])
 }
 
 // IO
 pub fn print_ln(context: &mut Context, type_checker: &TypeChecker, args: Vec<Value>) -> Value {
-
-
-
-
+    
     for arg in args {
         match arg {
             Value::Int(val) => print!("{}\n", val),
@@ -264,6 +262,21 @@ pub fn tostr(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Valu
     };
     Value::String(result)
 }
+
+// Math
+// IO
+pub fn abs(context: &mut Context, type_checker: &TypeChecker, args: Vec<Value>) -> Value {
+    if args.len() != 1 {
+        panic!("abs expected 1 argument");
+    }
+    let arg = &args[0];
+    match arg {
+        Value::Int(val) => Value::Int(val.abs()),
+        Value::Double(val) => Value::Double(val.abs()),
+        _ => panic!("Cannot apply abs function to non-numeric value"),
+    }
+}
+    
 pub fn floor(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Value>) -> Value {
     if args.len() != 1 {
         panic!("floor expected 1 argument");
