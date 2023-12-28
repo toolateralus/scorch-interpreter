@@ -152,6 +152,48 @@ impl Interpreter {
             None => panic!("Cannot pop root context"),
         };
     }
+
+    pub fn access_array(&self, id: &str, index: usize) -> Value {
+        let ctx = self.context.borrow();
+        let var = ctx.find_variable(id).expect("Variable not found");
+        let var = var.borrow();
+        
+        match &var.value {
+            Value::Array(_, elements) => {
+                let elements = elements.borrow();
+                if elements.len() <= index {
+                    panic!("Array index out of bounds :: {}[{}]", id, index);
+                }
+                elements[index].value.clone()
+            }
+            _ => panic!("Expected Array node"),
+        }
+    }
+    
+    pub fn assign_to_array(&mut self, id: &str, index: usize, value: Value) {
+        let ctx = self.context.borrow();
+        let var = ctx.find_variable(id).expect("Variable not found");
+        let mut var = var.borrow_mut();
+
+        match &mut var.value {
+            Value::Array(mutable, elements) => {
+                if !*mutable {
+                    panic!("Cannot mutate immutable array");
+                }
+                let mut elements = elements.borrow_mut();
+                if elements.len() <= index {
+                    panic!("Array index out of bounds :: {}[{}]", id, index);
+                }
+                elements[index].set_value(&value);
+
+                if !TypeChecker::validate(&elements[index]) {
+                    dbg!(&elements[index]);
+                    panic!("Invalid type");
+                }
+            }
+            _ => panic!("Expected Array node"),
+        }
+    }
 }
 impl Visitor<Value> for Interpreter {
     // top level nodes
@@ -675,70 +717,26 @@ impl Visitor<Value> for Interpreter {
             } => (id, index, expression, assignment),
             _ => panic!("Expected ArrayAccessExpr node"),
         };
-        
-        let mut var: Option<Rc<RefCell<Instance>>> = None;
-        
-        {
-            let ctx = self.context.borrow_mut();
-            var = ctx.find_variable(id);
-        }
-        
-        let Some(var) = var else {
-            panic!("Variable {:?} not found", id);
-        };
-
-        let var = var.borrow_mut();
-
-        let (mutable, elements) = match &var.value {
-            Value::Array(mutable, elements) => (mutable, elements),
-            _ => panic!("Expected Array node"),
-        };
 
         let index_value = match index.accept(self) {
             Value::Double(index_value) => index_value as usize,
             Value::Int(index_value) => index_value as usize,
             _ => panic!("Expected numerical index value"),
         };
-
-        let mut elements = elements.borrow_mut();
-
-        if elements.len() <= index_value {
-            panic!("Array index out of bounds :: {}[{}]", id, index_value);
-        }
-
-        let element = &mut elements[index_value];
-
-        // read
-        if !*assignment {
-            return element.value.clone();
-        }
         
-        if !*mutable {
-            panic!("Cannot mutate immutable array");
-        }
-        
-        // assignment
-        if let Some(expr) = expression {
-            let result = expr.accept(self);
-            
-            element.set_value(&result);
-            
-            if !TypeChecker::validate(&element) {
-                dbg!(&element);
-                panic!("Invalid type");
+        if *assignment {
+            if let Some(expr) = expression {
+                let result = expr.accept(self);
+                self.assign_to_array(id, index_value, result);
+            } else {
+                panic!("Expected expression in array assignment");
             }
-            
-            let mut ctx = self.context.borrow_mut();
-            
-            let Ok(_) = ctx.seek_overwrite_in_parents(id, &element.value) else {
-                panic!("Variable {:?} not found", id);
-            };
-
-            return Value::None();
+            Value::None()
+        } else {
+            self.access_array(id, index_value)
         }
-
-        panic!("Expected expression in array assignment");
     }
+    
     fn visit_lambda(&mut self, _node: &Node) -> Value {
         todo!()
     }
