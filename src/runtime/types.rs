@@ -1,7 +1,7 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, rc::Rc, borrow::Borrow};
 
 use crate::{
-    frontend::ast::{Node, Visitor},
+    frontend::{ast::{Node, Visitor}, parser::generate_random_function_name},
     runtime::interpreter::Interpreter,
 };
 
@@ -21,6 +21,25 @@ pub enum Value {
         typename: String,
         context: Box<Context>,
     },
+    Lambda(Rc<Lambda>)
+}
+
+#[derive(Debug, Clone)]
+pub struct Lambda {
+    pub params : Vec<Parameter>,
+    pub block : Box<Node>,
+    pub return_type : Rc<Type>,
+}
+impl Lambda {
+    pub(crate) fn as_function(&self) -> Rc<Function> {
+        Rc::new(Function {
+            name : generate_random_function_name(),
+            params : self.params.clone(),
+            body: self.block.clone(),
+            return_type : Rc::clone(&self.return_type),
+            mutable: false,
+        })
+    }
 }
 
 pub struct Struct {

@@ -8,6 +8,7 @@ pub enum Attr {
     Struct,
     Value,
     Array,
+    Function,
 }
 
 #[derive(Debug)]
@@ -32,6 +33,17 @@ impl TypeChecker {
         Self {
             structs: HashMap::new(),
             types: HashMap::from([
+                (
+                    String::from("None"),
+                    Rc::new(Type {
+                        name: String::from("None"),
+                        validator: Box::new(|v| match v {
+                            Value::None() => true,
+                            _ => false,
+                        }),
+                        attribute: Attr::Value,
+                    }),
+                ),
                 (
                     String::from("Int"),
                     Rc::new(Type {
@@ -105,7 +117,7 @@ impl TypeChecker {
                             Value::Function(..) => true,
                             _ => false,
                         }),
-                        attribute: Attr::Value,
+                        attribute: Attr::Function,
                     }),
                 ),
             ]),
@@ -131,11 +143,12 @@ impl TypeChecker {
             let struct_decl = self.structs.get(name)?;
             return Some(Rc::clone(&struct_decl.type_));
         }
-
-        self.get(_get_type_name(val))
+        
+        self.get(get_typename(val))
     }
 }
-pub fn _get_type_name<'a>(arg: &'a Value) -> &'a str {
+
+pub fn get_typename<'a>(arg: &'a Value) -> &'a str {
     let arg_type_name = match arg {
         Value::Array(..) => "Array",
         Value::None() => "None",
@@ -143,9 +156,15 @@ pub fn _get_type_name<'a>(arg: &'a Value) -> &'a str {
         Value::Bool(..) => "Bool",
         Value::String(..) => "String",
         Value::Double(..) => "Double",
-        Value::Function(..) => "Fn",
         Value::Return(..) => todo!(),
-        Value::Struct { .. } => "Struct",
+        Value::Lambda { .. } => todo!(),
+        // todo: Fix the lack of type checking for functions,
+        // we need a more centralized way of checking types for structs & functions.
+        Value::Function(func) => {
+            let sig = super::std_builtins::get_function_signature(func);
+            "{sig}"
+        }
+        Value::Struct { typename, context : _ } => &typename,
     };
     arg_type_name
 }

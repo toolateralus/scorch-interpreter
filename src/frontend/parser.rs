@@ -1,3 +1,5 @@
+use rand::Rng;
+
 use super::{
     ast::Node,
     tokens::{Token, TokenFamily, TokenKind},
@@ -605,50 +607,57 @@ fn parse_explicit_decl(
 }
 
 fn parse_lambda(tokens: &Vec<Token>, index: &mut usize) -> Node {
-    if get_current(tokens, index).kind == TokenKind::LogicalOr {
-        *index += 1;
-
-        if get_current(tokens, index).kind == TokenKind::Lambda {
+    let current_token = get_current(tokens, index);
+    
+    match current_token.kind {
+        TokenKind::LogicalOr | TokenKind::Pipe => {
             *index += 1;
-        } else {
-            panic!("Expected lambda token");
-        }
-
-        let block = parse_block(tokens, index);
-
-        Node::Lambda {
-            params: Vec::new(),
-            block: Box::new(block),
-        }
-    } else {
-        *index += 1;
-        let mut params = Vec::new();
-        loop {
-            let token = get_current(tokens, index);
-
-            if token.kind == TokenKind::Pipe || token.kind == TokenKind::Lambda {
-                *index += 1;
-                break;
+            let params = if current_token.kind == TokenKind::Pipe {
+                parse_params(tokens, index)
+            } else {
+                Vec::new()
+            };
+            consume_next_if_type(tokens, index, TokenKind::Lambda);
+            let block = parse_block(tokens, index);
+            Node::Lambda {
+                params,
+                block: Box::new(block),
             }
-
-            let expr = Box::new(parse_expression(tokens, index));
-
-            params.push(expr);
-        }
-        if get_current(tokens, index).kind == TokenKind::Lambda {
-            *index += 1;
-        } else {
-            dbg!(params);
-            panic!("Expected lambda token");
-        }
-
-        let block = parse_block(tokens, index);
-
-        Node::Lambda {
-            params,
-            block: Box::new(block),
-        }
+        },
+        _ => panic!("Expected lambda expression"),
     }
+}
+
+pub fn generate_random_function_name() -> String {
+    let mut rng = rand::thread_rng();
+    let letters: Vec<char> = "abcdefghijklmnopqrstuvwxyz".chars().collect();
+    let name: String = (0..8)
+        .map(|_| letters[rng.gen_range(0..letters.len())])
+        .collect();
+    name
+}
+
+fn parse_params(tokens: &Vec<Token>, index: &mut usize) -> Vec<Node> {
+    let mut params = Vec::new();
+    while get_current(tokens, index).kind != TokenKind::Pipe {
+        let expr = parse_expression(tokens, index);
+        
+        if get_current(tokens, index).kind == TokenKind::Comma {
+            *index += 1;
+        }
+        
+        params.push(expr);
+    }
+    *index += 1; // Skip over the closing Pipe token
+    params
+}
+
+fn consume_next_if_type(tokens: &Vec<Token>, index: &mut usize, expected: TokenKind) {
+    let current = get_current(tokens, index);
+    if current.kind != expected {
+        panic!("Expected {:?}, got {:?}", expected, current.kind);
+    }
+    *index += 1;
 }
 
 pub fn parse_program(tokens: &Vec<Token>) -> Node {
@@ -1074,6 +1083,14 @@ fn parse_operand(tokens: &Vec<Token>, index: &mut usize) -> Node {
     if let Some(identifier) = tokens.get(*index) {
         *index += 1;
         let node = match identifier.kind {
+            TokenKind::LogicalOr => {
+                *index -= 1;
+                parse_lambda(tokens, index)
+            }
+            TokenKind::Pipe => {
+                *index -= 1;
+                parse_lambda(tokens, index)
+            },
             TokenKind::Number => {
                 let int = identifier.value.parse::<i32>();
                 let float = identifier.value.parse::<f64>();
@@ -1133,11 +1150,6 @@ fn parse_operand(tokens: &Vec<Token>, index: &mut usize) -> Node {
                     elements_mutable,
                 );
             }
-            TokenKind::LogicalOr => {
-                let lambda = parse_lambda(tokens, index);
-                lambda
-            }
-            TokenKind::Pipe => parse_lambda(tokens, index),
             TokenKind::OpenParenthesis => {
                 // todo: add value tuples maybe an epic syntax
 

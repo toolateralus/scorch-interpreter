@@ -87,6 +87,7 @@ pub fn print_ln(context: &mut Context, type_checker: &TypeChecker, args: Vec<Val
                 // }
             }
             Value::Return(_) => panic!("Cannot print return value"),
+            Value::Lambda { .. } => panic!("Cannot print lambda"),
         }
     }
     Value::None()
@@ -232,18 +233,7 @@ pub fn tostr(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Valu
         Value::Bool(val) => val.to_string(),
         Value::None() => String::from("None"),
         Value::Function(func) => {
-            let params: Vec<String> = func
-                .params
-                .iter()
-                .map(|param| format!("{}: {}", param.name, param.m_type.name))
-                .collect();
-            let stri = String::from(format!(
-                "{}({}) -> {}",
-                func.name,
-                params.join(", "),
-                func.return_type.name
-            ));
-            println!("{}", stri);
+            let stri = get_function_signature(func);
             stri
         }
         Value::Array(mutable, elements) => {
@@ -261,6 +251,20 @@ pub fn tostr(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Valu
         }
     };
     Value::String(result)
+}
+
+pub fn get_function_signature<'ctx>(func: &'ctx Rc<super::types::Function>) -> String {
+    let params: Vec<String> = func
+        .params
+        .iter()
+        .map(|param| format!("{}: {}", param.name, param.m_type.name))
+        .collect();
+    format!(
+        "{}({}) -> {}",
+        func.name,
+        params.join(", "),
+        func.return_type.name
+    )
 }
 
 // Math

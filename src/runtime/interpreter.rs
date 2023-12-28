@@ -1,7 +1,9 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::hash::RandomState;
 use std::rc::Rc;
 use crate::frontend::ast::*;
+use crate::frontend::parser::generate_random_function_name;
 use crate::frontend::tokens::*;
 use super::context::Context;
 use super::std_builtins::BuiltInFunction;
@@ -39,8 +41,12 @@ impl Interpreter {
                 return builtin.call(&mut ctx, &self.type_checker, args);
             };
             
+            
             function = match &fn_ptr.borrow_mut().value {
                 Value::Function(func) => Some(func.clone()),
+                Value::Lambda(func) => {
+                    Some(func.as_function())
+                },
                 _ => panic!("Expected function"),
             };
         }
@@ -49,13 +55,14 @@ impl Interpreter {
             dbg!(id);
             panic!("Function not found");
         };
-
+        
+        // valid parameterless
         if function.params.len() + args.len() == 0 {
             return function.body.accept(self);
         }
-
+        
         if args.len() != function.params.len() {
-            panic!("Number of arguments does not match the number of parameters");
+            panic!("Number of arguments does not match the number of parameters :: expected {}, got {}", function.params.len(), args.len());
         }
 
         self.push_ctx();
@@ -87,8 +94,10 @@ impl Interpreter {
     }
 
     pub fn dot_op(&mut self, lhs: &Box<Node>, rhs: &Box<Node>) -> Value {
+        
         {
             let ctx = self.context.borrow_mut();
+            
             if let Node::Identifier(id) = lhs.as_ref() {
                 let tempvar = ctx.find_variable(id);
                 let Some(var) = tempvar else {
@@ -136,7 +145,7 @@ impl Interpreter {
 
         self.try_find_and_execute_fn(&Some(args), func_id)
     }
-
+    
     pub fn push_ctx(&mut self) {
         let current = self.context.clone();
 
@@ -738,7 +747,21 @@ impl Visitor<Value> for Interpreter {
     }
     
     fn visit_lambda(&mut self, _node: &Node) -> Value {
-        todo!()
+        let Node::Lambda { params, block } = _node else {
+            dbg!(_node);
+            panic!("Expected Lambda node");
+        };
+        
+        let params = self.get_params_list(params);
+        
+        let return_type = self.type_checker.get("Dynamic").unwrap();
+        
+        return Value::Lambda(Rc::new(Lambda {
+            params,
+            block : block.clone(),
+            return_type })
+        );
+        
     }
     fn visit_struct_def(&mut self, node: &Node) -> Value {
         if let Node::StructDecl { id, block } = node {

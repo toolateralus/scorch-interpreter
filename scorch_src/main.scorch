@@ -1,10 +1,5 @@
-struct Association |
-    // #self :: String,
-    s : String
-|
+xaryus_function := | a, b, c | => {
+    println(a,b,c)    
+}
 
-
-assoc := [].push(new Association {'*.scorch'})
-
-assoc.println()
-
+xaryus_function(1,2,3)

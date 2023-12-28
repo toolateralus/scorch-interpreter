@@ -127,7 +127,7 @@ pub enum Node {
     Int(i32),
     Double(f64),
     Lambda {
-        params: Vec<Box<Node>>,
+        params: Vec<Node>,
         block: Box<Node>,
     },
     StructDecl {
