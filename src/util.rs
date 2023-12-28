@@ -5,7 +5,7 @@ use std::rc::Rc;
 
 use scorch_parser::*;
 use crate::*;
-use crate::runtime::context::Context;
+use crate::context::Context;
 
 pub struct Flags {
     pub proj_root: String,

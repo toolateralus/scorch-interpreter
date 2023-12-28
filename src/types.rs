@@ -2,7 +2,7 @@ use std::{cell::RefCell, rc::Rc};
 
 use scorch_parser::{ast::{Node, Visitor}, parser::generate_random_function_name};
 
-use crate::runtime::interpreter::Interpreter;
+use crate::interpreter::Interpreter;
 
 use super::{typechecker::Type, context::Context};
 

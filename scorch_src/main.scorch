@@ -1,5 +1,0 @@
-xaryus_function := | a, b, c | => {
-    println(a,b,c)    
-}
-
-xaryus_function(1,2,3)

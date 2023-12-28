@@ -1,7 +1,10 @@
-// tokenizer, parser.
+pub mod expression;
+pub mod interpreter;
+pub mod std_builtins;
+pub mod typechecker;
+pub mod types;
+pub mod context;
 
-// interpreter, execution. types.
-pub mod runtime;
 
 // cli repl, load & run file, etc.
 pub mod util;
@@ -12,7 +15,7 @@ pub mod test;
 use ::std::collections::HashMap;
 use ::std::env;
 
-use runtime::interpreter::*;
+use interpreter::*;
 
 use scorch_parser::lexer::*;
 
@@ -20,7 +23,7 @@ use util::*;
 
 fn main() -> () {
     let flags_map = parse_cmd_line_args();
-
+    
     let flags = util::Flags::new(flags_map);
 
     let file = format!("{}/{}", flags.proj_root, "scorch_src/main.scorch");

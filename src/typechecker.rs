@@ -1,4 +1,4 @@
-use crate::runtime::types::Value;
+use crate::types::Value;
 use std::{collections::HashMap, rc::Rc};
 
 use super::types::{Struct, Instance};

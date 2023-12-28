@@ -5,8 +5,8 @@ use super::{typechecker::TypeChecker, types::Instance};
 use scorch_parser::{ast::Node, lexer::TokenKind};
 
 use crate::{
-    runtime::interpreter::Interpreter,
-    runtime::types::{Parameter, Value},
+    interpreter::Interpreter,
+    types::{Parameter, Value},
 };
 
 // some helpers for the interpreter. off in this file for a smaller main interpreter file.
