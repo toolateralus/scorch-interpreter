@@ -1,28 +1,10 @@
-
-struct Vec3 |
-    x := 0.0
-    y := 0.0
-    z := 0.0
+struct Association |
+    // #self :: String,
+    s : String
 |
 
-var arrays := []
 
-println('arrays len : ', len(arrays))
+assoc := [].push(new Association {'*.scorch'})
 
-const start := time()
+assoc.println()
 
-repeat z < 1000 {
-    repeat i < 500 {
-        arrays = push(arrays, push([], new Vec3 { 0.0, 0.0, 0.0 }))
-    }
-}
-
-const end := time()
-
-const delta := end - start
-
-delta = floor(delta)
-
-println('time spent: ', delta, 'ms')
-
-println('arrays len : ', len(arrays))
