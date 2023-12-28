@@ -3,13 +3,12 @@ use super::typechecker::TypeChecker;
 use std::{collections::HashMap, rc::Rc};
 use super::types::{Value, Instance};
 
-
-pub struct BuiltInFunction {
+pub struct StandardFunction {
     pub func: Box<dyn FnMut(&mut Context, &TypeChecker, Vec<Value>) -> Value>,
 }
-impl BuiltInFunction {
+impl StandardFunction {
     pub fn new(func: Box<dyn FnMut(&mut Context, &TypeChecker, Vec<Value>) -> Value>) -> Self {
-        BuiltInFunction { func }
+        StandardFunction { func }
     }
     pub fn call(
         &mut self,
@@ -21,35 +20,34 @@ impl BuiltInFunction {
     }
 }
 
-pub fn get_builtin_functions() -> HashMap<String, BuiltInFunction> {
+pub fn get_builtin_functions() -> HashMap<String, StandardFunction> {
     HashMap::from([
         (
             String::from("println"),
-            BuiltInFunction::new(Box::new(print_ln)),
+            StandardFunction::new(Box::new(print_ln)),
         ),
         (
             String::from("readln"),
-            BuiltInFunction::new(Box::new(readln)),
+            StandardFunction::new(Box::new(readln)),
         ),
-        (String::from("wait"), BuiltInFunction::new(Box::new(wait))),
-        (String::from("tostr"), BuiltInFunction::new(Box::new(tostr))),
-        (String::from("time"), BuiltInFunction::new(Box::new(time))),
+        (String::from("wait"), StandardFunction::new(Box::new(wait))),
+        (String::from("tostr"), StandardFunction::new(Box::new(tostr))),
+        (String::from("time"), StandardFunction::new(Box::new(time))),
         (
             String::from("assert"),
-            BuiltInFunction::new(Box::new(assert)),
+            StandardFunction::new(Box::new(assert)),
         ),
         (
             String::from("assert_eq"),
-            BuiltInFunction::new(Box::new(assert_eq)),
+            StandardFunction::new(Box::new(assert_eq)),
         ),
-        (String::from("len"), BuiltInFunction::new(Box::new(length))),
-        (String::from("push"), BuiltInFunction::new(Box::new(push))),
-        (String::from("pop"), BuiltInFunction::new(Box::new(pop))),
-        (String::from("floor"), BuiltInFunction::new(Box::new(floor))),
-        (String::from("abs"), BuiltInFunction::new(Box::new(abs))),
+        (String::from("len"), StandardFunction::new(Box::new(length))),
+        (String::from("push"), StandardFunction::new(Box::new(push))),
+        (String::from("pop"), StandardFunction::new(Box::new(pop))),
+        (String::from("floor"), StandardFunction::new(Box::new(floor))),
+        (String::from("abs"), StandardFunction::new(Box::new(abs))),
     ])
 }
-
 // IO
 pub fn print_ln(context: &mut Context, type_checker: &TypeChecker, args: Vec<Value>) -> Value {
     
@@ -102,7 +100,6 @@ pub fn readln(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Val
         .expect("failed to read from stdin");
     Value::String(input.replace("\n", ""))
 }
-
 // System
 pub fn time(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Value>) -> Value {
     if args.len() != 0 {
@@ -126,7 +123,6 @@ pub fn wait(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Value
     }
     Value::None()
 }
-
 // Vectors & Arrays
 pub fn length(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Value>) -> Value {
     if args.len() != 1 {
@@ -144,7 +140,6 @@ pub fn length(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Val
         }
     }
 }
-
 pub fn push(_context: &mut Context, type_checker: &TypeChecker, mut args: Vec<Value>) -> Value {
     if args.len() < 2 {
         panic!("push expected 2 arguments");
@@ -191,7 +186,6 @@ pub fn pop(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Value>
         }
     }
 }
-
 // Testing
 pub fn assert_eq(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Value>) -> Value {
     if args.len() != 3 {
@@ -219,7 +213,6 @@ pub fn assert(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Val
     assert!(condition, "{}", message);
     Value::None()
 }
-
 // Conversions
 pub fn tostr(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Value>) -> Value {
     if args.len() != 1 {
@@ -252,7 +245,6 @@ pub fn tostr(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Valu
     };
     Value::String(result)
 }
-
 pub fn get_function_signature<'ctx>(func: &'ctx Rc<super::types::Function>) -> String {
     let params: Vec<String> = func
         .params
@@ -266,7 +258,6 @@ pub fn get_function_signature<'ctx>(func: &'ctx Rc<super::types::Function>) -> S
         func.return_type.name
     )
 }
-
 // Math
 // IO
 pub fn abs(context: &mut Context, type_checker: &TypeChecker, args: Vec<Value>) -> Value {
@@ -280,7 +271,6 @@ pub fn abs(context: &mut Context, type_checker: &TypeChecker, args: Vec<Value>) 
         _ => panic!("Cannot apply abs function to non-numeric value"),
     }
 }
-    
 pub fn floor(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Value>) -> Value {
     if args.len() != 1 {
         panic!("floor expected 1 argument");
@@ -291,5 +281,3 @@ pub fn floor(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Valu
         _ => panic!("Cannot apply floor function to non-double value"),
     }
 }
-
-

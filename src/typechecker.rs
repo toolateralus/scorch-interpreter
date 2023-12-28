@@ -161,7 +161,7 @@ pub fn get_typename<'a>(arg: &'a Value) -> &'a str {
         // todo: Fix the lack of type checking for functions,
         // we need a more centralized way of checking types for structs & functions.
         Value::Function(func) => {
-            let sig = super::std_builtins::get_function_signature(func);
+            let sig = super::standard_functions::get_function_signature(func);
             "{sig}"
         }
         Value::Struct { typename, context : _ } => &typename,

@@ -38,7 +38,7 @@ pub fn get_project_root() -> String {
     project_root.to_str().unwrap().to_string()
 }
 
-pub fn run_cli() {
+pub fn run_repl() {
     let mut tokenizer = lexer::create_tokenizer();
     let mut interpreter = Interpreter::new();
 

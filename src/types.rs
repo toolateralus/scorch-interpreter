@@ -1,9 +1,6 @@
 use std::{cell::RefCell, rc::Rc};
-
 use scorch_parser::{ast::{Node, Visitor}, parser::generate_random_function_name};
-
 use crate::interpreter::Interpreter;
-
 use super::{typechecker::Type, context::Context};
 
 #[derive(Debug, Clone)]
@@ -22,7 +19,6 @@ pub enum Value {
     },
     Lambda(Rc<Lambda>)
 }
-
 #[derive(Debug, Clone)]
 pub struct Lambda {
     pub params : Vec<Parameter>,
@@ -40,13 +36,11 @@ impl Lambda {
         })
     }
 }
-
 pub struct Struct {
     pub name: String,
     pub fields: Vec<(String, Rc<Type>)>,
     pub type_: Rc<Type>,
 }
-
 impl Value {
     pub fn as_bool(&self) -> Option<&bool> {
         let value = match self {
@@ -70,7 +64,6 @@ impl Value {
         value
     }
 }
-
 // technically this isn't always variable, it's just a declared field or value in an array.
 #[derive(Debug, Clone)]
 pub struct Instance {
@@ -78,7 +71,6 @@ pub struct Instance {
     pub value: Value, // this could be a function, a struct, a list, an array, a float, a bool, a string, etc.
     pub m_type: Rc<Type>,
 }
-
 impl Instance {
     pub fn set_value(&mut self, value: &Value) -> () {
         self.value = value.clone(); // todo : stop cloning every value on assignment? maybe use Rc?
@@ -91,13 +83,11 @@ impl Instance {
         }
     }
 }
-
 #[derive(Debug, Clone)]
 pub struct Parameter {
     pub name: String,
     pub m_type: Rc<Type>,
 }
-
 #[derive(Debug, Clone)]
 pub struct Function {
     pub name: String,
@@ -106,7 +96,6 @@ pub struct Function {
     pub return_type: Rc<Type>,
     pub mutable: bool,
 }
-
 impl Function {
     // todo: replace manual calls with this in interpreter. can also add more
     // procedure here, like injecting args, context swaps.
@@ -114,8 +103,6 @@ impl Function {
         return self.body.accept(i);
     }
 }
-
-
 pub trait Invokable {
     fn extract_args(interpeter: &mut Interpreter, arguments: &Option<Vec<Node>>) -> Vec<Value>;
 }
