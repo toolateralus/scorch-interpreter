@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 either = "1.9.0"
+scorch-parser = { git = "https://github.com/toolateralus/scorch-parser", branch = "master" }
 inkwell = { git = "https://github.com/TheDan64/inkwell", branch = "master", features = ["llvm12-0"] }
 inkwell_internals = "0.8.0"
 libc = "0.2.151"

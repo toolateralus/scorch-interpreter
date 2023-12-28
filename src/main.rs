@@ -1,11 +1,10 @@
 // tokenizer, parser.
-pub mod frontend;
 pub mod llvm;
 pub mod util;
 
 use ::std::collections::HashMap;
 use ::std::env;
-use frontend::tokens::TokenProcessor;
+use scorch_parser::lexer::TokenProcessor;
 use inkwell::context::Context;
 use std::{fs, os};
 
@@ -19,9 +18,9 @@ fn main() {
     let file_path = format!("{}/{}", flags.proj_root, "scorch_src/main.scorch");
     let file_contents = fs::read_to_string(file_path).unwrap();
 
-    let mut tokenizer = frontend::tokens::create_tokenizer();
+    let mut tokenizer = scorch_parser::lexer::create_tokenizer();
     tokenizer.tokenize(&file_contents);
-    let ast_root = frontend::parser::parse_program(&tokenizer.tokens);
+    let ast_root = scorch_parser::parser::parse_program(&tokenizer.tokens);
     
     let mut context = Context::create();
     let mut symbol_table = SymbolTable {

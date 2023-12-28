@@ -1,6 +1,6 @@
 use std::collections::HashMap;
-use crate::frontend::ast::{Node, Visitor};
-use crate::frontend::tokens::TokenKind;
+use scorch_parser::ast::{Node, Visitor};
+use scorch_parser::lexer::TokenKind;
 use inkwell::builder::Builder;
 use inkwell::context::Context;
 use inkwell::module::Module;
@@ -99,7 +99,7 @@ impl<'ctx> Visitor<BasicValueEnum<'ctx>> for LLVMVisitor<'ctx> {
         match node {
             Node::Int(value) => {
                 let signed = true;
-                BasicValueEnum::IntValue(self.context.i32_type().const_int(*value, signed))
+                BasicValueEnum::IntValue(self.context.i32_type().const_int(*value as u64, signed))
             }
             Node::Double(value) => {
                 BasicValueEnum::FloatValue(self.context.f64_type().const_float(*value))
@@ -272,7 +272,7 @@ impl<'ctx> Visitor<BasicValueEnum<'ctx>> for LLVMVisitor<'ctx> {
         var.value
     }
     fn visit_binary_op(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
-        let Node::BinaryOperation(lhs, op, rhs) = node else {
+        let Node::BinaryOperation{ lhs, op, rhs} = node else {
             panic!("Expected binary operator node");
         };
         let left = lhs.accept(self);
@@ -350,12 +350,16 @@ impl<'ctx> Visitor<BasicValueEnum<'ctx>> for LLVMVisitor<'ctx> {
         }
     }
     fn visit_assignment(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
-        let Node::Assignment { id, expression } = node else {
+        let Node::AssignStmnt { id, expression } = node else {
             panic!("Expected Assignment node");
         };
         let value = expression.accept(self);
         
-        let Some(var) = self.symbol_table.get_var(id) else {
+        let Node::Identifier(id) = *id.clone() else {
+            panic!("Expected Identifier node");
+        };
+        
+        let Some(var) = self.symbol_table.get_var(&id) else {
             dbg!(id);
             panic!("Variable not found :: cannot assign undefined variables.");
         };
@@ -365,8 +369,10 @@ impl<'ctx> Visitor<BasicValueEnum<'ctx>> for LLVMVisitor<'ctx> {
             panic!("Cannot assign to immutable variable");
         }
         
+        
+      
         self.symbol_table.insert_var(
-            id.clone(),
+            id,
             Instance {
                 name: var.name.clone(),
                 type_: var.type_.clone(),
@@ -391,9 +397,18 @@ impl<'ctx> Visitor<BasicValueEnum<'ctx>> for LLVMVisitor<'ctx> {
         let mut params_new = HashMap::new();
         
         for param in params {
-            let Node::ParamDecl { varname ,typename } = param else {
+            let Node::ParamDeclNode { varname ,typename } = param else {
                 panic!("Expected ParamDecl node");  
             };
+            
+            let Node::Identifier(varname) = *varname.clone() else {
+                panic!("Expected Identifier node");
+            };
+            let Node::Identifier(typename) = *typename.clone() else {
+                panic!("Expected Identifier node");
+            };
+            
+            
             params_new.insert(varname.clone(), Type::from_string(typename.to_string()));
         }
         
@@ -477,5 +492,45 @@ impl<'ctx> Visitor<BasicValueEnum<'ctx>> for LLVMVisitor<'ctx> {
         };
         
         BasicValueEnum::IntValue(self.context.i32_type().const_int(0, false))
+    }
+
+    fn visit_term(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+        todo!()
+    }
+
+    fn visit_factor(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+        todo!()
+    }
+
+    fn visit_param_decl(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+        todo!()
+    }
+
+    fn visit_repeat_stmnt(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+        todo!()
+    }
+
+    fn visit_array(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+        todo!()
+    }
+
+    fn visit_array_access(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+        todo!()
+    }
+
+    fn visit_if_stmnt(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+        todo!()
+    }
+
+    fn visit_else_stmnt(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+        todo!()
+    }
+
+    fn visit_struct_def(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+        todo!()
+    }
+
+    fn visit_struct_init(&mut self, node: &Node) -> BasicValueEnum<'ctx> {
+        todo!()
     }
 }

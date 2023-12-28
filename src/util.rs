@@ -1,6 +1,6 @@
 use std::io::{self, Write};
 
-use crate::frontend::*;
+use scorch_parser::*;
 use crate::*;
 
 pub struct Flags {
@@ -35,7 +35,7 @@ pub fn get_project_root() -> String {
 }
 
 pub fn run_cli() {
-    let tokenizer = tokens::create_tokenizer();
+    let tokenizer = lexer::create_tokenizer();
     let mut input = String::new();
 
     loop {
@@ -48,9 +48,9 @@ pub fn run_cli() {
             break;
         }
 
-        let tokens = &tokenizer.tokens;
+        let lexer = &tokenizer.tokens;
 
-        let _ast_root = parser::parse_program(&tokens);
+        let _ast_root = parser::parse_program(&lexer);
         input.clear();
     }
 }

@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use crate::frontend::ast::*;
-use crate::frontend::tokens::*;
+use scorch_parser::ast::*;
+use scorch_parser::lexer::*;
 
 use super::std_builtins::print_ln;
 use super::typechecker::*;
