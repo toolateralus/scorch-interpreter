@@ -1,7 +1,4 @@
 {
     "oneDarkPro.editorTheme": "One Dark Pro",
-    "files.associations": {
-        "*.scorch": "coffeescript"
-    },
     "rust-analyzer.showUnlinkedFileNotification": true // set to false when using old detached files to port to new code.
 }

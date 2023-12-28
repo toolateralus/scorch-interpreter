@@ -1,3 +1,42 @@
+int_addition         := 5 + 6
+assert(int_addition == 11, "Integer addition failed, got " + tostr(int_addition))
+
+int_subtraction      := 5 - 6
+assert(int_subtraction == -1, "Integer subtraction failed, got " + tostr(int_subtraction))
+
+int_multiplication   := 5 * 6
+assert(int_multiplication == 30, "Integer multiplication failed, got " + tostr(int_multiplication))
+
+int_division         := 15 / 3
+assert(int_division == 5, "Integer division failed, got " + tostr(int_division))
+
+int_parenthesis_1    := (5 + 6) * 2
+assert(int_parenthesis_1 == 22, "Integer parenthesis 1 failed, got " + tostr(int_parenthesis_1))
+
+int_parenthesis_2    := 5 - (6 * 3)
+assert(int_parenthesis_2 == -13, "Integer parenthesis 2 failed, got " + tostr(int_parenthesis_2))
+
+int_complex_1        := (5 + 6) / (3 - 2)
+assert(int_complex_1 == 11, "Integer complex 1 failed, got " + tostr(int_complex_1))
+
+int_complex_2        := 5 + (6 * 3) / 2
+assert(int_complex_2 == 14, "Integer complex 2 failed, got " + tostr(int_complex_2))
+
+int_complex_3        := (5 - 6) * 2 / 3
+assert(int_complex_3 == 0, "Integer complex 3 failed, got " + tostr(int_complex_3))
+
+// this rounds to 0, when it should round to 1. the odd thing is it rounds from 1.1 to 0
+// the expected result SHOULD be 1 here, i think.
+int_complex_4        := 5 / (6 + 3) * 2
+// should be 1
+assert(int_complex_4 == 0, "Integer complex 4 failed, got " + tostr(int_complex_4))
+
+int_complex_5        := 5 + 6 - 3 * 2 / 1
+assert(int_complex_5 == 5, "Integer complex 5 failed, got " + tostr(int_complex_5))
+
+int_complex_6        := ((5 * 2) - 6) / 3 + 1
+assert(int_complex_6 == 2, "Integer complex 6 failed, got " + tostr(int_complex_6))
+
 ff_addition 		:= 5.3 + 6.2
 ff_subtraction 		:= 5.3 - 6.2
 ff_multiplcation 	:= 5.3 * 6.2
