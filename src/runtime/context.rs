@@ -3,11 +3,11 @@ use std::collections::HashMap;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use super::types::{Variable, Value};
+use super::types::{Instance, Value};
 
 pub struct Context {
     pub parent: Option<Rc<RefCell<Context>>>,
-    pub variables: HashMap<String, Rc<RefCell<Variable>>>,
+    pub variables: HashMap<String, Rc<RefCell<Instance>>>,
 }
 
 impl std::fmt::Debug for Context {
@@ -34,7 +34,7 @@ impl Context {
             variables: HashMap::new(),
         }))
     }
-    pub fn find_variable(&self, name: &str) -> Option<Rc<RefCell<Variable>>> {
+    pub fn find_variable(&self, name: &str) -> Option<Rc<RefCell<Instance>>> {
         match self.variables.get(name) {
             Some(var) => Some(Rc::clone(&var)),
             None => match &self.parent {
@@ -43,7 +43,7 @@ impl Context {
             },
         }
     }
-    pub fn insert_variable(&mut self, name: &str, value: Rc<RefCell<Variable>>) -> () {
+    pub fn insert_variable(&mut self, name: &str, value: Rc<RefCell<Instance>>) -> () {
         self.variables.insert(String::from(name), value);
     }
     pub fn seek_overwrite_in_parents<'ctx>(

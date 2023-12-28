@@ -1,7 +1,7 @@
 use core::panic;
 use std::{cell::RefCell, rc::Rc};
 
-use super::{typechecker::TypeChecker, types::Variable};
+use super::{typechecker::TypeChecker, types::Instance};
 
 use crate::{
     frontend::{ast::Node, tokens::TokenKind},
@@ -40,7 +40,7 @@ impl Interpreter {
                         panic!("Double isnt a type")
                     };
 
-                    let var = Variable::new(true, val, m_type);
+                    let var = Instance::new(true, val, m_type);
 
                     if !TypeChecker::validate(&var) {
                         panic!(

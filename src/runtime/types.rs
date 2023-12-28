@@ -1,22 +1,22 @@
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::{cell::RefCell, rc::Rc};
 
 use crate::{
     frontend::ast::{Node, Visitor},
     runtime::interpreter::Interpreter,
 };
 
-use super::{typechecker::{Type, TypeChecker}, context::Context};
+use super::{typechecker::Type, context::Context};
 
 #[derive(Debug, Clone)]
 pub enum Value {
     None(),
     Int(i32),
-    Double(f64),
     Bool(bool),
+    Double(f64),
     String(String),
-    Return(Option<Box<Value>>),
     Function(Rc<Function>),
-    Array(bool, Rc<RefCell<Vec<Variable>>>),
+    Return(Option<Box<Value>>),
+    Array(bool, Rc<RefCell<Vec<Instance>>>),
     Struct {
         typename: String,
         context: Box<Context>,
@@ -53,19 +53,20 @@ impl Value {
     }
 }
 
-// technically this isn't always variable, it's just a declared field.
+// technically this isn't always variable, it's just a declared field or value in an array.
 #[derive(Debug, Clone)]
-pub struct Variable {
+pub struct Instance {
     pub mutable: bool, // is_mutable?
     pub value: Value, // this could be a function, a struct, a list, an array, a float, a bool, a string, etc.
     pub m_type: Rc<Type>,
 }
-impl Variable {
+
+impl Instance {
     pub fn set_value(&mut self, value: &Value) -> () {
-        self.value = value.clone();
+        self.value = value.clone(); // todo : stop cloning every value on assignment? maybe use Rc?
     }
     pub fn new(mutable: bool, value: Value, m_type: Rc<Type>) -> Self {
-        Variable {
+        Instance {
             mutable,
             value,
             m_type,
@@ -78,6 +79,7 @@ pub struct Parameter {
     pub name: String,
     pub m_type: Rc<Type>,
 }
+
 #[derive(Debug, Clone)]
 pub struct Function {
     pub name: String,
@@ -94,22 +96,8 @@ impl Function {
         return self.body.accept(i);
     }
 }
-pub struct BuiltInFunction {
-    pub func: Box<dyn FnMut(&mut Context, &TypeChecker, Vec<Value>) -> Value>,
-}
-impl BuiltInFunction {
-    pub fn new(func: Box<dyn FnMut(&mut Context, &TypeChecker, Vec<Value>) -> Value>) -> Self {
-        BuiltInFunction { func }
-    }
-    pub fn call(
-        &mut self,
-        context: &mut Context,
-        type_checker: &TypeChecker,
-        args: Vec<Value>,
-    ) -> Value {
-        (self.func)(context, type_checker, args)
-    }
-}
+
+
 pub trait Invokable {
     fn extract_args(interpeter: &mut Interpreter, arguments: &Option<Vec<Node>>) -> Vec<Value>;
 }

@@ -1,7 +1,7 @@
 use crate::runtime::types::Value;
 use std::{collections::HashMap, rc::Rc};
 
-use super::types::{Struct, Variable};
+use super::types::{Struct, Instance};
 
 #[derive(Debug, PartialEq)]
 pub enum Attr {
@@ -114,7 +114,7 @@ impl TypeChecker {
 }
 
 impl TypeChecker {
-    pub fn validate(val: &Variable) -> bool {
+    pub fn validate(val: &Instance) -> bool {
         val.m_type.validate(&val.value)
     }
     pub fn get(&self, name: &str) -> Option<Rc<Type>> {

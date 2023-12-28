@@ -4,6 +4,7 @@ use std::rc::Rc;
 use crate::frontend::ast::*;
 use crate::frontend::tokens::*;
 use super::context::Context;
+use super::std_builtins::BuiltInFunction;
 use super::typechecker::*;
 use super::types::*;
 
@@ -65,7 +66,7 @@ impl Interpreter {
             } else {
                 self.context.borrow_mut().insert_variable(
                     &param.name,
-                    Rc::new(RefCell::new(Variable::new(
+                    Rc::new(RefCell::new(Instance::new(
                         false,
                         arg.clone(),
                         Rc::clone(&param.m_type),
@@ -266,13 +267,13 @@ impl Visitor<Value> for Interpreter {
         } = node
         {
             let value: Value;
-            let var: Variable;
+            let var: Instance;
             let mutability = *mutable;
 
             match self.type_checker.get(target_type.as_str()) {
                 Some(m_type) => {
                     value = expression.accept(self);
-                    var = Variable::new(mutability, value, m_type);
+                    var = Instance::new(mutability, value, m_type);
                     if !TypeChecker::validate(&var) {
                         dbg!(&var);
                         panic!("invalid type");
@@ -590,7 +591,7 @@ impl Visitor<Value> for Interpreter {
             let Some(m_type) = self.type_checker.get("Fn") else {
                 panic!("Fn isn't a type");
             };
-            let function = Variable {
+            let function = Instance {
                 mutable: *mutable,
                 value: Value::Function(Rc::new(func)),
                 m_type,
@@ -655,7 +656,7 @@ impl Visitor<Value> for Interpreter {
                     dbg!(&node);
                     panic!("{:?} doesn't match to a valid type", val);
                 };
-                let var = Variable::new(*elements_mutable, val, m_type);
+                let var = Instance::new(*elements_mutable, val, m_type);
                 values.push(var);
             }
 
@@ -674,14 +675,14 @@ impl Visitor<Value> for Interpreter {
             } => (id, index, expression, assignment),
             _ => panic!("Expected ArrayAccessExpr node"),
         };
-
-        let mut var: Option<Rc<RefCell<Variable>>> = None;
-
+        
+        let mut var: Option<Rc<RefCell<Instance>>> = None;
+        
         {
             let ctx = self.context.borrow_mut();
             var = ctx.find_variable(id);
         }
-
+        
         let Some(var) = var else {
             panic!("Variable {:?} not found", id);
         };
@@ -711,17 +712,22 @@ impl Visitor<Value> for Interpreter {
         if !*assignment {
             return element.value.clone();
         }
-
+        
+        if !*mutable {
+            panic!("Cannot mutate immutable array");
+        }
+        
         // assignment
         if let Some(expr) = expression {
-            let expr_result = expr.accept(self);
+            let result = expr.accept(self);
             
-            element.value = expr_result.clone();
+            element.set_value(&result);
             
             if !TypeChecker::validate(&element) {
                 dbg!(&element);
                 panic!("Invalid type");
             }
+            
             let mut ctx = self.context.borrow_mut();
             
             let Ok(_) = ctx.seek_overwrite_in_parents(id, &element.value) else {
@@ -819,7 +825,7 @@ impl Visitor<Value> for Interpreter {
                 );
             }
 
-            let var = Variable::new(true, value, Rc::clone(&t));
+            let var = Instance::new(true, value, Rc::clone(&t));
             struct_ctx.insert_variable(&field.0, Rc::new(RefCell::new(var)));
         }
 
