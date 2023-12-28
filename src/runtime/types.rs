@@ -1,27 +1,50 @@
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::{cell::RefCell, rc::Rc};
 
-use crate::{
-    frontend::ast::{Node, Visitor},
-    runtime::interpreter::Interpreter,
-};
+use scorch_parser::{ast::{Node, Visitor}, parser::generate_random_function_name};
 
-use super::typechecker::Type;
+use crate::runtime::interpreter::Interpreter;
+
+use super::{typechecker::Type, context::Context};
 
 #[derive(Debug, Clone)]
 pub enum Value {
     None(),
     Int(i32),
-    Double(f64),
     Bool(bool),
+    Double(f64),
     String(String),
-    Return(Option<Box<Value>>),
     Function(Rc<Function>),
-    Array(bool, Vec<Variable>),
-    List(Rc<RefCell<Vec<Variable>>>),
+    Return(Option<Box<Value>>),
+    Array(bool, Rc<RefCell<Vec<Instance>>>),
     Struct {
-        name: String,
-        context: Rc<RefCell<Context>>,
+        typename: String,
+        context: Box<Context>,
     },
+    Lambda(Rc<Lambda>)
+}
+
+#[derive(Debug, Clone)]
+pub struct Lambda {
+    pub params : Vec<Parameter>,
+    pub block : Box<Node>,
+    pub return_type : Rc<Type>,
+}
+impl Lambda {
+    pub(crate) fn as_function(&self) -> Rc<Function> {
+        Rc::new(Function {
+            name : generate_random_function_name(),
+            params : self.params.clone(),
+            body: self.block.clone(),
+            return_type : Rc::clone(&self.return_type),
+            mutable: false,
+        })
+    }
+}
+
+pub struct Struct {
+    pub name: String,
+    pub fields: Vec<(String, Rc<Type>)>,
+    pub type_: Rc<Type>,
 }
 
 impl Value {
@@ -48,16 +71,20 @@ impl Value {
     }
 }
 
-// technically this isn't always variable, it's just a declared field.
+// technically this isn't always variable, it's just a declared field or value in an array.
 #[derive(Debug, Clone)]
-pub struct Variable {
+pub struct Instance {
     pub mutable: bool, // is_mutable?
     pub value: Value, // this could be a function, a struct, a list, an array, a float, a bool, a string, etc.
     pub m_type: Rc<Type>,
 }
-impl Variable {
+
+impl Instance {
+    pub fn set_value(&mut self, value: &Value) -> () {
+        self.value = value.clone(); // todo : stop cloning every value on assignment? maybe use Rc?
+    }
     pub fn new(mutable: bool, value: Value, m_type: Rc<Type>) -> Self {
-        Variable {
+        Instance {
             mutable,
             value,
             m_type,
@@ -66,31 +93,11 @@ impl Variable {
 }
 
 #[derive(Debug, Clone)]
-pub struct Context {
-    pub parent: Option<Rc<RefCell<Context>>>,
-    pub variables: HashMap<String, Rc<Variable>>,
-}
-
-impl Context {
-    pub fn find_variable(&self, name: &str) -> Option<Rc<Variable>> {
-        match self.variables.get(name) {
-            Some(var) => Some(var.clone()),
-            None => match &self.parent {
-                Some(parent) => parent.borrow().find_variable(name),
-                None => None,
-            },
-        }
-    }
-    pub fn insert_variable(&mut self, name: &str, value: Rc<Variable>) -> () {
-        let name_str = name.to_string();
-        self.variables.insert(name_str, value);
-    }
-}
-#[derive(Debug, Clone)]
 pub struct Parameter {
     pub name: String,
     pub m_type: Rc<Type>,
 }
+
 #[derive(Debug, Clone)]
 pub struct Function {
     pub name: String,
@@ -107,17 +114,8 @@ impl Function {
         return self.body.accept(i);
     }
 }
-pub struct BuiltInFunction {
-    func: Box<dyn FnMut(Vec<Value>) -> Value>,
-}
-impl BuiltInFunction {
-    pub fn new(func: Box<dyn FnMut(Vec<Value>) -> Value>) -> Self {
-        BuiltInFunction { func }
-    }
-    pub fn call(&mut self, args: Vec<Value>) -> Value {
-        (self.func)(args)
-    }
-}
+
+
 pub trait Invokable {
     fn extract_args(interpeter: &mut Interpreter, arguments: &Option<Vec<Node>>) -> Vec<Value>;
 }
@@ -130,16 +128,5 @@ impl Invokable for Function {
             args.push(value);
         }
         args
-    }
-}
-pub trait ContextHelpers {
-    fn add_range(&self, _args: &HashMap<String, Value>) -> ();
-}
-impl Context {
-    pub fn new() -> Context {
-        Context {
-            parent: Option::None,
-            variables: HashMap::new(),
-        }
     }
 }

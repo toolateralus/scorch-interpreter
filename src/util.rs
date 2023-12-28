@@ -1,8 +1,11 @@
+use std::cell::RefCell;
 use std::fs::File;
 use std::io::{self, Read, Write};
+use std::rc::Rc;
 
-use crate::frontend::*;
+use scorch_parser::*;
 use crate::*;
+use crate::runtime::context::Context;
 
 pub struct Flags {
     pub proj_root: String,
@@ -36,7 +39,7 @@ pub fn get_project_root() -> String {
 }
 
 pub fn run_cli() {
-    let mut tokenizer = tokens::create_tokenizer();
+    let mut tokenizer = lexer::create_tokenizer();
     let mut interpreter = Interpreter::new();
 
     let mut input = String::new();
@@ -59,8 +62,8 @@ pub fn run_cli() {
         input.clear();
     }
 }
-pub fn execute_from_file(filename: String) -> Box<Context> {
-    let mut tokenizer = tokens::create_tokenizer();
+pub fn execute_from_file(filename: String) -> Rc<RefCell<Context>> {
+    let mut tokenizer = lexer::create_tokenizer();
     let mut file = File::open(filename).expect("Failed to open file");
     let mut contents = String::new();
     file.read_to_string(&mut contents)
@@ -74,10 +77,10 @@ pub fn execute_from_file(filename: String) -> Box<Context> {
     ast_root.accept(&mut interpreter);
 
     let ctx = interpreter.context;
-    return Box::new(ctx);
+    return ctx;
 }
 pub fn execute_file_then_dump(filename: String) {
-    let mut tokenizer = tokens::create_tokenizer();
+    let mut tokenizer = lexer::create_tokenizer();
     let mut file = File::open(filename).expect("Failed to open file");
     let mut contents = String::new();
 
@@ -93,5 +96,17 @@ pub fn execute_file_then_dump(filename: String) {
     let mut interpreter = Interpreter::new();
     ast_root.accept(&mut interpreter);
     println!("Global Context:");
-    dbg!(interpreter.context);
+
+    let mut context: Option<Rc<RefCell<Context>>> = None;
+
+    while interpreter.context.borrow().parent.is_some() {
+        context = Some(interpreter.context.borrow().parent.clone().unwrap());
+        interpreter.context = Rc::clone(&context.as_ref().unwrap());
+    }
+
+    let Some(i) = context else {
+        panic!("Failed to get global context");
+    };
+
+    dbg!(i);
 }

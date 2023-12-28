@@ -12,6 +12,7 @@ implicit_fn_test_no_params := {
 
 implicit_fn_test_params('my argument')
 
+assert(status == 'passed', 'failed to pass functions.scorch')
 
 implicit_fn_test_no_params()
 

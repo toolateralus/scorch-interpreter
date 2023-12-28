@@ -11,6 +11,8 @@ if false {
     status = pass_status
 }
 
+assert(status == 'passed', 'failed to pass if_else.scorch')
+
 if true {
     status = pass_status
 } else false {
@@ -19,5 +21,43 @@ if true {
     status = fail_status
 }
 
+assert(status == 'passed', 'failed to pass if_else.scorch')
+
+xx := false
+xy := true
+
+if xx != xy {
+    status = pass_status
+} else {
+    status = fail_status
+}
+
+assert(status == 'passed', 'failed to pass if_else.scorch')
+
+if xx == xy {
+    status = fail_status
+} else {
+    status = pass_status
+}
+
+xxy := 5
+xyy := 10
+
+assert(status == 'passed', 'failed to pass if_else.scorch')
+
+if xxy < xyy && (xx != xy) {
+    status = pass_status
+} else {
+    status = fail_status
+}
+
+assert(status == 'passed', 'failed to pass if_else.scorch')
+
+if xxy > xyy && (xx != xy) {
+    status = fail_status
+} else {
+    status = pass_status
+}
 
 
+assert(status == 'passed', 'failed to pass if_else.scorch')

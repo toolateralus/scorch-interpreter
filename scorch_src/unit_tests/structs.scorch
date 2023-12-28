@@ -1,0 +1,36 @@
+var status := false
+
+//# simple type
+struct Vec2 |
+    x := 0.0
+    y := 0.0
+|
+
+vector2 := new Vec2 { 0.0, 1250.050 }
+
+assert_eq(0.0, vector2.x, 'Vec2.x failed to equal expected value')
+assert_eq(1250.050, vector2.y, 'Vec2.y failed to equal expected value')
+
+
+// complex type
+struct Vec3 |
+    xy := new Vec2{0.0, 0.0}
+    z := 0.0
+|
+
+vector3 := new Vec3 {
+    new Vec2 {
+        0.0,
+        1250.050
+    },
+    100.0
+}
+
+//# temp while chained field access isn't working.
+xy := vector3.xy
+
+assert_eq(0.0, xy.x, 'Vec3.xy.x failed to equal expected value')
+assert_eq(1250.050, xy.y, 'Vec3.xy.y failed to equal expected value')
+assert_eq(100.0, vector3.z, 'Vec3.z failed to equal expected value')
+
+status = true

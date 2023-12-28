@@ -1,5 +1,0 @@
-foreach := (array:Array, callback:Fn) {
-    repeat i < (len(array)) {
-        callback(i, array[i])
-    }
-}

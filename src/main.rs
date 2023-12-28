@@ -1,5 +1,4 @@
 // tokenizer, parser.
-pub mod frontend;
 
 // interpreter, execution. types.
 pub mod runtime;
@@ -14,9 +13,8 @@ use ::std::collections::HashMap;
 use ::std::env;
 
 use runtime::interpreter::*;
-use runtime::types::Context;
 
-use frontend::tokens::*;
+use scorch_parser::lexer::*;
 
 use util::*;
 

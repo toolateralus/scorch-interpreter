@@ -3,15 +3,11 @@ var result1 := false
 var result2 := false
 var i := 0
 
-
-// todo: find out why medium loops (>= 10,000 on my computer) cause stack overflow only during testing.
 repeat i < 10000 {
     result = true
 }
 
-println('Test: Cached repeat with condition.')
-println('Expected result: true.')
-println('Value: Is i == 2500? ', result && i == 2500)
+assert(result && i == 10000, 'Test: Cached repeat with condition failed, expected 10000 got ' + tostr(i))
 
 repeat z < 250000 {
     if z == 249999 {
@@ -20,8 +16,7 @@ repeat z < 250000 {
     }
 } 
 
-println('Test: Implicitly declared iterator repeat with condition.')
-println('Expected result: true.')
+assert(result1, 'Test: Implicitly declared iterator repeat with condition failed.')
 
 repeat {
     break
@@ -29,4 +24,4 @@ repeat {
 }
 
 result2 = true
-println('test: repeat without condition passed')
+assert(result2, 'Test: Repeat without condition failed.')
