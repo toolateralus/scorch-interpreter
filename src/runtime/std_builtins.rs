@@ -111,8 +111,8 @@ pub fn time(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Value
     let time = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .expect("Time went backwards");
-
-    Value::Double(time.as_secs_f64())
+    
+    Value::Int(time.as_millis() as i32)
 }
 pub fn wait(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Value>) -> Value {
     if args.len() != 1 {
