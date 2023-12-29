@@ -1,1 +1,14 @@
-y := 0
+struct List |
+    inner : array
+    len : dynamic
+|
+
+
+lenfn := || => {
+    break len(list.inner)
+}
+
+list := new List([], lenfn)
+
+
+println(list.len())

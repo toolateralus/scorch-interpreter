@@ -1040,7 +1040,7 @@ impl Visitor<Value> for Interpreter {
 
             let Some(t) = self.type_checker.from_value(&value) else {
                 panic!(
-                    "type error: cannot find a type that matches value : {:#?}",
+                    "type error: interpreter failed to infer type from value. : {:#?}",
                     value
                 );
             };

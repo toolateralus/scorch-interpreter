@@ -139,12 +139,35 @@ impl TypeChecker {
         }
     }
     pub fn from_value(&self, val: &Value) -> Option<Rc<Type>> {
-        if let Value::Struct { typename: name, .. } = &val {
-            let struct_decl = self.structs.get(name)?;
-            return Some(Rc::clone(&struct_decl.type_));
+        match &val{
+            Value::Struct{typename, ..} => {
+                let struct_decl = self.structs.get(typename)?;
+                return Some(Rc::clone(&struct_decl.type_));
+            },
+            Value::Lambda(func) => {
+                let function = func.as_function();
+                let sig = super::standard_functions::get_function_signature(&function);
+                return Some(Rc::new(Type {
+                    name: sig,
+                    validator: Box::new(|v| 
+                        match v {
+                            Value::Lambda(func) => {
+                                let function = func.as_function();
+                                let sig = super::standard_functions::get_function_signature(&function);
+                                sig == sig
+                            },
+                            _ => {
+                                todo!()
+                            }
+                        }
+                    ),
+                    attribute: Attr::Function,
+                }));
+            },
+            _ => {
+                self.get(get_typename(val))
+            }
         }
-
-        self.get(get_typename(val))
     }
 }
 
@@ -156,10 +179,14 @@ pub fn get_typename<'a>(arg: &'a Value) -> &'a str {
         Value::Bool(..) => "bool",
         Value::String(..) => "string",
         Value::Double(..) => "double",
-        Value::Return(..) => todo!(),
-        Value::Lambda { .. } => todo!(),
+        Value::Return(..) => panic!("cannot get the typename of a return node. if you don't know what this means, something has gone seriously wrong."),
         // todo: Fix the lack of type checking for functions,
         // we need a more centralized way of checking types for structs & functions.
+        Value::Lambda(func) => {
+            let function = func.as_function(); // todo : fix the lambda system, right now its just creating a new function every time its invoked or searched for.
+            let _sig = super::standard_functions::get_function_signature(&function);
+            "{sig}"
+        },
         Value::Function(func) => {
             let _sig = super::standard_functions::get_function_signature(func);
             "{sig}"

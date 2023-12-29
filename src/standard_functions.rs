@@ -162,7 +162,7 @@ pub fn push(_context: &mut Context, type_checker: &TypeChecker, mut args: Vec<Va
                         panic!("invalid type for array");
                     }
                 }
-
+                
                 return Value::Array(mutable, elements);
             } else {
                 panic!("Cannot push to immutable array");
@@ -173,18 +173,17 @@ pub fn push(_context: &mut Context, type_checker: &TypeChecker, mut args: Vec<Va
         }
     }
 }
-pub fn pop(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Value>) -> Value {
+pub fn pop(_context: &mut Context, _type_checker: &TypeChecker, mut args: Vec<Value>) -> Value {
     if args.len() != 1 {
         panic!("pop expected 1 argument");
     }
-    let arg = &args[0];
-    match &arg {
+    let arg = args.remove(0);
+    match arg {
         Value::Array(mutable, elements) => {
-            if *mutable {
-                return elements.borrow_mut().pop().unwrap().value;
-            } else {
-                panic!("Cannot pop from immutable array");
-            }
+            let mut el = elements.borrow_mut();
+            assert!(el.len() > (0 as usize), "stack underflow: cannot pop from an empty array.");
+            assert!(mutable, "Cannot pop from immutable array");
+            return el.pop().unwrap().value;
         }
         _ => {
             panic!("Cannot pop from non-array value");
