@@ -7,4 +7,4 @@ edition = "2021"
 [dependencies]
 rand = "0.8.5"
 regex = "1.10.2"
-scorch-parser = { git = "https://github.com/toolateralus/scorch-parser", branch = "master" }
+scorch-parser = { git = "https://github.com/toolateralus/scorch-parser", branch = "main" }

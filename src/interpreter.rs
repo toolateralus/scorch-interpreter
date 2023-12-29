@@ -23,7 +23,7 @@ impl Interpreter {
     ) -> Value {
         let mut iter: i32 = 0;
 
-        let typename = "Int".to_string();
+        let typename = "int".to_string();
 
         self.push_ctx();
 
@@ -40,7 +40,7 @@ impl Interpreter {
                 }
                 None => {
                     let val = Value::Int(0);
-                    let Some(m_type) = self.type_checker.get("Int") else {
+                    let Some(m_type) = self.type_checker.get("int") else {
                         panic!("Double isnt a type")
                     };
 
@@ -542,7 +542,7 @@ impl Visitor<Value> for Interpreter {
                 }
                 _ => {
                     dbg!(node);
-                    panic!("Unsupported type");
+                    panic!("{} is not a supported or known type.", target_type);
                 }
             }
             {
@@ -849,7 +849,7 @@ impl Visitor<Value> for Interpreter {
                 mutable: *mutable,
             };
             // Todo: we might want to have a better way to do this than just getting it by string
-            let Some(m_type) = self.type_checker.get("Fn") else {
+            let Some(m_type) = self.type_checker.get("fn") else {
                 panic!("Fn isn't a type");
             };
             let function = Instance {
@@ -964,7 +964,7 @@ impl Visitor<Value> for Interpreter {
 
         let params = self.get_params_list(params);
 
-        let return_type = self.type_checker.get("Dynamic").unwrap();
+        let return_type = self.type_checker.get("dynamic").unwrap();
 
         return Value::Lambda(Rc::new(Lambda {
             params,
@@ -1047,7 +1047,7 @@ impl Visitor<Value> for Interpreter {
 
             let expected_typename = field.1.as_ref().name.clone();
             let found_typename = t.name.clone();
-            if expected_typename != "Dynamic" && expected_typename != found_typename {
+            if expected_typename != "dynamic" && expected_typename != found_typename {
                 panic!(
                     "type mismatch in '{id}' constructor. expected {:?}, got {:?}",
                     field.1.as_ref().name,

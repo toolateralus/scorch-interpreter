@@ -34,9 +34,9 @@ impl TypeChecker {
             structs: HashMap::new(),
             types: HashMap::from([
                 (
-                    String::from("None"),
+                    String::from("none"),
                     Rc::new(Type {
-                        name: String::from("None"),
+                        name: String::from("none"),
                         validator: Box::new(|v| match v {
                             Value::None() => true,
                             _ => false,
@@ -45,9 +45,9 @@ impl TypeChecker {
                     }),
                 ),
                 (
-                    String::from("Int"),
+                    String::from("int"),
                     Rc::new(Type {
-                        name: String::from("Int"),
+                        name: String::from("int"),
                         validator: Box::new(|v| match v {
                             Value::Int(..) => true,
                             _ => false,
@@ -56,9 +56,9 @@ impl TypeChecker {
                     }),
                 ),
                 (
-                    String::from("Double"),
+                    String::from("double"),
                     Rc::new(Type {
-                        name: String::from("Double"),
+                        name: String::from("double"),
                         validator: Box::new(|v| match v {
                             Value::Double(_) => true,
                             _ => false,
@@ -67,9 +67,9 @@ impl TypeChecker {
                     }),
                 ),
                 (
-                    String::from("Dynamic"),
+                    String::from("dynamic"),
                     Rc::new(Type {
-                        name: String::from("Dynamic"),
+                        name: String::from("dynamic"),
                         validator: Box::new(|v| match v {
                             _ => true, // :D
                         }),
@@ -77,9 +77,9 @@ impl TypeChecker {
                     }),
                 ),
                 (
-                    String::from("String"),
+                    String::from("string"),
                     Rc::new(Type {
-                        name: String::from("String"),
+                        name: String::from("string"),
                         validator: Box::new(|v| match v {
                             Value::String(_) => true,
                             _ => false,
@@ -88,9 +88,9 @@ impl TypeChecker {
                     }),
                 ),
                 (
-                    String::from("Bool"),
+                    String::from("bool"),
                     Rc::new(Type {
-                        name: String::from("Bool"),
+                        name: String::from("bool"),
                         validator: Box::new(|v| match v {
                             Value::Bool(_) => true,
                             _ => false,
@@ -99,9 +99,9 @@ impl TypeChecker {
                     }),
                 ),
                 (
-                    String::from("Array"),
+                    String::from("array"),
                     Rc::new(Type {
-                        name: String::from("Array"),
+                        name: String::from("array"),
                         validator: Box::new(|v| match v {
                             Value::Array(..) => true,
                             _ => false,
@@ -110,9 +110,9 @@ impl TypeChecker {
                     }),
                 ),
                 (
-                    String::from("Fn"),
+                    String::from("fn"),
                     Rc::new(Type {
-                        name: String::from("Fn"),
+                        name: String::from("fn"),
                         validator: Box::new(|v| match v {
                             Value::Function(..) => true,
                             _ => false,
@@ -150,12 +150,12 @@ impl TypeChecker {
 
 pub fn get_typename<'a>(arg: &'a Value) -> &'a str {
     let arg_type_name = match arg {
-        Value::Array(..) => "Array",
-        Value::None() => "None",
-        Value::Int(..) => "Int",
-        Value::Bool(..) => "Bool",
-        Value::String(..) => "String",
-        Value::Double(..) => "Double",
+        Value::Array(..) => "array",
+        Value::None() => "none",
+        Value::Int(..) => "int",
+        Value::Bool(..) => "bool",
+        Value::String(..) => "string",
+        Value::Double(..) => "double",
         Value::Return(..) => todo!(),
         Value::Lambda { .. } => todo!(),
         // todo: Fix the lack of type checking for functions,

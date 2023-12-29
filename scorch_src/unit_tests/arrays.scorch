@@ -5,19 +5,19 @@ assert(len(empty_implicit) == 0, 'empty_implicit array failed to be empty')
 // # todo implement array comparison
 // # assert(len(empty_implicit) == 0, 'empty_implicit array failed to compare to []')
 
-empty_explicit 			: Array = []
+empty_explicit 			: array = []
 assert(len(empty_explicit) == 0, 'empty_explicit array failed to be empty')
 
 single_float_implicit 	:= [1.0]
 assert(len(single_float_implicit) == 1, 'single_float_implicit array failed to have length of 1')
 
-single_float_explicit 	: Array = [1.0]
+single_float_explicit 	: array = [1.0]
 assert(len(single_float_explicit) == 1, 'single_float_explicit array failed to have length of 1')
 
 plural_float_implicit  	:= [1.0, 2.0]
 assert(len(plural_float_implicit) == 2, 'plural_float_implicit array failed to have length of 2')
 
-plural_float_explicit 	: Array = [1.0, 2.0]
+plural_float_explicit 	: array = [1.0, 2.0]
 assert(len(plural_float_explicit) == 2, 'plural_float_explicit array failed to have length of 2')
 
 assignment 				:= single_float_implicit
