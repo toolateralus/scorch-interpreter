@@ -998,8 +998,9 @@ impl Visitor<Value> for Interpreter {
         }
         Value::None()
     }
+    
     fn visit_struct_init(&mut self, node: &Node) -> Value {
-        let Node::Struct { id, args } = node else {
+        let Node::StructInit { id, args } = node else {
             panic!("Expected StructInit node");
         };
 
@@ -1048,5 +1049,22 @@ impl Visitor<Value> for Interpreter {
             typename: id.clone(),
             context: Box::new(struct_ctx),
         }
+    }
+
+    fn visit_type_assoc_block(&mut self, node: &Node) -> Value {
+        let Node::TypeAssocBlock { typename, block } = node else {
+            panic!("Expected TypeAssocBlock node");
+        };
+        
+        let _struct = if let Some(_struct) = self.type_checker.structs.get_mut(typename) {
+            _struct
+        } else {
+            panic!("Struct {} not found", typename);
+        };
+        
+        // todo: make associated functions actually work.
+        block.accept(self);
+        
+        Value::None()
     }
 }
