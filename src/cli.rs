@@ -3,9 +3,9 @@ use std::fs::File;
 use std::io::{self, Read, Write};
 use std::rc::Rc;
 
-use scorch_parser::*;
-use crate::*;
 use crate::context::Context;
+use crate::*;
+use scorch_parser::*;
 
 pub struct Flags {
     pub proj_root: String,

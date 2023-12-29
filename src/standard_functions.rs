@@ -1,7 +1,7 @@
 use super::context::Context;
 use super::typechecker::TypeChecker;
+use super::types::{Instance, Value};
 use std::{collections::HashMap, rc::Rc};
-use super::types::{Value, Instance};
 
 pub struct StandardFunction {
     pub func: Box<dyn FnMut(&mut Context, &TypeChecker, Vec<Value>) -> Value>,
@@ -31,7 +31,10 @@ pub fn get_builtin_functions() -> HashMap<String, StandardFunction> {
             StandardFunction::new(Box::new(readln)),
         ),
         (String::from("wait"), StandardFunction::new(Box::new(wait))),
-        (String::from("tostr"), StandardFunction::new(Box::new(tostr))),
+        (
+            String::from("tostr"),
+            StandardFunction::new(Box::new(tostr)),
+        ),
         (String::from("time"), StandardFunction::new(Box::new(time))),
         (
             String::from("assert"),
@@ -44,13 +47,15 @@ pub fn get_builtin_functions() -> HashMap<String, StandardFunction> {
         (String::from("len"), StandardFunction::new(Box::new(length))),
         (String::from("push"), StandardFunction::new(Box::new(push))),
         (String::from("pop"), StandardFunction::new(Box::new(pop))),
-        (String::from("floor"), StandardFunction::new(Box::new(floor))),
+        (
+            String::from("floor"),
+            StandardFunction::new(Box::new(floor)),
+        ),
         (String::from("abs"), StandardFunction::new(Box::new(abs))),
     ])
 }
 // IO
 pub fn print_ln(context: &mut Context, type_checker: &TypeChecker, args: Vec<Value>) -> Value {
-    
     for arg in args {
         match arg {
             Value::Int(val) => print!("{}\n", val),
@@ -109,7 +114,7 @@ pub fn time(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Value
     let time = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .expect("Time went backwards");
-    
+
     Value::Int(time.as_millis() as i32)
 }
 pub fn wait(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Value>) -> Value {
@@ -147,7 +152,7 @@ pub fn push(_context: &mut Context, type_checker: &TypeChecker, mut args: Vec<Va
     let arg = args.remove(0);
 
     match arg {
-        Value::Array(mutable, mut elements) => {
+        Value::Array(mutable, elements) => {
             if mutable {
                 for value in args {
                     if let Some(t) = type_checker.from_value(&value) {
@@ -260,7 +265,7 @@ pub fn get_function_signature<'ctx>(func: &'ctx Rc<super::types::Function>) -> S
 }
 // Math
 // IO
-pub fn abs(context: &mut Context, type_checker: &TypeChecker, args: Vec<Value>) -> Value {
+pub fn abs(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Value>) -> Value {
     if args.len() != 1 {
         panic!("abs expected 1 argument");
     }

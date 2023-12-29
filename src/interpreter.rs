@@ -1,12 +1,12 @@
-use std::cell::RefCell;
-use std::collections::HashMap;
-use std::rc::Rc;
-use scorch_parser::ast::*;
-use scorch_parser::lexer::*;
 use super::context::Context;
 use super::standard_functions::StandardFunction;
 use super::typechecker::*;
 use super::types::*;
+use scorch_parser::ast::*;
+use scorch_parser::lexer::*;
+use std::cell::RefCell;
+use std::collections::HashMap;
+use std::rc::Rc;
 
 pub struct Interpreter {
     pub context: Rc<RefCell<Context>>, // initally the root context, but this is a kinda tree like structure.
@@ -58,7 +58,7 @@ impl Interpreter {
             }
         }
 
-        let Some(m_type) = self.type_checker.get(typename.as_str()) else {
+        let Some(_m_type) = self.type_checker.get(typename.as_str()) else {
             panic!("{} isnt a type", typename)
         };
 
@@ -70,7 +70,7 @@ impl Interpreter {
                     } else {
                         dbg!(expression);
                         panic!("Expected boolean condition");
-                        }
+                    }
                 }
                 None => panic!("Expected condition in conditional repeat statement"),
             };
@@ -98,24 +98,28 @@ impl Interpreter {
             } else {
                 // pop iterator ctx.
                 let value = Value::Int(iter);
-                
+
                 self.assign_var(id, &value);
-                
+
                 self.pop_ctx();
                 return Value::None();
             }
-            
+
             iter += 1;
-            
+
             let value = Value::Int(iter);
-            
+
             self.assign_var(id, &value);
         }
     }
     // this will seek parent contexts if & when the variable is not found in the current context.
     // this cannot be used to add new variables to a context.
     pub fn assign_var<'ctx>(&mut self, id: &str, value: &'ctx Value) {
-        let Ok(_) = self.context.borrow_mut().seek_overwrite_in_parents(&id, &value) else {
+        let Ok(_) = self
+            .context
+            .borrow_mut()
+            .seek_overwrite_in_parents(&id, &value)
+        else {
             panic!("assignment error : {} not found.", id);
         };
     }
@@ -136,7 +140,7 @@ impl Interpreter {
             }
         }
     }
-    
+
     pub fn get_params_list(&mut self, param_nodes: &Vec<Node>) -> Vec<Parameter> {
         let mut params = Vec::new();
         for param in param_nodes {
@@ -197,7 +201,7 @@ impl Interpreter {
             dbg!(node);
             panic!("Expected binary operation node");
         };
-        
+
         match op {
             TokenKind::Add => result = lhs + rhs,
             TokenKind::Subtract => result = lhs - rhs,
@@ -227,7 +231,6 @@ impl Interpreter {
         Value::String(result)
     }
 
-    
     pub fn new() -> Interpreter {
         let builtins = super::standard_functions::get_builtin_functions();
         Interpreter {
@@ -238,9 +241,9 @@ impl Interpreter {
     }
     pub fn try_find_and_execute_fn(&mut self, arguments: &Option<Vec<Node>>, id: &String) -> Value {
         let args = Function::extract_args(self, arguments);
-        
+
         let function: Option<Rc<Function>>;
-        
+
         {
             let mut ctx = self.context.borrow_mut();
             // function pointer
@@ -251,27 +254,24 @@ impl Interpreter {
                 };
                 return builtin.call(&mut ctx, &self.type_checker, args);
             };
-            
-            
+
             function = match &fn_ptr.borrow_mut().value {
                 Value::Function(func) => Some(func.clone()),
-                Value::Lambda(func) => {
-                    Some(func.as_function())
-                },
+                Value::Lambda(func) => Some(func.as_function()),
                 _ => panic!("Expected function"),
             };
         }
-        
+
         let Some(function) = function else {
             dbg!(id);
             panic!("Function not found");
         };
-        
+
         // valid parameterless
         if function.params.len() + args.len() == 0 {
             return function.body.accept(self);
         }
-        
+
         if args.len() != function.params.len() {
             panic!("Number of arguments does not match the number of parameters :: expected {}, got {}", function.params.len(), args.len());
         }
@@ -305,10 +305,9 @@ impl Interpreter {
     }
 
     pub fn dot_op(&mut self, lhs: &Box<Node>, rhs: &Box<Node>) -> Value {
-        
         {
             let ctx = self.context.borrow_mut();
-            
+
             if let Node::Identifier(id) = lhs.as_ref() {
                 let tempvar = ctx.find_variable(id);
                 let Some(var) = tempvar else {
@@ -356,7 +355,7 @@ impl Interpreter {
 
         self.try_find_and_execute_fn(&Some(args), func_id)
     }
-    
+
     pub fn push_ctx(&mut self) {
         let current = self.context.clone();
 
@@ -377,7 +376,7 @@ impl Interpreter {
         let ctx = self.context.borrow();
         let var = ctx.find_variable(id).expect("Variable not found");
         let var = var.borrow();
-        
+
         match &var.value {
             Value::Array(_, elements) => {
                 let elements = elements.borrow();
@@ -389,7 +388,7 @@ impl Interpreter {
             _ => panic!("Expected Array node"),
         }
     }
-    
+
     pub fn assign_to_array(&mut self, id: &str, index: usize, value: Value) {
         let ctx = self.context.borrow();
         let var = ctx.find_variable(id).expect("Variable not found");
@@ -575,9 +574,9 @@ impl Visitor<Value> for Interpreter {
                         panic!("Expected Identifier node");
                     }
                 };
-                
+
                 self.assign_var(&str_id, &val);
-                
+
                 return Value::None();
             }
             _ => {
@@ -943,7 +942,7 @@ impl Visitor<Value> for Interpreter {
             Value::Int(index_value) => index_value as usize,
             _ => panic!("Expected numerical index value"),
         };
-        
+
         if *assignment {
             if let Some(expr) = expression {
                 let result = expr.accept(self);
@@ -956,23 +955,22 @@ impl Visitor<Value> for Interpreter {
             self.access_array(id, index_value)
         }
     }
-    
+
     fn visit_lambda(&mut self, _node: &Node) -> Value {
         let Node::Lambda { params, block } = _node else {
             dbg!(_node);
             panic!("Expected Lambda node");
         };
-        
+
         let params = self.get_params_list(params);
-        
+
         let return_type = self.type_checker.get("Dynamic").unwrap();
-        
+
         return Value::Lambda(Rc::new(Lambda {
             params,
-            block : block.clone(),
-            return_type })
-        );
-        
+            block: block.clone(),
+            return_type,
+        }));
     }
     fn visit_struct_def(&mut self, node: &Node) -> Value {
         if let Node::StructDecl { id, block } = node {

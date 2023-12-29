@@ -1,7 +1,10 @@
-use std::{cell::RefCell, rc::Rc};
-use scorch_parser::{ast::{Node, Visitor}, parser::generate_random_function_name};
+use super::{context::Context, typechecker::Type};
 use crate::interpreter::Interpreter;
-use super::{typechecker::Type, context::Context};
+use scorch_parser::{
+    ast::{Node, Visitor},
+    parser::generate_random_function_name,
+};
+use std::{cell::RefCell, rc::Rc};
 
 #[derive(Debug, Clone)]
 pub enum Value {
@@ -17,21 +20,21 @@ pub enum Value {
         typename: String,
         context: Box<Context>,
     },
-    Lambda(Rc<Lambda>)
+    Lambda(Rc<Lambda>),
 }
 #[derive(Debug, Clone)]
 pub struct Lambda {
-    pub params : Vec<Parameter>,
-    pub block : Box<Node>,
-    pub return_type : Rc<Type>,
+    pub params: Vec<Parameter>,
+    pub block: Box<Node>,
+    pub return_type: Rc<Type>,
 }
 impl Lambda {
     pub(crate) fn as_function(&self) -> Rc<Function> {
         Rc::new(Function {
-            name : generate_random_function_name(),
-            params : self.params.clone(),
+            name: generate_random_function_name(),
+            params: self.params.clone(),
             body: self.block.clone(),
-            return_type : Rc::clone(&self.return_type),
+            return_type: Rc::clone(&self.return_type),
             mutable: false,
         })
     }

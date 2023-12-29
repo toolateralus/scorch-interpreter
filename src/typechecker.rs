@@ -1,7 +1,7 @@
 use crate::types::Value;
 use std::{collections::HashMap, rc::Rc};
 
-use super::types::{Struct, Instance};
+use super::types::{Instance, Struct};
 
 #[derive(Debug, PartialEq)]
 pub enum Attr {
@@ -143,7 +143,7 @@ impl TypeChecker {
             let struct_decl = self.structs.get(name)?;
             return Some(Rc::clone(&struct_decl.type_));
         }
-        
+
         self.get(get_typename(val))
     }
 }
@@ -161,10 +161,13 @@ pub fn get_typename<'a>(arg: &'a Value) -> &'a str {
         // todo: Fix the lack of type checking for functions,
         // we need a more centralized way of checking types for structs & functions.
         Value::Function(func) => {
-            let sig = super::standard_functions::get_function_signature(func);
+            let _sig = super::standard_functions::get_function_signature(func);
             "{sig}"
         }
-        Value::Struct { typename, context : _ } => &typename,
+        Value::Struct {
+            typename,
+            context: _,
+        } => &typename,
     };
     arg_type_name
 }
