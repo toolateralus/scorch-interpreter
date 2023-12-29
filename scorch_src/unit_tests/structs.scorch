@@ -32,7 +32,16 @@ xy := vector3.xy
 assert_eq(0.0, xy.x, 'Vec3.xy.x failed to equal expected value')
 assert_eq(1250.050, xy.y, 'Vec3.xy.y failed to equal expected value')
 assert_eq(100.0, vector3.z, 'Vec3.z failed to equal expected value')
-
 // TODO: implement assignment. the dot operator desperately needs to be fixed so this is on hold.
+
+Vec3 :: {
+    check_z_is_1000 : fn(this : Vec3) -> none {
+        assert_eq(1000.0, this.z, 'Vec3.z failed to equal expected value')
+    }
+}
+
+vactor := new Vec3(new Vec2(0, 0), 1000.0)
+
+vactor.check_z_is_1000()
 
 status = true

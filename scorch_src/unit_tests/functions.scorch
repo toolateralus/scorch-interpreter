@@ -44,6 +44,7 @@ func_d := (f : fn) {
 }
 
 
+
 // return val
 assert(func_a() == 560, 'func_a failed to return 560')
 
