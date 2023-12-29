@@ -279,7 +279,7 @@ impl Interpreter {
         self.push_ctx();
 
         for (arg, param) in args.iter().zip(function.params.iter()) {
-            if !param.m_type.validate(arg) {
+            if !param.m_type.borrow().validate(arg) {
                 panic!("Argument type does not match parameter type.\n provided argument: {:?} expected parameter : {:?}", arg, param)
             } else {
                 self.context.borrow_mut().insert_variable(
@@ -969,7 +969,7 @@ impl Visitor<Value> for Interpreter {
                 attribute: Attr::Struct,
             };
 
-            let mut fields = Vec::<(String, Rc<Type>)>::new();
+            let mut fields = Vec::<(String, Rc<RefCell<Type>>)>::new();
 
             for statement in _statements {
                 let Node::DeclStmt {
@@ -989,7 +989,7 @@ impl Visitor<Value> for Interpreter {
             let _struct = Struct {
                 name: id.to_string(),
                 fields, // todo : pre-evaluate default values for fields and just copy that context into new structs instead of what we do now.
-                type_: Rc::new(_new_type),
+                type_: Rc::new(RefCell::new(_new_type)),
             };
 
             self.type_checker
@@ -1023,25 +1023,30 @@ impl Visitor<Value> for Interpreter {
 
         for (field, arg) in fields.iter().zip(args.iter()) {
             let value = arg.accept(self);
-
-            let Some(t) = self.type_checker.from_value(&value) else {
+            
+            let Some(arg_type_rc) = self.type_checker.from_value(&value) else {
                 panic!(
                     "type error: interpreter failed to infer type from value. : {:#?}",
                     value
                 );
             };
-
-            let expected_typename = field.1.as_ref().name.clone();
-            let found_typename = t.name.clone();
+            
+            let param_type = &field.1;
+            
+            let expected_typename = param_type.borrow().name.clone();
+            
+            let arg_type = arg_type_rc.borrow_mut();
+            let found_typename = arg_type.name.clone();
+            
             if expected_typename != DYNAMIC_TNAME && expected_typename != found_typename {
                 panic!(
                     "type mismatch in '{id}' constructor. expected {:?}, got {:?}",
-                    field.1.as_ref().name,
-                    t.name
+                    field.1.borrow().name,
+                    arg_type.name
                 );
             }
 
-            let var = Instance::new(true, value, Rc::clone(&t));
+            let var = Instance::new(true, value, Rc::clone(&arg_type_rc));
             struct_ctx.insert_variable(&field.0, Rc::new(RefCell::new(var)));
         }
 

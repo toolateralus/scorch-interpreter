@@ -1,5 +1,5 @@
 use crate::types::Value;
-use std::{collections::HashMap, rc::Rc};
+use std::{collections::HashMap, rc::Rc, cell::RefCell};
 
 use super::types::{Instance, Struct};
 
@@ -25,7 +25,7 @@ impl Type {
 }
 
 pub struct TypeChecker {
-    pub types: HashMap<String, Rc<Type>>,
+    pub types: HashMap<String, Rc<RefCell<Type>>>,
     pub structs: HashMap<String, Box<Struct>>,
 }
 impl TypeChecker {
@@ -35,90 +35,90 @@ impl TypeChecker {
             types: HashMap::from([
                 (
                     String::from(NONE_TNAME),
-                    Rc::new(Type {
+                    Rc::new(RefCell::new(Type {
                         name: String::from(NONE_TNAME),
                         validator: Box::new(|v| match v {
                             Value::None() => true,
                             _ => false,
                         }),
                         attribute: Attr::Value,
-                    }),
+                    })),
                 ),
                 (
                     String::from(INT_TNAME),
-                    Rc::new(Type {
+                    Rc::new(RefCell::new(Type {
                         name: String::from(INT_TNAME),
                         validator: Box::new(|v| match v {
                             Value::Int(..) => true,
                             _ => false,
                         }),
                         attribute: Attr::Value,
-                    }),
+                    })),
                 ),
                 (
                     String::from(DOUBLE_TNAME),
-                    Rc::new(Type {
+                    Rc::new(RefCell::new(Type {
                         name: String::from(DOUBLE_TNAME),
                         validator: Box::new(|v| match v {
                             Value::Double(_) => true,
                             _ => false,
                         }),
                         attribute: Attr::Value,
-                    }),
+                    })),
                 ),
                 (
                     String::from(DYNAMIC_TNAME),
-                    Rc::new(Type {
+                    Rc::new(RefCell::new(Type {
                         name: String::from(DYNAMIC_TNAME),
                         validator: Box::new(|v| match v {
                             _ => true, // :D
                         }),
                         attribute: Attr::Value,
-                    }),
+                    })),
                 ),
                 (
                     String::from(STRING_TNAME),
-                    Rc::new(Type {
+                    Rc::new(RefCell::new(Type {
                         name: String::from(STRING_TNAME),
                         validator: Box::new(|v| match v {
                             Value::String(_) => true,
                             _ => false,
                         }),
                         attribute: Attr::Value,
-                    }),
+                    })),
                 ),
                 (
                     String::from(BOOL_TNAME),
-                    Rc::new(Type {
+                    Rc::new(RefCell::new(Type {
                         name: String::from(BOOL_TNAME),
                         validator: Box::new(|v| match v {
                             Value::Bool(_) => true,
                             _ => false,
                         }),
                         attribute: Attr::Value,
-                    }),
+                    })),
                 ),
                 (
                     String::from(ARRAY_TNAME),
-                    Rc::new(Type {
+                    Rc::new(RefCell::new(Type {
                         name: String::from(ARRAY_TNAME),
                         validator: Box::new(|v| match v {
                             Value::Array(..) => true,
                             _ => false,
                         }),
                         attribute: Attr::Array,
-                    }),
+                    })),
                 ),
                 (
                     String::from(FN_TNAME),
-                    Rc::new(Type {
+                    Rc::new(RefCell::new(Type {
                         name: String::from(FN_TNAME),
                         validator: Box::new(|v| match v {
                             Value::Function(..) => true,
                             _ => false,
                         }),
                         attribute: Attr::Function,
-                    }),
+                    })),
                 ),
             ]),
         }
@@ -127,9 +127,9 @@ impl TypeChecker {
 
 impl TypeChecker {
     pub fn validate(val: &Instance) -> bool {
-        val.m_type.validate(&val.value)
+        val.m_type.borrow().validate(&val.value)
     }
-    pub fn get(&self, name: &str) -> Option<Rc<Type>> {
+    pub fn get(&self, name: &str) -> Option<Rc<RefCell<Type>>> {
         match self.structs.get(name) {
             Some(t) => Some(Rc::clone(&t.type_)),
             None => match self.types.get(name) {
@@ -138,7 +138,7 @@ impl TypeChecker {
             },
         }
     }
-    pub fn from_value(&self, val: &Value) -> Option<Rc<Type>> {
+    pub fn from_value(&self, val: &Value) -> Option<Rc<RefCell<Type>>> {
         match &val{
             Value::Struct{typename, ..} => {
                 let struct_decl = self.structs.get(typename)?;

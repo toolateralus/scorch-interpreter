@@ -253,13 +253,13 @@ pub fn get_function_signature<'ctx>(func: &'ctx Rc<super::types::Function>) -> S
     let params: Vec<String> = func
         .params
         .iter()
-        .map(|param| format!("{}: {}", param.name, param.m_type.name))
+        .map(|param| format!("{}: {}", param.name, param.m_type.borrow().name))
         .collect();
     format!(
         "{}({}) -> {}",
         func.name,
         params.join(", "),
-        func.return_type.name
+        func.return_type.borrow().name
     )
 }
 // Math
