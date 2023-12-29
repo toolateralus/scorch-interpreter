@@ -228,7 +228,7 @@ pub fn tostr(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Valu
         Value::Double(val) => val.to_string(),
         Value::String(val) => val.clone(),
         Value::Bool(val) => val.to_string(),
-        Value::None() => String::from("none"),
+        Value::None() => String::from(scorch_parser::ast::NONE_TNAME),
         Value::Function(func) => {
             let stri = get_function_signature(func);
             stri

@@ -23,7 +23,7 @@ impl Interpreter {
     ) -> Value {
         let mut iter: i32 = 0;
 
-        let typename = "int".to_string();
+        let typename = INT_TNAME.to_string();
 
         self.push_ctx();
 
@@ -40,7 +40,7 @@ impl Interpreter {
                 }
                 None => {
                     let val = Value::Int(0);
-                    let Some(m_type) = self.type_checker.get("int") else {
+                    let Some(m_type) = self.type_checker.get(INT_TNAME) else {
                         panic!("Double isnt a type")
                     };
 
@@ -303,59 +303,44 @@ impl Interpreter {
 
         Value::None()
     }
-
+    
     pub fn dot_op(&mut self, lhs: &Box<Node>, rhs: &Box<Node>) -> Value {
-        {
-            let ctx = self.context.borrow_mut();
-
-            if let Node::Identifier(id) = lhs.as_ref() {
-                let tempvar = ctx.find_variable(id);
-                let Some(var) = tempvar else {
-                    dbg!(lhs, rhs);
-                    panic!("Expected Struct node");
-                };
-                let Value::Struct {
-                    typename: _,
-                    context,
-                } = &var.borrow_mut().value
-                else {
-                    dbg!(lhs, rhs);
-                    panic!("Expected Struct node");
-                };
-                let Node::Identifier(id) = rhs.as_ref() else {
-                    dbg!(lhs, rhs);
-                    panic!("Expected Struct node");
-                };
-
-                let Some(var) = context.find_variable(id) else {
-                    dbg!(lhs, rhs);
-                    panic!("Expected Struct node");
-                };
-
-                return var.borrow_mut().value.clone();
-            };
+        let lhs_value = lhs.accept(self);
+    
+        match rhs.as_ref() {
+            Node::Identifier(id) => {
+                match lhs_value {
+                    Value::Struct { typename: _, context } => {
+                        let Some(var) = context.find_variable(id) else {
+                            dbg!(lhs, rhs);
+                            panic!("Expected Struct node");
+                        };
+    
+                        return var.borrow_mut().value.clone();
+                    },
+                    _ => {
+                        dbg!(lhs, rhs);
+                        panic!("Unexpected value type");
+                    }
+                }
+            },
+            Node::FunctionCall { id, arguments } => {
+                if let Some(mut args) = arguments.clone() {
+                    args.insert(0, *lhs.clone());
+                    self.try_find_and_execute_fn(&Some(args), id)
+                } else {
+                    let mut args = Vec::new();
+                    args.push(*lhs.clone());
+                    self.try_find_and_execute_fn(&Some(args), id)
+                }
+                
+            },
+            _ => {
+                dbg!(lhs, rhs);
+                panic!("Unexpected node type");
+            }
         }
-
-        let Node::FunctionCall {
-            id: func_id,
-            arguments,
-        } = rhs.as_ref()
-        else {
-            dbg!(lhs, rhs);
-            panic!("Expected FunctionCall node");
-        };
-
-        let Some(args) = arguments else {
-            dbg!(lhs, rhs);
-            panic!("Expected arguments");
-        };
-
-        let mut args = args.clone();
-        args.insert(0, *lhs.clone());
-
-        self.try_find_and_execute_fn(&Some(args), func_id)
     }
-
     pub fn push_ctx(&mut self) {
         let current = self.context.clone();
 
@@ -600,7 +585,7 @@ impl Visitor<Value> for Interpreter {
             Some(value) => value.borrow_mut().value.clone(),
             None => {
                 dbg!(node);
-                panic!("Variable not found");
+                panic!("variable {} not found", id);
             }
         }
     }
@@ -849,7 +834,7 @@ impl Visitor<Value> for Interpreter {
                 mutable: *mutable,
             };
             // Todo: we might want to have a better way to do this than just getting it by string
-            let Some(m_type) = self.type_checker.get("fn") else {
+            let Some(m_type) = self.type_checker.get(FN_TNAME) else {
                 panic!("Fn isn't a type");
             };
             let function = Instance {
@@ -961,11 +946,11 @@ impl Visitor<Value> for Interpreter {
             dbg!(_node);
             panic!("Expected Lambda node");
         };
-
+        
         let params = self.get_params_list(params);
-
-        let return_type = self.type_checker.get("dynamic").unwrap();
-
+        
+        let return_type = self.type_checker.get(DYNAMIC_TNAME).unwrap();
+        
         return Value::Lambda(Rc::new(Lambda {
             params,
             block: block.clone(),
@@ -1047,7 +1032,7 @@ impl Visitor<Value> for Interpreter {
 
             let expected_typename = field.1.as_ref().name.clone();
             let found_typename = t.name.clone();
-            if expected_typename != "dynamic" && expected_typename != found_typename {
+            if expected_typename != DYNAMIC_TNAME && expected_typename != found_typename {
                 panic!(
                     "type mismatch in '{id}' constructor. expected {:?}, got {:?}",
                     field.1.as_ref().name,

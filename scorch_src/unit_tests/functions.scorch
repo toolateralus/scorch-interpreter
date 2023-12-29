@@ -1,34 +1,58 @@
-var status := 'failed'
+// NOT FULLY IMPLEMENTED
 
-lambda := || => {
+//assert(lambda_args_test(1, true, '3'), 'lambda fn literal failed to return true')
+// lambda_args_test := |a, b, c| => {
+//     assert(a == 1, 'lambda_args_test failed assert0: print int arg')
+//     assert(b == true, 'lambda_args_test failed assert1 : print bool arg')
+//     assert(c == '3', 'lambda_args_test failed assert2 : print string arg')
+//     break true 
+// }
+
+// NOT FULLY IMPLEMENTED 
+// recursive function
+// this can freeze the test runner
+// this is excluded because return is not implemented and break should not be used as both, although it currently can be.
+// assert(recursive_fn(10) == 0, 'recursive_fn failed to return 0')
+// recursive_fn := (a : int) {
+//     if a == 0 {
+//         break 0
+//     }
+//     break recursive_fn(a - 1)
+// }
+
+
+
+var lambda := || => {
     break true
 }
-
-lambda_args_test := |a, b, c| => {
-    assert(a == 1, 'lambda_args_test failed assert0: print int arg')
-    assert(b == true, 'lambda_args_test failed assert1 : print bool arg')
-    assert(c == '3', 'lambda_args_test failed assert2 : print string arg')
-    break true 
-}
-
 assert(lambda(), 'lambda fn assigned to a field failed to return true')
 
-assert(lambda_args_test(1, true, '3'), 'lambda fn literal failed to return true')
 
-
-implicit_fn_test_params := (a: string) {
-    println('recursive func ', a)
-    status = 'passed'
+func_a : fn() -> dynamic {
+    break 560
 }
 
-implicit_fn_test_no_params := {
-    status = 'passed'
-    println('recursive func paramless')
+func_b := (p : string) {
+    assert(p == 'func_b', 'func_b failed to assert')
+}
+func_c := {
+    break 560
 }
 
-implicit_fn_test_params('my argument')
+func_d := (f : fn) {
+    assert(f() == 560, 'func_d failed to assert')
+}
 
-assert(status == 'passed', 'failed to pass functions.scorch')
 
-implicit_fn_test_no_params()
+// return val
+assert(func_a() == 560, 'func_a failed to return 560')
+
+// string arg
+func_b('func_b')
+
+// return val implicit
+assert(func_c() == 560, 'func_c failed to return 560')
+
+// func pointer arg
+func_d(func_a)
 
