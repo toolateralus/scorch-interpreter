@@ -140,7 +140,7 @@ impl Interpreter {
             }
         }
     }
-
+    
     pub fn get_params_list(&mut self, param_nodes: &Vec<Node>) -> Vec<Parameter> {
         let mut params = Vec::new();
         for param in param_nodes {
@@ -801,11 +801,7 @@ impl Visitor<Value> for Interpreter {
             }
         }
     }
-
-    // functions
-    fn visit_param_decl(&mut self, _node: &Node) -> Value {
-        todo!()
-    }
+  
     fn visit_function_call(&mut self, node: &Node) -> Value {
         let (id, arguments) = match node {
             Node::FunctionCall { id, arguments } => (id, arguments),
@@ -940,23 +936,7 @@ impl Visitor<Value> for Interpreter {
             self.access_array(id, index_value)
         }
     }
-
-    fn visit_lambda(&mut self, _node: &Node) -> Value {
-        let Node::Lambda { params, block } = _node else {
-            dbg!(_node);
-            panic!("Expected Lambda node");
-        };
-
-        let params = self.get_params_list(params);
-
-        let return_type = self.type_checker.get(DYNAMIC_TNAME).unwrap();
-
-        return Value::Lambda(Rc::new(Lambda {
-            params,
-            block: block.clone(),
-            return_type,
-        }));
-    }
+   
     fn visit_struct_def(&mut self, node: &Node) -> Value {
         if let Node::StructDecl { id, block } = node {
             let Node::Block(_statements) = block.as_ref() else {
@@ -998,7 +978,6 @@ impl Visitor<Value> for Interpreter {
         }
         Value::None()
     }
-
     fn visit_struct_init(&mut self, node: &Node) -> Value {
         let Node::StructInit { id, args } = node else {
             panic!("Expected StructInit node");
@@ -1055,7 +1034,6 @@ impl Visitor<Value> for Interpreter {
             context: Box::new(struct_ctx),
         }
     }
-
     fn visit_type_assoc_block(&mut self, node: &Node) -> Value {
         let Node::TypeAssocBlock { typename, block } = node else {
             panic!("Expected TypeAssocBlock node");

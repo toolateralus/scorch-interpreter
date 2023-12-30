@@ -117,7 +117,7 @@ dependencies = [
 [[package]]
 name = "scorch-parser"
 version = "0.1.0"
-source = "git+https://github.com/toolateralus/scorch-parser?branch=main#e93d3521165f36224bc6291539d0879bb5627eec"
+source = "git+https://github.com/toolateralus/scorch-parser?branch=result_rework#9f4c335543494fbc23f77f2d8f1f48ea5d9a9fcd"
 dependencies = [
  "rand",
  "regex",

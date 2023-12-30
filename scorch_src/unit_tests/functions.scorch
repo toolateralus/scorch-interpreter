@@ -1,32 +1,3 @@
-// NOT FULLY IMPLEMENTED
-
-//assert(lambda_args_test(1, true, '3'), 'lambda fn literal failed to return true')
-// lambda_args_test := |a, b, c| => {
-//     assert(a == 1, 'lambda_args_test failed assert0: print int arg')
-//     assert(b == true, 'lambda_args_test failed assert1 : print bool arg')
-//     assert(c == '3', 'lambda_args_test failed assert2 : print string arg')
-//     break true 
-// }
-
-// NOT FULLY IMPLEMENTED 
-// recursive function
-// this can freeze the test runner
-// this is excluded because return is not implemented and break should not be used as both, although it currently can be.
-// assert(recursive_fn(10) == 0, 'recursive_fn failed to return 0')
-// recursive_fn := (a : int) {
-//     if a == 0 {
-//         break 0
-//     }
-//     break recursive_fn(a - 1)
-// }
-
-
-
-var lambda := || => {
-    break true
-}
-assert(lambda(), 'lambda fn assigned to a field failed to return true')
-
 
 func_a : fn() -> dynamic {
     break 560

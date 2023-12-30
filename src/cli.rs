@@ -56,8 +56,14 @@ pub fn run_repl() {
 
         tokenizer.tokenize(&input.as_str());
         let tokens = &tokenizer.tokens;
-
+        
         let ast_root = parser::parse_program(&tokens);
+        
+        let Ok(ast_root) = ast_root else {
+            println!("Failed to parse input");
+            continue;
+        };
+        
         ast_root.accept(&mut interpreter);
         input.clear();
     }
@@ -71,9 +77,18 @@ pub fn execute_from_file(filename: String) -> Rc<RefCell<Context>> {
     tokenizer.tokenize(&contents.as_str());
 
     let tokens = tokenizer.tokens;
-    let ast_root = parser::parse_program(&tokens);
     let mut interpreter = Interpreter::new();
-
+    
+    let ast_root = parser::parse_program(&tokens);
+    
+    if let Err(err) = ast_root {
+        panic!("Failed to parse input :: {:?}", err);
+    } 
+    
+    let Ok(ast_root) = ast_root else {
+        panic!("Failed to parse input");
+    };
+    
     ast_root.accept(&mut interpreter);
 
     let ctx = interpreter.context;
@@ -94,6 +109,10 @@ pub fn execute_file_then_dump(filename: String) {
     println!("AST Root:");
     dbg!(&ast_root);
     let mut interpreter = Interpreter::new();
+    let Ok(ast_root) = ast_root else {
+        panic!("Failed to parse input");
+    };
+    
     ast_root.accept(&mut interpreter);
     println!("Global Context:");
 
