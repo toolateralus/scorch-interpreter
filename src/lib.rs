@@ -6,6 +6,7 @@ pub mod typechecker;
 pub mod types;
 
 use ::std::collections::HashMap;
+use indexmap::IndexMap;
 use interpreter::*;
 use scorch_parser::{lexer::{*, self}, parser};
 use types::Value;
@@ -38,7 +39,7 @@ pub fn run<'a>(code : &'a String) -> Result<&'a Value, String> {
     
     Ok(&Value::None())   
 }
-pub fn run_with_modules<'a>(code_array : HashMap<String, Vec<String>>) -> Result<Value, String> {
+pub fn run_with_modules<'a>(code_array : IndexMap<String, Vec<String>>) -> Result<Value, String> {
     let mut interpreter = Interpreter::new();
     let mut result : Option<Value> = None;    
     
