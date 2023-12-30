@@ -38,36 +38,30 @@ pub fn run<'a>(code : &'a String) -> Result<&'a Value, String> {
     
     Ok(&Value::None())   
 }
-
-pub fn run_with_modules<'a>(code_array : Vec<String>) -> Result<Value, String> {
-    
+pub fn run_with_modules<'a>(code_array : HashMap<String, Vec<String>>) -> Result<Value, String> {
     let mut interpreter = Interpreter::new();
-    
     let mut result : Option<Value> = None;    
     
-    for code in code_array {
-        let mut lexer = lexer::create_tokenizer();
-    
-        lexer.tokenize(&code);
-        
-        let tokens = &lexer.tokens;
-        
-        let ast_root = parser::parse_program(&tokens);
+    for (_module_name, code_vec) in &code_array {
+        for code in code_vec {
+            let mut lexer = lexer::create_tokenizer();
+            lexer.tokenize(&code);
+            let tokens = &lexer.tokens;
             
-            let Ok(ast_root) = ast_root else {
-                let Err(err) = ast_root else {
-                    panic!("Failed to parse input:");
-                };
-                
-                dbg!(err);
-                panic!();
+            let ast_root = match parser::parse_program(&tokens) {
+                Ok(root) => root,
+                Err(err) => {
+                    dbg!(err);
+                    panic!("Failed to parse input");
+                }
             };
-            
-        result = Some(ast_root.accept(&mut interpreter));
+                
+            result = Some(ast_root.accept(&mut interpreter));
+        }
     }
     
-    match result.clone() {
-        Some(value) => return Ok(value),
-        None => return Err("No result".to_string())
+    match result {
+        Some(value) => Ok(value),
+        None => Err("No result".to_string())
     }
 }
