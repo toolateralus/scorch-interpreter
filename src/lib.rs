@@ -21,15 +21,20 @@ pub fn run<'a>(code : &'a String) -> Result<&'a Value, String> {
     
     let tokens = &lexer.tokens;
     
-    let ast_root = parser::parse_program(tokens);
-    
     let mut interpreter = Interpreter::new();
     
-    let result = ast_root.accept(&mut interpreter);
-    
-    if let Value::None() = result {
-        return Err("No result".to_string());
-    }
+    let ast_root = parser::parse_program(&tokens);
+        
+        let Ok(ast_root) = ast_root else {
+            let Err(err) = ast_root else {
+                panic!("Failed to parse input:");
+            };
+            
+            dbg!(err);
+            panic!();
+        };
+        
+    ast_root.accept(&mut interpreter);
     
     Ok(&Value::None())   
 }

@@ -82,7 +82,7 @@ pub fn execute_from_file(filename: String) -> Rc<RefCell<Context>> {
     file.read_to_string(&mut contents)
         .expect("Failed to read file");
     tokenizer.tokenize(&contents.as_str());
-
+    
     let tokens = tokenizer.tokens;
     let mut interpreter = Interpreter::new();
     

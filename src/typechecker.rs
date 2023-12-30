@@ -1,8 +1,6 @@
 use crate::types::Value;
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
-
 use super::types::{Instance, Struct};
-
 #[derive(Debug, PartialEq)]
 pub enum Attr {
     Struct,
@@ -10,20 +8,17 @@ pub enum Attr {
     Array,
     Function,
 }
-
 #[derive(Debug)]
 pub struct Type {
     pub name: String,
     pub validator: Box<fn(&Value) -> bool>,
     pub attribute: Attr,
 }
-
 impl Type {
     pub fn validate(&self, val: &Value) -> bool {
         (self.validator)(val)
     }
 }
-
 pub struct TypeChecker {
     pub types: HashMap<String, Rc<RefCell<Type>>>,
     pub structs: HashMap<String, Box<Struct>>,
@@ -124,7 +119,6 @@ impl TypeChecker {
         }
     }
 }
-
 impl TypeChecker {
     pub fn validate(val: &Instance) -> bool {
         val.m_type.borrow().validate(&val.value)
@@ -153,10 +147,8 @@ impl TypeChecker {
         }
     }
 }
-
 // import constants.
 use scorch_parser::ast::*;
-
 pub fn get_typename(arg: &Value) -> &str {
     match &arg {
         Value::Array(..) => ARRAY_TNAME,
