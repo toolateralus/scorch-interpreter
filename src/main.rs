@@ -7,10 +7,10 @@ pub mod types;
 
 use ::std::collections::HashMap;
 use ::std::env;
-use std::process::Command;
 use cli::*;
 use interpreter::*;
 use scorch_parser::lexer::*;
+use std::process::Command;
 
 #[cfg(test)]
 pub mod test;

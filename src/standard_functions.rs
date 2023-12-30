@@ -1,5 +1,3 @@
-use crate::clear_terminal;
-
 use super::context::Context;
 use super::typechecker::TypeChecker;
 use super::types::{Instance, Value};
@@ -62,8 +60,7 @@ pub fn get_builtin_functions() -> HashMap<String, StandardFunction> {
     ])
 }
 
-
-pub fn clear_screen(context: &mut Context, type_checker: &TypeChecker, args: Vec<Value>) -> Value {
+pub fn clear_screen(_: &mut Context, _: &TypeChecker, _: Vec<Value>) -> Value {
     if cfg!(target_os = "windows") {
         let _ = Command::new("cmd").arg("/c").arg("cls").status();
     } else {
@@ -180,7 +177,7 @@ pub fn push(_context: &mut Context, type_checker: &TypeChecker, mut args: Vec<Va
                         panic!("invalid type for array");
                     }
                 }
-                
+
                 return Value::Array(mutable, elements);
             } else {
                 panic!("Cannot push to immutable array");
@@ -199,7 +196,10 @@ pub fn pop(_context: &mut Context, _type_checker: &TypeChecker, mut args: Vec<Va
     match arg {
         Value::Array(mutable, elements) => {
             let mut el = elements.borrow_mut();
-            assert!(el.len() > (0 as usize), "stack underflow: cannot pop from an empty array.");
+            assert!(
+                el.len() > (0 as usize),
+                "stack underflow: cannot pop from an empty array."
+            );
             assert!(mutable, "Cannot pop from immutable array");
             return el.pop().unwrap().value;
         }

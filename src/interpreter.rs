@@ -303,25 +303,26 @@ impl Interpreter {
 
         Value::None()
     }
-    
+
     pub fn dot_op(&mut self, lhs: &Box<Node>, rhs: &Box<Node>) -> Value {
         let lhs_value = lhs.accept(self);
-    
+
         match rhs.as_ref() {
-            Node::Identifier(id) => {
-                match lhs_value {
-                    Value::Struct { typename: _, context } => {
-                        let Some(var) = context.find_variable(id) else {
-                            dbg!(lhs, rhs);
-                            panic!("Expected Struct node");
-                        };
-    
-                        return var.borrow_mut().value.clone();
-                    },
-                    _ => {
+            Node::Identifier(id) => match lhs_value {
+                Value::Struct {
+                    typename: _,
+                    context,
+                } => {
+                    let Some(var) = context.find_variable(id) else {
                         dbg!(lhs, rhs);
-                        panic!("Unexpected value type");
-                    }
+                        panic!("Expected Struct node");
+                    };
+
+                    return var.borrow_mut().value.clone();
+                }
+                _ => {
+                    dbg!(lhs, rhs);
+                    panic!("Unexpected value type");
                 }
             },
             Node::FunctionCall { id, arguments } => {
@@ -333,8 +334,7 @@ impl Interpreter {
                     args.push(*lhs.clone());
                     self.try_find_and_execute_fn(&Some(args), id)
                 }
-                
-            },
+            }
             _ => {
                 dbg!(lhs, rhs);
                 panic!("Unexpected node type");
@@ -946,11 +946,11 @@ impl Visitor<Value> for Interpreter {
             dbg!(_node);
             panic!("Expected Lambda node");
         };
-        
+
         let params = self.get_params_list(params);
-        
+
         let return_type = self.type_checker.get(DYNAMIC_TNAME).unwrap();
-        
+
         return Value::Lambda(Rc::new(Lambda {
             params,
             block: block.clone(),
@@ -998,7 +998,7 @@ impl Visitor<Value> for Interpreter {
         }
         Value::None()
     }
-    
+
     fn visit_struct_init(&mut self, node: &Node) -> Value {
         let Node::StructInit { id, args } = node else {
             panic!("Expected StructInit node");
@@ -1023,21 +1023,21 @@ impl Visitor<Value> for Interpreter {
 
         for (field, arg) in fields.iter().zip(args.iter()) {
             let value = arg.accept(self);
-            
+
             let Some(arg_type_rc) = self.type_checker.from_value(&value) else {
                 panic!(
                     "type error: interpreter failed to infer type from value. : {:#?}",
                     value
                 );
             };
-            
+
             let param_type = &field.1;
-            
+
             let expected_typename = param_type.borrow().name.clone();
-            
+
             let arg_type = arg_type_rc.borrow_mut();
             let found_typename = arg_type.name.clone();
-            
+
             if expected_typename != DYNAMIC_TNAME && expected_typename != found_typename {
                 panic!(
                     "type mismatch in '{id}' constructor. expected {:?}, got {:?}",
@@ -1060,16 +1060,16 @@ impl Visitor<Value> for Interpreter {
         let Node::TypeAssocBlock { typename, block } = node else {
             panic!("Expected TypeAssocBlock node");
         };
-        
+
         let _struct = if let Some(_struct) = self.type_checker.structs.get_mut(typename) {
             _struct
         } else {
             panic!("Struct {} not found", typename);
         };
-        
+
         // todo: make associated functions actually work.
         block.accept(self);
-        
+
         Value::None()
     }
 }

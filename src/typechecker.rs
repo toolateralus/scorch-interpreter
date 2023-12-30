@@ -1,5 +1,5 @@
 use crate::types::Value;
-use std::{collections::HashMap, rc::Rc, cell::RefCell};
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use super::types::{Instance, Struct};
 
@@ -139,11 +139,11 @@ impl TypeChecker {
         }
     }
     pub fn from_value(&self, val: &Value) -> Option<Rc<RefCell<Type>>> {
-        match &val{
-            Value::Struct{typename, ..} => {
+        match &val {
+            Value::Struct { typename, .. } => {
                 let struct_decl = self.structs.get(typename)?;
                 return Some(Rc::clone(&struct_decl.type_));
-            },
+            }
             _ => {
                 let typename = get_typename(val);
                 let result = self.get(&typename);
@@ -168,7 +168,7 @@ pub fn get_typename(arg: &Value) -> &str {
         Value::Return(..) => panic!("cannot get the typename of a return node. if you don't know what this means, something has gone seriously wrong."),
         // todo: Fix the lack of type checking for functions,
         // we need a more centralized way of checking types for structs & functions.
-        Value::Function(func) => FN_TNAME,
+        Value::Function(..) => FN_TNAME,
         Value::Struct {
             typename,
             context: _,
