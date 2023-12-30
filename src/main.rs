@@ -7,13 +7,20 @@ pub mod types;
 
 use ::std::collections::HashMap;
 use ::std::env;
+use std::process::Command;
 use cli::*;
 use interpreter::*;
 use scorch_parser::lexer::*;
 
 #[cfg(test)]
 pub mod test;
-
+pub fn clear_terminal() {
+    if cfg!(target_os = "windows") {
+        let _ = Command::new("cmd").arg("/c").arg("cls").status();
+    } else {
+        let _ = Command::new("clear").status();
+    }
+}
 fn main() -> () {
     let flags_map = parse_cmd_line_args();
 

@@ -1,6 +1,9 @@
+use crate::clear_terminal;
+
 use super::context::Context;
 use super::typechecker::TypeChecker;
 use super::types::{Instance, Value};
+use std::process::Command;
 use std::{collections::HashMap, rc::Rc};
 
 pub struct StandardFunction {
@@ -22,6 +25,10 @@ impl StandardFunction {
 
 pub fn get_builtin_functions() -> HashMap<String, StandardFunction> {
     HashMap::from([
+        (
+            String::from("clearscreen"),
+            StandardFunction::new(Box::new(clear_screen)),
+        ),
         (
             String::from("println"),
             StandardFunction::new(Box::new(print_ln)),
@@ -54,6 +61,17 @@ pub fn get_builtin_functions() -> HashMap<String, StandardFunction> {
         (String::from("abs"), StandardFunction::new(Box::new(abs))),
     ])
 }
+
+
+pub fn clear_screen(context: &mut Context, type_checker: &TypeChecker, args: Vec<Value>) -> Value {
+    if cfg!(target_os = "windows") {
+        let _ = Command::new("cmd").arg("/c").arg("cls").status();
+    } else {
+        let _ = Command::new("clear").status();
+    }
+    Value::None()
+}
+
 // IO
 pub fn print_ln(context: &mut Context, type_checker: &TypeChecker, args: Vec<Value>) -> Value {
     for arg in args {
