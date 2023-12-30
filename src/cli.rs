@@ -60,11 +60,18 @@ pub fn run_repl() {
         let ast_root = parser::parse_program(&tokens);
         
         let Ok(ast_root) = ast_root else {
-            println!("Failed to parse input");
-            continue;
+            let Err(err) = ast_root else {
+                println!("Failed to parse input:");
+                continue;
+            };
+            
+            dbg!(err);
+            panic!();
         };
         
+        
         ast_root.accept(&mut interpreter);
+        
         input.clear();
     }
 }
@@ -80,19 +87,17 @@ pub fn execute_from_file(filename: String) -> Rc<RefCell<Context>> {
     let mut interpreter = Interpreter::new();
     
     let ast_root = parser::parse_program(&tokens);
-    
-    if let Err(err) = ast_root {
-        panic!("Failed to parse input :: {:?}", err);
-    } 
-    
-    let Ok(ast_root) = ast_root else {
-        panic!("Failed to parse input");
-    };
-    
+        
+        let Ok(ast_root) = ast_root else {
+            let Err(err) = ast_root else {
+                panic!("Failed to parse input:");
+            };
+            
+            dbg!(err);
+            panic!();
+        };
     ast_root.accept(&mut interpreter);
-
-    let ctx = interpreter.context;
-    return ctx;
+    interpreter.context
 }
 pub fn execute_file_then_dump(filename: String) {
     let mut tokenizer = lexer::create_tokenizer();
