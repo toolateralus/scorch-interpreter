@@ -1,11 +1,11 @@
-struct List |
-    inner : array = []
-|
 
-list := new List([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 'seven', 'eight', 'nine', 'ten'])
-
-List :: {
-    main : fn(this: List) -> int {
-        break 0
+println(repeat {
+    
+if true {
+    if true {
+        if true {
+            break true   
+        }
     }
 }
+})

@@ -74,23 +74,23 @@ impl Interpreter {
                 }
                 None => panic!("Expected condition in conditional repeat statement"),
             };
-
+            
             if condition_result {
                 self.push_ctx();
                 let result = block.accept(self);
                 self.pop_ctx();
-
-                match result {
+                
+                match &result {
                     Value::Int(..)
                     | Value::Double(..)
                     | Value::Bool(_)
                     | Value::Function(_)
                     | Value::String(_) => return result,
                     Value::Return(value) => {
-                        if let Some(val) = value {
+                        if let Some(val) = value.clone() {
                             return *val;
                         } else {
-                            return Value::None();
+                            return result;
                         }
                     }
                     _ => {}
@@ -241,9 +241,9 @@ impl Interpreter {
     }
     pub fn try_find_and_execute_fn(&mut self, arguments: &Option<Vec<Node>>, id: &String) -> Value {
         let args = Function::extract_args(self, arguments);
-
+        
         let function: Option<Rc<Function>>;
-
+        
         {
             let mut ctx = self.context.borrow_mut();
             // function pointer
@@ -254,22 +254,29 @@ impl Interpreter {
                 };
                 return builtin.call(&mut ctx, &self.type_checker, args);
             };
-
+            
             function = match &fn_ptr.borrow_mut().value {
                 Value::Function(func) => Some(func.clone()),
                 Value::Lambda(func) => Some(func.as_function()),
                 _ => panic!("Expected function"),
             };
         }
-
+        
         let Some(function) = function else {
             dbg!(id);
             panic!("Function not found");
         };
-
+        
         // valid parameterless
         if function.params.len() + args.len() == 0 {
-            return function.body.accept(self);
+            let result = function.body.accept(self);
+            
+            match result {
+                Value::Return(Some(return_value)) => return *return_value,
+                Value::Return(None) => return Value::None(),
+                _ => return result,
+            }
+            
         }
 
         if args.len() != function.params.len() {
@@ -350,7 +357,7 @@ impl Interpreter {
     }
     pub fn pop_ctx(&mut self) {
         let current = self.context.clone();
-
+        
         self.context = match current.borrow_mut().parent.take() {
             Some(parent) => Rc::clone(&parent),
             None => panic!("Cannot pop root context"),
@@ -423,12 +430,11 @@ impl Visitor<Value> for Interpreter {
             Node::Block(statements) => statements,
             _ => panic!("Expected Block node"),
         };
-
+        
         for statement in statements {
             let value = statement.accept(self);
             match value {
-                Value::Return(Some(return_value)) => return *return_value,
-                Value::Return(None) => return Value::Return(None),
+                Value::Return(..) => return value,
                 _ => continue,
             }
         }
@@ -455,11 +461,11 @@ impl Visitor<Value> for Interpreter {
         if condition_result {
             self.push_ctx();
             let returned = true_block.accept(self);
+            self.pop_ctx();
             match returned {
                 Value::Return(_) => return returned,
                 _ => {}
             }
-            self.pop_ctx();
         } else if let Some(else_stmnt) = else_block {
             let returned = else_stmnt.accept(self);
             match returned {
@@ -491,13 +497,13 @@ impl Visitor<Value> for Interpreter {
         if condition_result {
             self.push_ctx();
             let returned = true_block.accept(self);
+            self.pop_ctx();
 
             match returned {
                 Value::Return(_) => return returned,
                 _ => {}
             }
 
-            self.pop_ctx();
         } else if let Some(else_statement) = else_stmnt {
             else_statement.accept(self);
         }
