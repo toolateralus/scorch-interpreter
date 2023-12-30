@@ -8,4 +8,4 @@ edition = "2021"
 rand = "0.8.5"
 regex = "1.10.2"
 
-scorch-parser = { git = "https://github.com/toolateralus/scorch-parser", branch = "result_rework" }
+scorch-parser = { git = "https://github.com/toolateralus/scorch-parser", branch = "main" }
