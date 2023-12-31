@@ -21,12 +21,6 @@ pub enum Value {
         context: Box<Context>,
     },
 }
-
-pub struct Struct {
-    pub name: String,
-    pub fields: Vec<(String, Rc<RefCell<Type>>)>,
-    pub type_: Rc<RefCell<Type>>,
-}
 impl Value {
     pub fn as_bool(&self) -> Option<&bool> {
         let value = match self {

@@ -1,7 +1,7 @@
-use crate::types::Value;
+use crate::{types::Value, context::Context};
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
-use super::types::{Instance, Struct};
+use super::types::Instance;
 
 #[derive(Debug, PartialEq)]
 pub enum Attr {
@@ -16,6 +16,7 @@ pub struct Type {
     pub name: String,
     pub validator: Box<fn(&Value) -> bool>,
     pub attribute: Attr,
+    pub context : Box<Context>
 }
 
 impl Type {
@@ -26,12 +27,10 @@ impl Type {
 
 pub struct TypeChecker {
     pub types: HashMap<String, Rc<RefCell<Type>>>,
-    pub structs: HashMap<String, Box<Struct>>,
 }
 impl TypeChecker {
     pub fn new() -> Self {
         Self {
-            structs: HashMap::new(),
             types: HashMap::from([
                 (
                     String::from(NONE_TNAME),
@@ -42,6 +41,7 @@ impl TypeChecker {
                             _ => false,
                         }),
                         attribute: Attr::Value,
+                        context: Box::new(Context { parent: None, variables: HashMap::new() }),
                     })),
                 ),
                 (
@@ -53,6 +53,7 @@ impl TypeChecker {
                             _ => false,
                         }),
                         attribute: Attr::Value,
+                        context: Box::new(Context { parent: None, variables: HashMap::new() }),
                     })),
                 ),
                 (
@@ -64,6 +65,7 @@ impl TypeChecker {
                             _ => false,
                         }),
                         attribute: Attr::Value,
+                        context: Box::new(Context { parent: None, variables: HashMap::new() }),
                     })),
                 ),
                 (
@@ -74,6 +76,7 @@ impl TypeChecker {
                             _ => true, // :D
                         }),
                         attribute: Attr::Value,
+                        context: Box::new(Context { parent: None, variables: HashMap::new() }),
                     })),
                 ),
                 (
@@ -85,6 +88,7 @@ impl TypeChecker {
                             _ => false,
                         }),
                         attribute: Attr::Value,
+                        context: Box::new(Context { parent: None, variables: HashMap::new() }),
                     })),
                 ),
                 (
@@ -96,6 +100,7 @@ impl TypeChecker {
                             _ => false,
                         }),
                         attribute: Attr::Value,
+                        context: Box::new(Context { parent: None, variables: HashMap::new() }),
                     })),
                 ),
                 (
@@ -107,6 +112,7 @@ impl TypeChecker {
                             _ => false,
                         }),
                         attribute: Attr::Array,
+                        context: Box::new(Context { parent: None, variables: HashMap::new() }),
                     })),
                 ),
                 (
@@ -118,6 +124,7 @@ impl TypeChecker {
                             _ => false,
                         }),
                         attribute: Attr::Function,
+                        context: Box::new(Context { parent: None, variables: HashMap::new() }),
                     })),
                 ),
             ]),
@@ -130,27 +137,16 @@ impl TypeChecker {
         val.m_type.borrow().validate(&val.value)
     }
     pub fn get(&self, name: &str) -> Option<Rc<RefCell<Type>>> {
-        match self.structs.get(name) {
-            Some(t) => Some(Rc::clone(&t.type_)),
-            None => match self.types.get(name) {
-                Some(t) => Some(Rc::clone(t)),
-                None => None,
-            },
+        match self.types.get(name) {
+            Some(t) => Some(Rc::clone(t)),
+            None => None,
         }
     }
     pub fn from_value(&self, val: &Value) -> Option<Rc<RefCell<Type>>> {
-        match &val {
-            Value::Struct { typename, .. } => {
-                let struct_decl = self.structs.get(typename)?;
-                return Some(Rc::clone(&struct_decl.type_));
-            }
-            _ => {
-                let typename = get_typename(val);
-                let result = self.get(&typename);
-                assert!(result.is_some(), "type not found, {}", typename);
-                Some(result.unwrap())
-            }
-        }
+        let typename = get_typename(val);
+        let result = self.get(&typename);
+        assert!(result.is_some(), "type not found, {}", typename);
+        Some(result.unwrap())
     }
 }
 

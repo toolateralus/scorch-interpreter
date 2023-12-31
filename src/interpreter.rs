@@ -4,6 +4,7 @@ use super::typechecker::*;
 use super::types::*;
 use scorch_parser::ast::*;
 use scorch_parser::lexer::*;
+use std::arch::x86_64::_t1mskc_u32;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -947,15 +948,11 @@ impl Visitor<Value> for Interpreter {
             let Node::Block(_statements) = block.as_ref() else {
                 panic!("Expected block")
             };
-
-            let _new_type = Type {
-                name: id.to_string(),
-                validator: Box::new(|_value| true),
-                attribute: Attr::Struct,
-            };
-
+            
+            self.push_ctx();
+            
             let mut fields = Vec::<(String, Rc<RefCell<Type>>)>::new();
-
+            
             for statement in _statements {
                 let Node::DeclStmt {
                     target_type, id, ..
@@ -963,23 +960,26 @@ impl Visitor<Value> for Interpreter {
                 else {
                     panic!("Expected declaration, got {:#?}", statement);
                 };
-
+                
                 let Some(t) = self.type_checker.get(&target_type) else {
                     panic!("{} not a valid type", target_type);
                 };
-
+                
                 fields.push((id.clone(), t));
+                statement.accept(self);
             }
-
-            let _struct = Struct {
+            
+            let _new_type = Type {
                 name: id.to_string(),
-                fields, // todo : pre-evaluate default values for fields and just copy that context into new structs instead of what we do now.
-                type_: Rc::new(RefCell::new(_new_type)),
+                validator: Box::new(|_value| true),
+                attribute: Attr::Struct,
+                // todo : make sure this clones fully and doesn't just copy the reference.
+                context: Box::new(self.context.borrow().to_owned()),
             };
-
-            self.type_checker
-                .structs
-                .insert(id.to_string(), Box::new(_struct));
+            
+            self.type_checker.types.insert(id.to_string(), Rc::new(RefCell::new(_new_type)));
+            
+            self.pop_ctx();
         }
         Value::None()
     }
@@ -987,64 +987,26 @@ impl Visitor<Value> for Interpreter {
         let Node::StructInit { id, args } = node else {
             panic!("Expected StructInit node");
         };
-
-        let mut struct_ctx = Context {
-            parent: Some(Rc::clone(&self.context)),
-            variables: HashMap::new(),
-        };
-
-        let _struct = if let Some(_struct) = self.type_checker.structs.get_mut(id) {
-            _struct
+        
+        let typedef = if let Some(type_) = self.type_checker.types.get_mut(id) {
+            type_
         } else {
             panic!("Struct {} not found", id);
         };
-
-        let fields = _struct.fields.clone();
-
-        if fields.len() != args.len() {
-            panic!("{id} constructor:  number of arguments does not match the number of fields");
-        }
-
-        for (field, arg) in fields.iter().zip(args.iter()) {
-            let value = arg.accept(self);
-
-            let Some(arg_type_rc) = self.type_checker.from_value(&value) else {
-                panic!(
-                    "type error: interpreter failed to infer type from value. : {:#?}",
-                    value
-                );
-            };
-
-            let param_type = &field.1;
-
-            let expected_typename = param_type.borrow().name.clone();
-
-            let arg_type = arg_type_rc.borrow_mut();
-            let found_typename = arg_type.name.clone();
-
-            if expected_typename != DYNAMIC_TNAME && expected_typename != found_typename {
-                panic!(
-                    "type mismatch in '{id}' constructor. expected {:?}, got {:?}",
-                    field.1.borrow().name,
-                    arg_type.name
-                );
-            }
-
-            let var = Instance::new(true, value, Rc::clone(&arg_type_rc));
-            struct_ctx.insert_variable(&field.0, Rc::new(RefCell::new(var)));
-        }
-
+        
+        let struct_context = typedef.borrow().context.clone();
+        
         Value::Struct {
             typename: id.clone(),
-            context: Box::new(struct_ctx),
+            context: struct_context,
         }
     }
     fn visit_type_assoc_block(&mut self, node: &Node) -> Value {
         let Node::TypeAssocBlock { typename, block } = node else {
             panic!("Expected TypeAssocBlock node");
         };
-
-        let _struct = if let Some(_struct) = self.type_checker.structs.get_mut(typename) {
+        
+        let _struct = if let Some(_struct) = self.type_checker.types.get_mut(typename) {
             _struct
         } else {
             panic!("Struct {} not found", typename);
