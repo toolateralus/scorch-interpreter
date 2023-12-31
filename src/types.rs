@@ -20,25 +20,8 @@ pub enum Value {
         typename: String,
         context: Box<Context>,
     },
-    Lambda(Rc<Lambda>),
 }
-#[derive(Debug, Clone)]
-pub struct Lambda {
-    pub params: Vec<Parameter>,
-    pub block: Box<Node>,
-    pub return_type: Rc<RefCell<Type>>,
-}
-impl Lambda {
-    pub(crate) fn as_function(&self) -> Rc<Function> {
-        Rc::new(Function {
-            name: generate_random_function_name(),
-            params: self.params.clone(),
-            body: self.block.clone(),
-            return_type: Rc::clone(&self.return_type),
-            mutable: false,
-        })
-    }
-}
+
 pub struct Struct {
     pub name: String,
     pub fields: Vec<(String, Rc<RefCell<Type>>)>,

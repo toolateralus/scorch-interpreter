@@ -257,7 +257,6 @@ impl Interpreter {
             
             function = match &fn_ptr.borrow_mut().value {
                 Value::Function(func) => Some(func.clone()),
-                Value::Lambda(func) => Some(func.as_function()),
                 _ => panic!("Expected function"),
             };
         }
@@ -313,7 +312,7 @@ impl Interpreter {
 
     pub fn dot_op(&mut self, lhs: &Box<Node>, rhs: &Box<Node>) -> Value {
         let lhs_value = lhs.accept(self);
-
+        
         match rhs.as_ref() {
             Node::Identifier(id) => match lhs_value {
                 Value::Struct {
@@ -324,7 +323,7 @@ impl Interpreter {
                         dbg!(lhs, rhs);
                         panic!("Expected Struct node");
                     };
-
+                    
                     return var.borrow_mut().value.clone();
                 }
                 _ => {
@@ -852,7 +851,7 @@ impl Visitor<Value> for Interpreter {
         };
         Value::None()
     }
-
+    
     fn visit_repeat_stmnt(&mut self, node: &Node) -> Value {
         let Node::RepeatStmnt {
             iterator_id,

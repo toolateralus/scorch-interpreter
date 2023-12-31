@@ -105,7 +105,6 @@ pub fn print_ln(context: &mut Context, type_checker: &TypeChecker, args: Vec<Val
                 // }
             }
             Value::Return(_) => panic!("Cannot print return value"),
-            Value::Lambda { .. } => panic!("Cannot print lambda"),
         }
     }
     Value::None()
