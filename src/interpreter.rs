@@ -233,8 +233,19 @@ impl Interpreter {
 
     pub fn new() -> Interpreter {
         let builtins = super::standard_functions::get_builtin_functions();
+        let type_checker = TypeChecker::new();
+        let variables = HashMap::from([
+            ("none".to_string(), Rc::new(RefCell::new(Instance{
+                mutable: false,
+                value: Value::None(),
+                m_type: type_checker.get(NONE_TNAME).unwrap()
+            })))
+        ]);
         Interpreter {
-            context: Context::new(),
+            context: Rc::new(RefCell::new(Context {
+                parent: None,
+                variables
+            })),
             builtin: builtins,
             type_checker: TypeChecker::new(),
         }
@@ -788,24 +799,13 @@ impl Visitor<Value> for Interpreter {
                 let e_lhs = lhs.accept(self);
                 let e_rhs = rhs.accept(self);
                 match (e_lhs, e_rhs) {
-                    (Value::Int(lhs_float), Value::Int(rhs_float)) => {
-                        return self.bin_op_int(node, &lhs_float, &rhs_float);
-                    }
-                    (Value::Double(lhs_float), Value::Double(rhs_float)) => {
-                        return self.bin_op_float(node, &lhs_float, &rhs_float);
-                    }
-                    (Value::String(lhs_string), Value::String(rhs_string)) => {
-                        return self.bin_op_string(node, &lhs_string, &rhs_string);
-                    }
-                    _ => {
-                        dbg!(node);
-                        panic!("mismatched type in binary operation");
-                    }
+                    (Value::Int(lhs_float), Value::Int(rhs_float)) => self.bin_op_int(node, &lhs_float, &rhs_float),
+                    (Value::Double(lhs_float), Value::Double(rhs_float)) => self.bin_op_float(node, &lhs_float, &rhs_float),
+                    (Value::String(lhs_string), Value::String(rhs_string)) => self.bin_op_string(node, &lhs_string, &rhs_string),
+                    _ => self.evaluate_expression(lhs, rhs, op)
                 }
             }
-            _ => {
-                return self.evaluate_expression(lhs, rhs, op);
-            }
+            _ => self.evaluate_expression(lhs, rhs, op),
         }
     }
     fn visit_term(&mut self, _node: &Node) -> Value {
@@ -1028,12 +1028,14 @@ impl Visitor<Value> for Interpreter {
         };
         
         // clone boxed context
-        let struct_context = _struct.borrow().context.clone();
+        let mut struct_context = _struct.borrow().context.clone();
         
+        struct_context.parent = Some(Rc::clone(&self.context));
         // make rc to ctx
         let rc = Rc::new(RefCell::new(*struct_context));
         
         self.context = Rc::clone(&rc);
+        
         let ctx = Some(Rc::clone(&rc));
         
         block.accept(self);
@@ -1043,6 +1045,8 @@ impl Visitor<Value> for Interpreter {
                 _struct.borrow_mut().context = Box::new(ctx.borrow().to_owned());
             }
         }
+        
+        self.pop_ctx();
         
         Value::None()
     }

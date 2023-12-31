@@ -1,8 +1,7 @@
 use crate::{types::Value, context::Context};
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use super::types::Instance;
-use std::fmt::Debug;
+use std::{fmt::Debug, rc::Rc, cell::RefCell, collections::HashMap};
 
 #[derive(Debug, PartialEq)]
 pub enum Attr {
@@ -29,7 +28,8 @@ pub struct Type {
 
 impl Debug for Type {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Type {{ name: {}, attribute: {:?} }}", self.name, self.attribute)
+        write!(f, "Type {{\n  name: {}, \n  attribute: {:?} \n  # of operator overloads: {}\n  # of fields on type : {}\n}}",
+         self.name, self.attribute, self.operators.len(), self.context.variables.len())
     }
 }
 

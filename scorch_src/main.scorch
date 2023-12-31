@@ -1,2 +1,16 @@
-i := 1 + 2
-println(i)
+struct Type |
+    x : int
+    y : int
+|
+
+Type :: {
+    hashcode : fn() -> int {
+        break 2 - time() * x - (y * y * time())
+    }
+}
+
+
+ffn : fn(s : string) -> bool {
+    
+    
+}
