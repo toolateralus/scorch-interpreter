@@ -25,10 +25,7 @@ assert(int_complex_2 == 14, "Integer complex 2 failed, got " + tostr(int_complex
 int_complex_3        := (5 - 6) * 2 / 3
 assert(int_complex_3 == 0, "Integer complex 3 failed, got " + tostr(int_complex_3))
 
-// this rounds to 0, when it should round to 1. the odd thing is it rounds from 1.1 to 0
-// the expected result SHOULD be 1 here, i think.
 int_complex_4        := 5 / (6 + 3) * 2
-// should be 1
 assert(int_complex_4 == 0, "Integer complex 4 failed, got " + tostr(int_complex_4))
 
 int_complex_5        := 5 + 6 - 3 * 2 / 1
