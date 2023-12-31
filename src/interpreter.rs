@@ -125,7 +125,9 @@ impl Interpreter {
     }
     pub fn visit_conditionless_repeat_stmnt(&mut self, block: &Box<Node>) -> Value {
         loop {
+            self.push_ctx();
             let _result = block.accept(self);
+            self.pop_ctx();
             match _result {
                 Value::Return(value) => {
                     if let Some(val) = value {

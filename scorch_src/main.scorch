@@ -1,16 +1,6 @@
-struct Type |
-    x : int
-    y : int
-|
-
-Type :: {
-    hashcode : fn() -> int {
-        break 2 - time() * x - (y * y * time())
-    }
-}
-
-
-ffn : fn(s : string) -> bool {
+repeat {
+    x := 250
+    
     
     
 }
