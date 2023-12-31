@@ -1,18 +1,28 @@
-var status := 'failed'
 
-implicit_fn_test_params := (a: String) {
-    println('recursive func ', a)
-    status = 'passed'
+func_a : fn() -> dynamic {
+    break 560
 }
 
-implicit_fn_test_no_params := {
-    status = 'passed'
-    println('recursive func paramless')
+func_b := (p : string) {
+    assert(p == 'func_b', 'func_b failed to assert')
+}
+func_c := {
+    break 560
 }
 
-implicit_fn_test_params('my argument')
+func_d := (f : fn) {
+    assert(f() == 560, 'func_d failed to assert')
+}
 
-assert(status == 'passed', 'failed to pass functions.scorch')
+// return val
+assert(func_a() == 560, 'func_a failed to return 560')
 
-implicit_fn_test_no_params()
+// string arg
+func_b('func_b')
+
+// return val implicit
+assert(func_c() == 560, 'func_c failed to return 560')
+
+// func pointer arg
+func_d(func_a)
 

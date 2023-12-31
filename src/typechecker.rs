@@ -1,7 +1,7 @@
 use crate::types::Value;
-use std::{collections::HashMap, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
-use super::types::{Struct, Instance};
+use super::types::{Instance, Struct};
 
 #[derive(Debug, PartialEq)]
 pub enum Attr {
@@ -25,7 +25,7 @@ impl Type {
 }
 
 pub struct TypeChecker {
-    pub types: HashMap<String, Rc<Type>>,
+    pub types: HashMap<String, Rc<RefCell<Type>>>,
     pub structs: HashMap<String, Box<Struct>>,
 }
 impl TypeChecker {
@@ -34,91 +34,91 @@ impl TypeChecker {
             structs: HashMap::new(),
             types: HashMap::from([
                 (
-                    String::from("None"),
-                    Rc::new(Type {
-                        name: String::from("None"),
+                    String::from(NONE_TNAME),
+                    Rc::new(RefCell::new(Type {
+                        name: String::from(NONE_TNAME),
                         validator: Box::new(|v| match v {
                             Value::None() => true,
                             _ => false,
                         }),
                         attribute: Attr::Value,
-                    }),
+                    })),
                 ),
                 (
-                    String::from("Int"),
-                    Rc::new(Type {
-                        name: String::from("Int"),
+                    String::from(INT_TNAME),
+                    Rc::new(RefCell::new(Type {
+                        name: String::from(INT_TNAME),
                         validator: Box::new(|v| match v {
                             Value::Int(..) => true,
                             _ => false,
                         }),
                         attribute: Attr::Value,
-                    }),
+                    })),
                 ),
                 (
-                    String::from("Double"),
-                    Rc::new(Type {
-                        name: String::from("Double"),
+                    String::from(DOUBLE_TNAME),
+                    Rc::new(RefCell::new(Type {
+                        name: String::from(DOUBLE_TNAME),
                         validator: Box::new(|v| match v {
                             Value::Double(_) => true,
                             _ => false,
                         }),
                         attribute: Attr::Value,
-                    }),
+                    })),
                 ),
                 (
-                    String::from("Dynamic"),
-                    Rc::new(Type {
-                        name: String::from("Dynamic"),
+                    String::from(DYNAMIC_TNAME),
+                    Rc::new(RefCell::new(Type {
+                        name: String::from(DYNAMIC_TNAME),
                         validator: Box::new(|v| match v {
                             _ => true, // :D
                         }),
                         attribute: Attr::Value,
-                    }),
+                    })),
                 ),
                 (
-                    String::from("String"),
-                    Rc::new(Type {
-                        name: String::from("String"),
+                    String::from(STRING_TNAME),
+                    Rc::new(RefCell::new(Type {
+                        name: String::from(STRING_TNAME),
                         validator: Box::new(|v| match v {
                             Value::String(_) => true,
                             _ => false,
                         }),
                         attribute: Attr::Value,
-                    }),
+                    })),
                 ),
                 (
-                    String::from("Bool"),
-                    Rc::new(Type {
-                        name: String::from("Bool"),
+                    String::from(BOOL_TNAME),
+                    Rc::new(RefCell::new(Type {
+                        name: String::from(BOOL_TNAME),
                         validator: Box::new(|v| match v {
                             Value::Bool(_) => true,
                             _ => false,
                         }),
                         attribute: Attr::Value,
-                    }),
+                    })),
                 ),
                 (
-                    String::from("Array"),
-                    Rc::new(Type {
-                        name: String::from("Array"),
+                    String::from(ARRAY_TNAME),
+                    Rc::new(RefCell::new(Type {
+                        name: String::from(ARRAY_TNAME),
                         validator: Box::new(|v| match v {
                             Value::Array(..) => true,
                             _ => false,
                         }),
                         attribute: Attr::Array,
-                    }),
+                    })),
                 ),
                 (
-                    String::from("Fn"),
-                    Rc::new(Type {
-                        name: String::from("Fn"),
+                    String::from(FN_TNAME),
+                    Rc::new(RefCell::new(Type {
+                        name: String::from(FN_TNAME),
                         validator: Box::new(|v| match v {
                             Value::Function(..) => true,
                             _ => false,
                         }),
                         attribute: Attr::Function,
-                    }),
+                    })),
                 ),
             ]),
         }
@@ -127,9 +127,9 @@ impl TypeChecker {
 
 impl TypeChecker {
     pub fn validate(val: &Instance) -> bool {
-        val.m_type.validate(&val.value)
+        val.m_type.borrow().validate(&val.value)
     }
-    pub fn get(&self, name: &str) -> Option<Rc<Type>> {
+    pub fn get(&self, name: &str) -> Option<Rc<RefCell<Type>>> {
         match self.structs.get(name) {
             Some(t) => Some(Rc::clone(&t.type_)),
             None => match self.types.get(name) {
@@ -138,33 +138,43 @@ impl TypeChecker {
             },
         }
     }
-    pub fn from_value(&self, val: &Value) -> Option<Rc<Type>> {
-        if let Value::Struct { typename: name, .. } = &val {
-            let struct_decl = self.structs.get(name)?;
-            return Some(Rc::clone(&struct_decl.type_));
+    pub fn from_value(&self, val: &Value) -> Option<Rc<RefCell<Type>>> {
+        match &val {
+            Value::Struct { typename, .. } => {
+                let struct_decl = self.structs.get(typename)?;
+                return Some(Rc::clone(&struct_decl.type_));
+            }
+            _ => {
+                let typename = get_typename(val);
+                let result = self.get(&typename);
+                assert!(result.is_some(), "type not found, {}", typename);
+                Some(result.unwrap())
+            }
         }
-        
-        self.get(get_typename(val))
     }
 }
 
-pub fn get_typename<'a>(arg: &'a Value) -> &'a str {
-    let arg_type_name = match arg {
-        Value::Array(..) => "Array",
-        Value::None() => "None",
-        Value::Int(..) => "Int",
-        Value::Bool(..) => "Bool",
-        Value::String(..) => "String",
-        Value::Double(..) => "Double",
-        Value::Return(..) => todo!(),
-        Value::Lambda { .. } => todo!(),
+// import constants.
+use scorch_parser::ast::*;
+
+pub fn get_typename(arg: &Value) -> &str {
+    match &arg {
+        Value::Array(..) => ARRAY_TNAME,
+        Value::None() => NONE_TNAME,
+        Value::Int(..) => INT_TNAME,
+        Value::Bool(..) => BOOL_TNAME,
+        Value::String(..) => STRING_TNAME,
+        Value::Double(..) => DOUBLE_TNAME,
+        Value::Return(..) => panic!("cannot get the typename of a return node. if you don't know what this means, something has gone seriously wrong."),
         // todo: Fix the lack of type checking for functions,
         // we need a more centralized way of checking types for structs & functions.
-        Value::Function(func) => {
-            let sig = super::standard_functions::get_function_signature(func);
-            "{sig}"
+        Value::Function(..) => FN_TNAME,
+        Value::Struct {
+            typename,
+            context: _,
+        } => typename,
+        _ => {
+            panic!("cannot find type from value {:?}", arg);
         }
-        Value::Struct { typename, context : _ } => &typename,
-    };
-    arg_type_name
+    }
 }

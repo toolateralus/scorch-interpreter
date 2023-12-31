@@ -1,7 +1,8 @@
 use super::context::Context;
 use super::typechecker::TypeChecker;
+use super::types::{Instance, Value};
+use std::process::Command;
 use std::{collections::HashMap, rc::Rc};
-use super::types::{Value, Instance};
 
 pub struct StandardFunction {
     pub func: Box<dyn FnMut(&mut Context, &TypeChecker, Vec<Value>) -> Value>,
@@ -23,6 +24,10 @@ impl StandardFunction {
 pub fn get_builtin_functions() -> HashMap<String, StandardFunction> {
     HashMap::from([
         (
+            String::from("clearscreen"),
+            StandardFunction::new(Box::new(clear_screen)),
+        ),
+        (
             String::from("println"),
             StandardFunction::new(Box::new(print_ln)),
         ),
@@ -31,7 +36,10 @@ pub fn get_builtin_functions() -> HashMap<String, StandardFunction> {
             StandardFunction::new(Box::new(readln)),
         ),
         (String::from("wait"), StandardFunction::new(Box::new(wait))),
-        (String::from("tostr"), StandardFunction::new(Box::new(tostr))),
+        (
+            String::from("tostr"),
+            StandardFunction::new(Box::new(tostr)),
+        ),
         (String::from("time"), StandardFunction::new(Box::new(time))),
         (
             String::from("assert"),
@@ -44,13 +52,25 @@ pub fn get_builtin_functions() -> HashMap<String, StandardFunction> {
         (String::from("len"), StandardFunction::new(Box::new(length))),
         (String::from("push"), StandardFunction::new(Box::new(push))),
         (String::from("pop"), StandardFunction::new(Box::new(pop))),
-        (String::from("floor"), StandardFunction::new(Box::new(floor))),
+        (
+            String::from("floor"),
+            StandardFunction::new(Box::new(floor)),
+        ),
         (String::from("abs"), StandardFunction::new(Box::new(abs))),
     ])
 }
+
+pub fn clear_screen(_: &mut Context, _: &TypeChecker, _: Vec<Value>) -> Value {
+    if cfg!(target_os = "windows") {
+        let _ = Command::new("cmd").arg("/c").arg("cls").status();
+    } else {
+        let _ = Command::new("clear").status();
+    }
+    Value::None()
+}
+
 // IO
 pub fn print_ln(context: &mut Context, type_checker: &TypeChecker, args: Vec<Value>) -> Value {
-    
     for arg in args {
         match arg {
             Value::Int(val) => print!("{}\n", val),
@@ -85,7 +105,6 @@ pub fn print_ln(context: &mut Context, type_checker: &TypeChecker, args: Vec<Val
                 // }
             }
             Value::Return(_) => panic!("Cannot print return value"),
-            Value::Lambda { .. } => panic!("Cannot print lambda"),
         }
     }
     Value::None()
@@ -109,7 +128,7 @@ pub fn time(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Value
     let time = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .expect("Time went backwards");
-    
+
     Value::Int(time.as_millis() as i32)
 }
 pub fn wait(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Value>) -> Value {
@@ -147,7 +166,7 @@ pub fn push(_context: &mut Context, type_checker: &TypeChecker, mut args: Vec<Va
     let arg = args.remove(0);
 
     match arg {
-        Value::Array(mutable, mut elements) => {
+        Value::Array(mutable, elements) => {
             if mutable {
                 for value in args {
                     if let Some(t) = type_checker.from_value(&value) {
@@ -168,18 +187,20 @@ pub fn push(_context: &mut Context, type_checker: &TypeChecker, mut args: Vec<Va
         }
     }
 }
-pub fn pop(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Value>) -> Value {
+pub fn pop(_context: &mut Context, _type_checker: &TypeChecker, mut args: Vec<Value>) -> Value {
     if args.len() != 1 {
         panic!("pop expected 1 argument");
     }
-    let arg = &args[0];
-    match &arg {
+    let arg = args.remove(0);
+    match arg {
         Value::Array(mutable, elements) => {
-            if *mutable {
-                return elements.borrow_mut().pop().unwrap().value;
-            } else {
-                panic!("Cannot pop from immutable array");
-            }
+            let mut el = elements.borrow_mut();
+            assert!(
+                el.len() > (0 as usize),
+                "stack underflow: cannot pop from an empty array."
+            );
+            assert!(mutable, "Cannot pop from immutable array");
+            return el.pop().unwrap().value;
         }
         _ => {
             panic!("Cannot pop from non-array value");
@@ -224,7 +245,7 @@ pub fn tostr(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Valu
         Value::Double(val) => val.to_string(),
         Value::String(val) => val.clone(),
         Value::Bool(val) => val.to_string(),
-        Value::None() => String::from("None"),
+        Value::None() => String::from(scorch_parser::ast::NONE_TNAME),
         Value::Function(func) => {
             let stri = get_function_signature(func);
             stri
@@ -249,18 +270,18 @@ pub fn get_function_signature<'ctx>(func: &'ctx Rc<super::types::Function>) -> S
     let params: Vec<String> = func
         .params
         .iter()
-        .map(|param| format!("{}: {}", param.name, param.m_type.name))
+        .map(|param| format!("{}: {}", param.name, param.m_type.borrow().name))
         .collect();
     format!(
         "{}({}) -> {}",
         func.name,
         params.join(", "),
-        func.return_type.name
+        func.return_type.borrow().name
     )
 }
 // Math
 // IO
-pub fn abs(context: &mut Context, type_checker: &TypeChecker, args: Vec<Value>) -> Value {
+pub fn abs(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Value>) -> Value {
     if args.len() != 1 {
         panic!("abs expected 1 argument");
     }

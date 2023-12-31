@@ -1,22 +1,29 @@
+pub mod cli;
+pub mod context;
 pub mod interpreter;
 pub mod standard_functions;
 pub mod typechecker;
 pub mod types;
-pub mod context;
-pub mod cli;
 
 use ::std::collections::HashMap;
 use ::std::env;
+use cli::*;
 use interpreter::*;
 use scorch_parser::lexer::*;
-use cli::*;
+use std::process::Command;
 
 #[cfg(test)]
 pub mod test;
-
+pub fn clear_terminal() {
+    if cfg!(target_os = "windows") {
+        let _ = Command::new("cmd").arg("/c").arg("cls").status();
+    } else {
+        let _ = Command::new("clear").status();
+    }
+}
 fn main() -> () {
     let flags_map = parse_cmd_line_args();
-    
+
     let flags = cli::Flags::new(flags_map);
 
     let file = format!("{}/{}", flags.proj_root, "scorch_src/main.scorch");
