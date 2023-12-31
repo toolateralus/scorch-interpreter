@@ -2,6 +2,7 @@ use crate::{types::Value, context::Context};
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use super::types::Instance;
+use std::fmt::Debug;
 
 #[derive(Debug, PartialEq)]
 pub enum Attr {
@@ -11,17 +12,47 @@ pub enum Attr {
     Function,
 }
 
-#[derive(Debug)]
+pub struct OperatorOverload {
+    pub rhs_t: String,
+    pub op : TokenKind,
+    pub method : Box<dyn Fn(&Value, &Value) -> Value + 'static>,
+}
+
+
 pub struct Type {
     pub name: String,
     pub validator: Box<fn(&Value) -> bool>,
     pub attribute: Attr,
+    pub operators: Vec<OperatorOverload>,
     pub context : Box<Context>
+}
+
+impl Debug for Type {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Type {{ name: {}, attribute: {:?} }}", self.name, self.attribute)
+    }
 }
 
 impl Type {
     pub fn validate(&self, val: &Value) -> bool {
         (self.validator)(val)
+    }
+    pub fn perform_bin_op<'a>(&'a self, op: &'a TokenKind, rhs_t: &Rc<RefCell<Type>>, lhs_value : &'a Value, other : &'a Value) -> Value {
+        let other_tname = rhs_t.borrow().name.clone();
+        
+        let op_ovr = self.operators.iter().find(|op_ovr| {
+            op_ovr.op == *op && op_ovr.rhs_t == other_tname
+        });
+        
+        match &op_ovr {
+            Some(op_ovr) => {
+                let result = (op_ovr.method)(lhs_value, other);
+                return result.clone();
+            },
+            None => {
+                panic!("no operator overload found for type {} and type {}", self.name, other_tname);
+            }
+        }
     }
 }
 
@@ -42,6 +73,7 @@ impl TypeChecker {
                         }),
                         attribute: Attr::Value,
                         context: Box::new(Context { parent: None, variables: HashMap::new() }),
+                        operators: Vec::new(),
                     })),
                 ),
                 (
@@ -54,6 +86,7 @@ impl TypeChecker {
                         }),
                         attribute: Attr::Value,
                         context: Box::new(Context { parent: None, variables: HashMap::new() }),
+                        operators: Vec::new(),
                     })),
                 ),
                 (
@@ -66,6 +99,7 @@ impl TypeChecker {
                         }),
                         attribute: Attr::Value,
                         context: Box::new(Context { parent: None, variables: HashMap::new() }),
+                        operators: Vec::new(),
                     })),
                 ),
                 (
@@ -77,6 +111,7 @@ impl TypeChecker {
                         }),
                         attribute: Attr::Value,
                         context: Box::new(Context { parent: None, variables: HashMap::new() }),
+                        operators: Vec::new(),
                     })),
                 ),
                 (
@@ -89,6 +124,7 @@ impl TypeChecker {
                         }),
                         attribute: Attr::Value,
                         context: Box::new(Context { parent: None, variables: HashMap::new() }),
+                        operators: Vec::new(),
                     })),
                 ),
                 (
@@ -101,6 +137,7 @@ impl TypeChecker {
                         }),
                         attribute: Attr::Value,
                         context: Box::new(Context { parent: None, variables: HashMap::new() }),
+                        operators: Vec::new(),
                     })),
                 ),
                 (
@@ -113,6 +150,7 @@ impl TypeChecker {
                         }),
                         attribute: Attr::Array,
                         context: Box::new(Context { parent: None, variables: HashMap::new() }),
+                        operators: Vec::new(),
                     })),
                 ),
                 (
@@ -125,6 +163,7 @@ impl TypeChecker {
                         }),
                         attribute: Attr::Function,
                         context: Box::new(Context { parent: None, variables: HashMap::new() }),
+                        operators: Vec::new(),
                     })),
                 ),
             ]),
@@ -151,7 +190,7 @@ impl TypeChecker {
 }
 
 // import constants.
-use scorch_parser::ast::*;
+use scorch_parser::{ast::*, lexer::TokenKind};
 
 pub fn get_typename(arg: &Value) -> &str {
     match &arg {

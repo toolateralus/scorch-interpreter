@@ -1,9 +1,6 @@
 use super::{context::Context, typechecker::Type};
 use crate::interpreter::Interpreter;
-use scorch_parser::{
-    ast::{Node, Visitor},
-    parser::generate_random_function_name,
-};
+use scorch_parser::ast::{Node, Visitor};
 use std::{cell::RefCell, rc::Rc};
 
 #[derive(Debug, Clone)]
@@ -44,16 +41,16 @@ impl Value {
         value
     }
 }
-// technically this isn't always variable, it's just a declared field or value in an array.
+
 #[derive(Debug, Clone)]
 pub struct Instance {
-    pub mutable: bool, // is_mutable?
-    pub value: Value, // this could be a function, a struct, a list, an array, a float, a bool, a string, etc.
+    pub mutable: bool, 
+    pub value: Value, 
     pub m_type: Rc<RefCell<Type>>,
 }
 impl Instance {
     pub fn set_value(&mut self, value: &Value) -> () {
-        self.value = value.clone(); // todo : stop cloning every value on assignment? maybe use Rc?
+        self.value = value.clone();
     }
     pub fn new(mutable: bool, value: Value, m_type: Rc<RefCell<Type>>) -> Self {
         Instance {

@@ -4,7 +4,6 @@ use super::typechecker::*;
 use super::types::*;
 use scorch_parser::ast::*;
 use scorch_parser::lexer::*;
-use std::arch::x86_64::_t1mskc_u32;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -317,19 +316,16 @@ impl Interpreter {
         match rhs.as_ref() {
             Node::Identifier(id) => match lhs_value {
                 Value::Struct {
-                    typename: _,
+                    typename,
                     context,
                 } => {
                     let Some(var) = context.find_variable(id) else {
-                        dbg!(lhs, rhs);
-                        panic!("Expected Struct node");
+                        panic!("unable to find variable {id} in struct {typename}");
                     };
-                    
-                    return var.borrow_mut().value.clone();
+                    return var.borrow().value.clone();
                 }
                 _ => {
-                    dbg!(lhs, rhs);
-                    panic!("Unexpected value type");
+                    panic!("expected struct");
                 }
             },
             Node::FunctionCall { id, arguments } => {
@@ -404,6 +400,23 @@ impl Interpreter {
             }
             _ => panic!("Expected Array node"),
         }
+    }
+
+    fn evaluate_expression(&mut self, lhs: &Box<Node>, rhs: &Box<Node>, op: &TokenKind) -> Value {
+        let lhs_value = lhs.accept(self);
+        let rhs_value = rhs.accept(self);
+        let l_type = self.type_checker.from_value(&lhs_value);
+        let r_type = self.type_checker.from_value(&rhs_value);
+        let l_type = match l_type {
+            Some(t) => Rc::clone(&t),
+            None => panic!("invalid type in relational expression : {:?}", lhs_value),
+        };
+        let r_type = match r_type {
+            Some(t) => t,
+            None => panic!("invalid type in relational expression : {:?}", rhs_value),
+        };
+        let result = l_type.borrow().perform_bin_op(op, &r_type, &lhs_value, &rhs_value);
+        result
     }
 }
 impl Visitor<Value> for Interpreter {
@@ -524,11 +537,14 @@ impl Visitor<Value> for Interpreter {
 
             match self.type_checker.get(target_type.as_str()) {
                 Some(m_type) => {
+                    
                     value = expression.accept(self);
                     var = Instance::new(mutability, value, m_type);
+                    
                     if !TypeChecker::validate(&var) {
-                        dbg!(&var);
-                        panic!("invalid type");
+                        println!("recieved value: ");
+                        dbg!(&var.value);
+                        panic!("invalid type in declaration '{id} : {}'", var.m_type.borrow().name);
                     }
                 }
                 _ => {
@@ -725,14 +741,14 @@ impl Visitor<Value> for Interpreter {
                     }
                 },
                 _ => {
-                    dbg!(node);
-                    panic!("mismatched type in relative expression");
-                }
+                    self.evaluate_expression(lhs, rhs, op)
+                }   
             }
         } else {
             panic!("Expected RelativeExpression node");
         }
     }
+        
     fn visit_logical_expression(&mut self, node: &Node) -> Value {
         if let Node::LogicalExpression { lhs, op, rhs } = node {
             let lhs_value = lhs.accept(self);
@@ -743,12 +759,11 @@ impl Visitor<Value> for Interpreter {
                     TokenKind::LogicalOr => return Value::Bool(lhs_bool || rhs_bool),
                     _ => {
                         dbg!(node);
-                        panic!("invalid operator");
+                        panic!("invalid operator for logical / boolean expression");
                     }
                 },
                 _ => {
-                    dbg!(node);
-                    panic!("mismatched type in logical expression");
+                    self.evaluate_expression(lhs, rhs, op)
                 }
             }
         } else {
@@ -767,7 +782,6 @@ impl Visitor<Value> for Interpreter {
             dbg!(node);
             panic!("Expected binary operation node");
         };
-
         match op {
             TokenKind::Dot => self.dot_op(lhs, rhs),
             TokenKind::Add | TokenKind::Divide | TokenKind::Multiply | TokenKind::Subtract => {
@@ -790,8 +804,7 @@ impl Visitor<Value> for Interpreter {
                 }
             }
             _ => {
-                dbg!(node);
-                panic!("Expected binary operation node");
+                return self.evaluate_expression(lhs, rhs, op);
             }
         }
     }
@@ -975,6 +988,7 @@ impl Visitor<Value> for Interpreter {
                 attribute: Attr::Struct,
                 // todo : make sure this clones fully and doesn't just copy the reference.
                 context: Box::new(self.context.borrow().to_owned()),
+                operators: Vec::new(),
             };
             
             self.type_checker.types.insert(id.to_string(), Rc::new(RefCell::new(_new_type)));
@@ -984,7 +998,7 @@ impl Visitor<Value> for Interpreter {
         Value::None()
     }
     fn visit_struct_init(&mut self, node: &Node) -> Value {
-        let Node::StructInit { id, args } = node else {
+        let Node::StructInit { id, .. } = node else {
             panic!("Expected StructInit node");
         };
         
@@ -1006,15 +1020,30 @@ impl Visitor<Value> for Interpreter {
             panic!("Expected TypeAssocBlock node");
         };
         
-        let _struct = if let Some(_struct) = self.type_checker.types.get_mut(typename) {
+        let typename_clone = typename.clone();
+        let _struct = if let Some(_struct) = self.type_checker.types.get_mut(&typename_clone) {
             _struct
         } else {
             panic!("Struct {} not found", typename);
         };
-
-        // todo: make associated functions actually work.
+        
+        // clone boxed context
+        let struct_context = _struct.borrow().context.clone();
+        
+        // make rc to ctx
+        let rc = Rc::new(RefCell::new(*struct_context));
+        
+        self.context = Rc::clone(&rc);
+        let ctx = Some(Rc::clone(&rc));
+        
         block.accept(self);
-
+        
+        if let Some(ctx) = ctx {
+            if let Some(_struct) = self.type_checker.get(&typename_clone) {
+                _struct.borrow_mut().context = Box::new(ctx.borrow().to_owned());
+            }
+        }
+        
         Value::None()
     }
 }
