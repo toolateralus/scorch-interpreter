@@ -1,13 +1,13 @@
 
 func_a : fn() -> dynamic {
-    break 560
+    return 560
 }
 
 func_b := (p : string) {
     assert(p == 'func_b', 'func_b failed to assert')
 }
 func_c := {
-    break 560
+    return 560
 }
 
 func_d := (f : fn) {

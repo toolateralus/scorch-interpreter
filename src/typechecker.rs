@@ -204,7 +204,7 @@ pub fn get_typename(arg: &Value) -> &str {
         // todo: Fix the lack of type checking for functions,
         // we need a more centralized way of checking types for structs & functions.
         Value::Function(..) => FN_TNAME,
-        Value::Struct {
+        Value::StructInstance {
             typename,
             context: _,
         } => typename,

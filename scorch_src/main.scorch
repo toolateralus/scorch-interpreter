@@ -1,6 +1,12 @@
-repeat {
-    x := 250
-    
-    
-    
+
+
+var x := []
+repeat i < 2500000 {
+    x.push('hi')
 }
+println(x.len())
+repeat i < 2500000 {
+    x.pop()
+}
+
+println(x.len())

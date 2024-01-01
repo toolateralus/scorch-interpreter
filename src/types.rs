@@ -12,12 +12,11 @@ pub enum Value {
     String(String),
     Function(Rc<Function>),
     Return(Option<Box<Value>>),
+    Reference(Rc<RefCell<Instance>>),
     Array(bool, Rc<RefCell<Vec<Instance>>>),
-    Struct {
-        typename: String,
-        context: Box<Context>,
-    },
+    StructInstance { typename: String, context: Box<Context> },
 }
+
 impl Value {
     pub fn as_bool(&self) -> Option<&bool> {
         let value = match self {
@@ -44,7 +43,7 @@ impl Value {
 
 #[derive(Debug, Clone)]
 pub struct Instance {
-    pub mutable: bool, 
+    pub mutable: bool,
     pub value: Value, 
     pub m_type: Rc<RefCell<Type>>,
 }
