@@ -24,16 +24,16 @@ impl Interpreter {
         let mut iter: i32 = 0;
 
         let typename = INT_TNAME.to_string();
-
+        
         self.push_ctx();
-
+        
         {
             let mut ctx = self.context.borrow_mut();
-
+            
             match ctx.find_variable(&id) {
                 Some(v) => {
                     let v = v.borrow_mut();
-
+                    
                     if v.mutable == false {
                         panic!("Cannot mutate immutable variable {} in a repeat loop", id);
                     }
@@ -43,7 +43,7 @@ impl Interpreter {
                     let Some(m_type) = self.type_checker.get(INT_TNAME) else {
                         panic!("Double isnt a type")
                     };
-
+                    
                     let var = Instance::new(true, val, m_type);
                     
                     if !TypeChecker::validate(&var) {
@@ -52,7 +52,6 @@ impl Interpreter {
                             id
                         );
                     }
-
                     ctx.insert_variable(&id, Rc::new(RefCell::new(var)));
                 }
             }
@@ -65,7 +64,7 @@ impl Interpreter {
         loop {
             let condition_result = match condition.as_ref() {
                 Some(expression) => {
-                    if let Value::Bool(val) = expression.accept(self) {
+                    if let Value::Bool(val) = self.eval_deref(expression) {
                         val
                     } else {
                         dbg!(expression);
@@ -232,7 +231,7 @@ impl Interpreter {
         }
         Value::String(result)
     }
-
+    
     pub fn new() -> Interpreter {
         let builtins = super::standard_functions::get_builtin_functions();
         let type_checker = TypeChecker::new();
@@ -281,6 +280,7 @@ impl Interpreter {
         
         // valid parameterless
         if function.params.len() + args.len() == 0 {
+            
             let result = function.body.accept(self);
             
             match result {
@@ -290,13 +290,13 @@ impl Interpreter {
             }
             
         }
-
+        
         if args.len() != function.params.len() {
             panic!("Number of arguments does not match the number of parameters :: expected {}, got {}", function.params.len(), args.len());
         }
-
+        
         self.push_ctx();
-
+        
         for (arg, param) in args.iter().zip(function.params.iter()) {
             if !param.m_type.borrow().validate(arg) {
                 panic!("Argument type does not match parameter type.\n provided argument: {:?} expected parameter : {:?}", arg, param)
@@ -311,7 +311,7 @@ impl Interpreter {
                 );
             }
         }
-
+        
         let ret = function.body.accept(self);
 
         self.pop_ctx();
@@ -418,6 +418,7 @@ impl Interpreter {
     fn evaluate_expression(&mut self, lhs: &Box<Node>, rhs: &Box<Node>, op: &TokenKind) -> Value {
         let lhs_value = lhs.accept(self);
         let rhs_value = rhs.accept(self);
+        
         let l_type = self.type_checker.from_value(&lhs_value);
         let r_type = self.type_checker.from_value(&rhs_value);
         let l_type = match l_type {
@@ -429,6 +430,19 @@ impl Interpreter {
             None => panic!("invalid type in relational expression : {:?}", rhs_value),
         };
         let result = l_type.borrow().perform_bin_op(op, &r_type, &lhs_value, &rhs_value);
+        result
+    }
+    
+    pub fn eval_deref(&mut self, expression: &Node) -> Value {
+        let value = expression.accept(self);
+                
+        let result = match &value {
+            Value::Reference(inner) => {
+                let inner = inner.borrow();
+                inner.value.clone()
+            }
+            _ => value,
+        };
         result
     }
 }
@@ -547,11 +561,11 @@ impl Visitor<Value> for Interpreter {
             let value: Value;
             let var: Instance;
             let mutability = *mutable;
-
+            
             match self.type_checker.get(target_type.as_str()) {
                 Some(m_type) => {
-                    
-                    value = expression.accept(self);
+                    let deref = self.eval_deref(expression);
+                    value = deref;
                     var = Instance::new(mutability, value, m_type);
                     
                     if !TypeChecker::validate(&var) {
@@ -585,18 +599,22 @@ impl Visitor<Value> for Interpreter {
     fn visit_assignment(&mut self, node: &Node) -> Value {
         match node {
             Node::AssignStmnt { id, expression } => {
-                let val: Value;
-                val = self.visit_expression(expression);
-                let str_id: String = match id.as_ref() {
-                    Node::Identifier(id) => id.clone(),
-                    _ => {
-                        dbg!(node);
-                        panic!("Expected Identifier node");
-                    }
+                let id = id.accept(self);
+                
+                let Value::Reference(id_val) = id else {
+                    panic!("Expected Reference");
                 };
-
-                self.assign_var(&str_id, &val);
-
+                
+                let mut id_val = id_val.borrow_mut();
+                
+                let result = self.eval_deref(expression);
+                
+                id_val.set_value(&result);
+                
+                if !TypeChecker::validate(&id_val) {
+                    panic!("Invalid type {}", id_val.m_type.borrow().name);
+                }
+                
                 return Value::None();
             }
             _ => {
@@ -614,13 +632,9 @@ impl Visitor<Value> for Interpreter {
             panic!("Expected Identifier");
         };
         
-        match ctx.find_variable(id) {
-            Some(value) => value.borrow_mut().value.clone(),
-            None => {
-                dbg!(node);
-                panic!("variable {} not found", id);
-            }
-        }
+        let var = ctx.find_variable(id).expect("Variable {id} not found");
+        
+        Value::Reference(Rc::clone(&var))
     }
    
     fn visit_bool(&mut self, node: &Node) -> Value {
@@ -650,7 +664,7 @@ impl Visitor<Value> for Interpreter {
     fn visit_eof(&mut self, _node: &Node) -> Value {
         Value::None() // do nothing.
     }
-
+    
     // unary operations
     fn visit_not_op(&mut self, node: &Node) -> Value {
         if let Node::NotOp(operand) = node {
@@ -673,12 +687,14 @@ impl Visitor<Value> for Interpreter {
             panic!("Expected NegOp node");
         }
     }
-
+    
     // binary operations & expressions
     fn visit_relational_expression(&mut self, node: &Node) -> Value {
         if let Node::RelationalExpression { lhs, op, rhs } = node {
-            let lhs_value = lhs.accept(self);
-            let rhs_value = rhs.accept(self);
+            
+            let lhs_value = self.eval_deref(lhs);
+            let rhs_value = self.eval_deref(rhs);
+            
             match (lhs_value, rhs_value) {
                 (Value::Bool(lhs_bool), Value::Bool(rhs_bool)) => match op {
                     TokenKind::Equals => return Value::Bool(lhs_bool == rhs_bool),
@@ -763,8 +779,8 @@ impl Visitor<Value> for Interpreter {
         
     fn visit_logical_expression(&mut self, node: &Node) -> Value {
         if let Node::LogicalExpression { lhs, op, rhs } = node {
-            let lhs_value = lhs.accept(self);
-            let rhs_value = rhs.accept(self);
+            let lhs_value = self.eval_deref(lhs);
+            let rhs_value = self.eval_deref(rhs);
             match (lhs_value, rhs_value) {
                 (Value::Bool(lhs_bool), Value::Bool(rhs_bool)) => match op {
                     TokenKind::LogicalAnd => return Value::Bool(lhs_bool && rhs_bool),

@@ -87,7 +87,7 @@ impl Invokable for Function {
         let mut args = Vec::new();
         let args_col = arguments.as_ref().unwrap();
         for arg in args_col {
-            let value = arg.accept(interpeter);
+            let value = interpeter.eval_deref(arg);
             args.push(value);
         }
         args
