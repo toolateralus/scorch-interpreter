@@ -1,13 +1,15 @@
 struct Vec2 |
-    x : int
-    y : int 
-|
-struct Xaryu |
-    pos := new Vec2()
+    x : int = 100
+    y : int = 100
 |
 
-xxx := new Xaryu()
+within Vec2 {
+    set : fn(this : Vec2, x : int, y : int) -> none {
+        this.x = x
+        this.y = y
+    }    
+}
 
-xxx.pos.x = 500
-
-println(xxx.x)
+foo := new Vec2()
+foo.set(250, 250)
+println(foo.x, foo.y)

@@ -6,7 +6,6 @@ use scorch_parser::ast::*;
 use scorch_parser::lexer::*;
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::ops::Deref;
 use std::rc::Rc;
 
 pub struct Interpreter {
@@ -343,14 +342,32 @@ impl Interpreter {
                 }
             },
             Node::FunctionCall { id, arguments } => {
-                if let Some(mut args) = arguments.clone() {
-                    args.insert(0, *lhs.clone());
-                    self.try_find_and_execute_fn(&Some(args), id)
-                } else {
-                    let mut args = Vec::new();
-                    args.push(*lhs.clone());
-                    self.try_find_and_execute_fn(&Some(args), id)
+                
+                match lhs_value {
+                    Value::StructInstance { typename, context } => {
+                        if let Some(mut args) = arguments.clone() {
+                            args.insert(0, *lhs.clone());
+                            self.try_call_associated_fn(Some(args), id, typename, context)
+                        } else {
+                            let mut args = Vec::new();
+                            args.push(*lhs.clone());
+                            self.try_call_associated_fn(Some(args), id, typename, context)
+                        }
+                    },
+                    _ => {
+                        if let Some(mut args) = arguments.clone() {
+                            args.insert(0, *lhs.clone());
+                            self.try_find_and_execute_fn(&Some(args), id)
+                        } else {
+                            let mut args = Vec::new();
+                            args.push(*lhs.clone());
+                            self.try_find_and_execute_fn(&Some(args), id)
+                        }
+                    }
                 }
+                
+                
+                
             }
             _ => {
                 dbg!(lhs, rhs);
@@ -447,6 +464,65 @@ impl Interpreter {
             _ => value,
         };
         result
+    }
+    
+    fn try_call_associated_fn(&mut self, arguments: Option<Vec<Node>>, id: &str, typename: String, context: Box<Context>) -> Value {
+        let func = context.find_variable(id);
+        
+        let Some(func) = func else {
+            panic!("unable to find function {id} in struct {typename}");
+        };
+        
+        let Value::Function(function) = func.borrow().value.clone() else {
+            panic!("expected function");
+        };
+        
+        let args = Function::extract_args(self, &arguments);
+        
+        // valid parameterless
+        if function.params.len() + args.len() == 0 {
+            
+            let result = function.body.accept(self);
+            
+            match result {
+                Value::Return(Some(return_value)) => return *return_value,
+                Value::Return(None) => return Value::None(),
+                _ => return result,
+            }
+            
+        }
+        
+        if args.len() != function.params.len() {
+            panic!("Number of arguments does not match the number of parameters :: expected {}, got {}", function.params.len(), args.len());
+        }
+        
+        self.push_ctx();
+        
+        for (arg, param) in args.iter().zip(function.params.iter()) {
+            if !param.m_type.borrow().validate(arg) {
+                panic!("Argument type does not match parameter type.\n provided argument: {:#?} expected parameter : {:#?}", arg, param)
+            } else {
+                self.context.borrow_mut().insert_variable(
+                    &param.name,
+                    Rc::new(RefCell::new(Instance::new(
+                        false,
+                        arg.clone(),
+                        Rc::clone(&param.m_type),
+                    ))),
+                );
+            }
+        }
+        
+        let ret = function.body.accept(self);
+
+        self.pop_ctx();
+
+        if let Value::Return(Some(return_value)) = ret {
+            return *return_value;
+        }
+
+        Value::None()
+        
     }
 }
 impl Visitor<Value> for Interpreter {
@@ -636,7 +712,12 @@ impl Visitor<Value> for Interpreter {
             panic!("Expected Identifier");
         };
         
-        let var = ctx.find_variable(id).expect("Variable {id} not found");
+        let var = ctx.find_variable(id);
+        
+        let Some(var) = var else {
+            dbg!(node);
+            panic!("Variable {id} not found");
+        };
         
         Value::Reference(Rc::clone(&var))
     }
@@ -1041,19 +1122,20 @@ impl Visitor<Value> for Interpreter {
             panic!("Expected TypeAssocBlock node");
         };
         
-        let typename_clone = typename.clone();
-        let _struct = if let Some(_struct) = self.type_checker.types.get_mut(&typename_clone) {
-            _struct
+        let typename = typename.clone();
+        let type_ = if let Some(struct_) = self.type_checker.types.get_mut(&typename) {
+            struct_
         } else {
             panic!("Struct {} not found", typename);
         };
         
         // clone boxed context
-        let mut struct_context = _struct.borrow().context.clone();
+        let mut type_context = type_.borrow_mut().context.clone();
         
-        struct_context.parent = Some(Rc::clone(&self.context));
+        type_context.parent = Some(Rc::clone(&self.context));
+        
         // make rc to ctx
-        let rc = Rc::new(RefCell::new(*struct_context));
+        let rc = Rc::new(RefCell::new(*type_context));
         
         self.context = Rc::clone(&rc);
         
@@ -1062,7 +1144,7 @@ impl Visitor<Value> for Interpreter {
         block.accept(self);
         
         if let Some(ctx) = ctx {
-            if let Some(_struct) = self.type_checker.get(&typename_clone) {
+            if let Some(_struct) = self.type_checker.get(&typename) {
                 _struct.borrow_mut().context = Box::new(ctx.borrow().to_owned());
             }
         }
