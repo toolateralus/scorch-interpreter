@@ -1,18 +1,22 @@
 struct Vec2 |
-    x : int = 100
-    y : int = 100
+	x : double
+	y : double
 |
 
-within Vec2 {
-    set : none(this : Vec2, x : int, y : int) {
-        this.x = x
-        this.y = y
-    }    
+struct Player |
+	position := new Vec2()
+	scale := new Vec2()
+|
+
+struct Scene |
+	objects : array = [].push(new Player())
+|
+
+scene := new Scene()
+	i := 0
+
+repeat {
+	i = i + i + i + 1
+	println(i)
+	wait(16.0)
 }
-
-foo := new Vec2()
-
-foo.set(250, 250)
-
-
-println(foo.x, foo.y)

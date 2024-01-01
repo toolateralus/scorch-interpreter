@@ -685,10 +685,10 @@ impl Visitor<Value> for Interpreter {
                     panic!("Expected Reference {:?}", id);
                 };
                 
-                let mut id_val = id_val.borrow_mut();
-                
                 let result = self.eval_deref(expression);
                 
+                let mut id_val = id_val.borrow_mut();
+
                 id_val.set_value(&result);
                 
                 if !TypeChecker::validate(&id_val) {
