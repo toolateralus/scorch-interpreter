@@ -605,11 +605,7 @@ impl Visitor<Value> for Interpreter {
             }
         }
     }
-
-    // literals & values
-    // todo: move this into it's own visitor, previous to this one? it needs a
-    // different return type otherwise reference counting nad pointers will be very very challenging, as far as i can see.
-    // there's probably a way.
+    
     fn visit_identifier(&mut self, node: &Node) -> Value {
         let ctx = self.context.borrow_mut();
         
@@ -891,14 +887,14 @@ impl Visitor<Value> for Interpreter {
         }
     }
     fn visit_break_stmnt(&mut self, node: &Node) -> Value {
-        if let Node::ReturnStmnt(opt_val) = node {
+        if let Node::BreakStmnt(opt_val) = node {
             let Some(value_node) = opt_val else {
                 return Value::Return(None);
             };
             let value = value_node.accept(self);
             return Value::Return(Some(Box::new(value.clone())));
         } else {
-            panic!("Expected ReturnStmnt node");
+            panic!("Expected BreakStmnt node");
         }
     }
     fn visit_array(&mut self, node: &Node) -> Value {
