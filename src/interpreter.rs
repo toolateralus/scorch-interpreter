@@ -6,6 +6,8 @@ use scorch_parser::ast::*;
 use scorch_parser::lexer::*;
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::ops::Deref;
+use std::ops::DerefMut;
 use std::rc::Rc;
 
 pub struct Interpreter {
@@ -1042,11 +1044,12 @@ impl Visitor<Value> for Interpreter {
             } => (id, index, expression, assignment),
             _ => panic!("Expected ArrayAccessExpr node"),
         };
-
-        let index_value = match index.accept(self) {
+        
+		let val = self.eval_deref(index);
+        let index_value = match val {
             Value::Double(index_value) => index_value as usize,
             Value::Int(index_value) => index_value as usize,
-            _ => panic!("Expected numerical index value"),
+            _ => panic!("Expected numerical index value, got {:?}", val),
         };
 
         if *assignment {

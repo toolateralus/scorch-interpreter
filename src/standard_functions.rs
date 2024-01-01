@@ -100,7 +100,7 @@ pub fn print_ln(context: &mut Context, type_checker: &TypeChecker, args: Vec<Val
                 typename: name,
                 context,
             } => {
-                println!("global::{}\n{:#?}", name, context);
+                // println!("global::{}\n{:#?}", name, context);
                 // for (k, member) in context.variables.iter() {
                 //     println!("{} : {:?}", k, member.value)
                 // }
