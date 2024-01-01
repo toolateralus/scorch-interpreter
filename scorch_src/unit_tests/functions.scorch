@@ -1,16 +1,16 @@
 
-func_a : fn() -> dynamic {
+func_a : dynamic() {
     return 560
 }
 
-func_b := (p : string) {
+func_b : none(p : string) {
     assert(p == 'func_b', 'func_b failed to assert')
 }
-func_c := {
+func_c : int() {
     return 560
 }
 
-func_d := (f : fn) {
+func_d : none(f : fn) {
     assert(f() == 560, 'func_d failed to assert')
 }
 

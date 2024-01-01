@@ -4,12 +4,15 @@ struct Vec2 |
 |
 
 within Vec2 {
-    set : fn(this : Vec2, x : int, y : int) -> none {
+    set : none(this : Vec2, x : int, y : int) {
         this.x = x
         this.y = y
     }    
 }
 
 foo := new Vec2()
+
 foo.set(250, 250)
+
+
 println(foo.x, foo.y)
