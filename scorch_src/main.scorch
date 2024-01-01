@@ -1,9 +1,18 @@
-println(repeat {
-if true {
-    if true {
-        if true {
-            break true   
-        }
-    }
+struct Vec2 |
+    x : int = 100
+    y : int = 100
+|
+
+within Vec2 {
+    set : none(this : Vec2, x : int, y : int) {
+        this.x = x
+        this.y = y
+    }    
 }
-})
+
+foo := new Vec2()
+
+foo.set(250, 250)
+
+
+println(foo.x, foo.y)

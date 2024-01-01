@@ -73,6 +73,7 @@ pub fn clear_screen(_: &mut Context, _: &TypeChecker, _: Vec<Value>) -> Value {
 pub fn print_ln(context: &mut Context, type_checker: &TypeChecker, args: Vec<Value>) -> Value {
     for arg in args {
         match arg {
+            Value::Reference(..) => todo!(),
             Value::Int(val) => print!("{}\n", val),
             Value::Double(val) => print!("{}\n", val),
             Value::Bool(val) => print!("{}\n", val),
@@ -95,11 +96,11 @@ pub fn print_ln(context: &mut Context, type_checker: &TypeChecker, args: Vec<Val
                 //     print_ln(Vec::from([element.value.clone()]));
                 // }
             }
-            Value::Struct {
+            Value::StructInstance {
                 typename: name,
-                context: _,
+                context,
             } => {
-                println!("global::{}", name);
+                println!("global::{}\n{:#?}", name, context);
                 // for (k, member) in context.variables.iter() {
                 //     println!("{} : {:?}", k, member.value)
                 // }

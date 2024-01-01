@@ -120,17 +120,7 @@ pub fn execute_file_then_dump(filename: String) {
     
     ast_root.accept(&mut interpreter);
     println!("Global Context:");
-
-    let mut context: Option<Rc<RefCell<Context>>> = None;
-
-    while interpreter.context.borrow().parent.is_some() {
-        context = Some(interpreter.context.borrow().parent.clone().unwrap());
-        interpreter.context = Rc::clone(&context.as_ref().unwrap());
-    }
-
-    let Some(i) = context else {
-        panic!("Failed to get global context");
-    };
-
-    dbg!(i);
+    
+    dbg!(interpreter.type_checker.types);
+    dbg!(interpreter.context);
 }

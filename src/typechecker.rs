@@ -1,7 +1,7 @@
-use crate::types::Value;
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use crate::{types::Value, context::Context};
 
-use super::types::{Instance, Struct};
+use super::types::Instance;
+use std::{fmt::Debug, rc::Rc, cell::RefCell, collections::HashMap};
 
 #[derive(Debug, PartialEq)]
 pub enum Attr {
@@ -11,27 +11,57 @@ pub enum Attr {
     Function,
 }
 
-#[derive(Debug)]
+pub struct OperatorOverload {
+    pub rhs_t: String,
+    pub op : TokenKind,
+    pub method : Box<dyn Fn(&Value, &Value) -> Value + 'static>,
+}
+
+
 pub struct Type {
     pub name: String,
     pub validator: Box<fn(&Value) -> bool>,
     pub attribute: Attr,
+    pub operators: Vec<OperatorOverload>,
+    pub context : Box<Context>
+}
+
+impl Debug for Type {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Type {{\n  name: {}, \n  attribute: {:?} \n  # of operator overloads: {}\n  # of fields on type : {}\n}}",
+         self.name, self.attribute, self.operators.len(), self.context.variables.len())
+    }
 }
 
 impl Type {
     pub fn validate(&self, val: &Value) -> bool {
         (self.validator)(val)
     }
+    pub fn perform_bin_op<'a>(&'a self, op: &'a TokenKind, rhs_t: &Rc<RefCell<Type>>, lhs_value : &'a Value, other : &'a Value) -> Value {
+        let other_tname = rhs_t.borrow().name.clone();
+        
+        let op_ovr = self.operators.iter().find(|op_ovr| {
+            op_ovr.op == *op && op_ovr.rhs_t == other_tname
+        });
+        
+        match &op_ovr {
+            Some(op_ovr) => {
+                let result = (op_ovr.method)(lhs_value, other);
+                return result.clone();
+            },
+            None => {
+                panic!("no operator overload found operator {:?} for type {} and type {}",op, self.name, other_tname);
+            }
+        }
+    }
 }
 
 pub struct TypeChecker {
     pub types: HashMap<String, Rc<RefCell<Type>>>,
-    pub structs: HashMap<String, Box<Struct>>,
 }
 impl TypeChecker {
     pub fn new() -> Self {
         Self {
-            structs: HashMap::new(),
             types: HashMap::from([
                 (
                     String::from(NONE_TNAME),
@@ -42,6 +72,8 @@ impl TypeChecker {
                             _ => false,
                         }),
                         attribute: Attr::Value,
+                        context: Box::new(Context { parent: None, variables: HashMap::new() }),
+                        operators: Vec::new(),
                     })),
                 ),
                 (
@@ -53,6 +85,8 @@ impl TypeChecker {
                             _ => false,
                         }),
                         attribute: Attr::Value,
+                        context: Box::new(Context { parent: None, variables: HashMap::new() }),
+                        operators: Vec::new(),
                     })),
                 ),
                 (
@@ -64,6 +98,8 @@ impl TypeChecker {
                             _ => false,
                         }),
                         attribute: Attr::Value,
+                        context: Box::new(Context { parent: None, variables: HashMap::new() }),
+                        operators: Vec::new(),
                     })),
                 ),
                 (
@@ -74,6 +110,8 @@ impl TypeChecker {
                             _ => true, // :D
                         }),
                         attribute: Attr::Value,
+                        context: Box::new(Context { parent: None, variables: HashMap::new() }),
+                        operators: Vec::new(),
                     })),
                 ),
                 (
@@ -85,6 +123,8 @@ impl TypeChecker {
                             _ => false,
                         }),
                         attribute: Attr::Value,
+                        context: Box::new(Context { parent: None, variables: HashMap::new() }),
+                        operators: Vec::new(),
                     })),
                 ),
                 (
@@ -96,6 +136,8 @@ impl TypeChecker {
                             _ => false,
                         }),
                         attribute: Attr::Value,
+                        context: Box::new(Context { parent: None, variables: HashMap::new() }),
+                        operators: Vec::new(),
                     })),
                 ),
                 (
@@ -107,6 +149,8 @@ impl TypeChecker {
                             _ => false,
                         }),
                         attribute: Attr::Array,
+                        context: Box::new(Context { parent: None, variables: HashMap::new() }),
+                        operators: Vec::new(),
                     })),
                 ),
                 (
@@ -118,6 +162,8 @@ impl TypeChecker {
                             _ => false,
                         }),
                         attribute: Attr::Function,
+                        context: Box::new(Context { parent: None, variables: HashMap::new() }),
+                        operators: Vec::new(),
                     })),
                 ),
             ]),
@@ -130,32 +176,21 @@ impl TypeChecker {
         val.m_type.borrow().validate(&val.value)
     }
     pub fn get(&self, name: &str) -> Option<Rc<RefCell<Type>>> {
-        match self.structs.get(name) {
-            Some(t) => Some(Rc::clone(&t.type_)),
-            None => match self.types.get(name) {
-                Some(t) => Some(Rc::clone(t)),
-                None => None,
-            },
+        match self.types.get(name) {
+            Some(t) => Some(Rc::clone(t)),
+            None => None,
         }
     }
     pub fn from_value(&self, val: &Value) -> Option<Rc<RefCell<Type>>> {
-        match &val {
-            Value::Struct { typename, .. } => {
-                let struct_decl = self.structs.get(typename)?;
-                return Some(Rc::clone(&struct_decl.type_));
-            }
-            _ => {
-                let typename = get_typename(val);
-                let result = self.get(&typename);
-                assert!(result.is_some(), "type not found, {}", typename);
-                Some(result.unwrap())
-            }
-        }
+        let typename = get_typename(val);
+        let result = self.get(&typename);
+        assert!(result.is_some(), "type not found, {}", typename);
+        Some(result.unwrap())
     }
 }
 
 // import constants.
-use scorch_parser::ast::*;
+use scorch_parser::{ast::*, lexer::TokenKind};
 
 pub fn get_typename(arg: &Value) -> &str {
     match &arg {
@@ -169,7 +204,7 @@ pub fn get_typename(arg: &Value) -> &str {
         // todo: Fix the lack of type checking for functions,
         // we need a more centralized way of checking types for structs & functions.
         Value::Function(..) => FN_TNAME,
-        Value::Struct {
+        Value::StructInstance {
             typename,
             context: _,
         } => typename,
