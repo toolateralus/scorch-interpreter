@@ -6,6 +6,7 @@ use scorch_parser::ast::*;
 use scorch_parser::lexer::*;
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::ops::Deref;
 use std::rc::Rc;
 
 pub struct Interpreter {
@@ -335,7 +336,7 @@ impl Interpreter {
                     let Some(var) = context.find_variable(id) else {
                         panic!("unable to find variable {id} in struct {typename}");
                     };
-                    return var.borrow().value.clone();
+                    return Value::Reference(var);
                 }
                 _ => {
                     panic!("expected struct");
@@ -416,11 +417,12 @@ impl Interpreter {
     }
 
     fn evaluate_expression(&mut self, lhs: &Box<Node>, rhs: &Box<Node>, op: &TokenKind) -> Value {
-        let lhs_value = lhs.accept(self);
-        let rhs_value = rhs.accept(self);
+        let lhs_value = self.eval_deref(lhs);
+        let rhs_value = self.eval_deref(rhs);
         
         let l_type = self.type_checker.from_value(&lhs_value);
         let r_type = self.type_checker.from_value(&rhs_value);
+        
         let l_type = match l_type {
             Some(t) => Rc::clone(&t),
             None => panic!("invalid type in relational expression : {:?}", lhs_value),
@@ -429,6 +431,7 @@ impl Interpreter {
             Some(t) => t,
             None => panic!("invalid type in relational expression : {:?}", rhs_value),
         };
+        
         let result = l_type.borrow().perform_bin_op(op, &r_type, &lhs_value, &rhs_value);
         result
     }
@@ -599,10 +602,11 @@ impl Visitor<Value> for Interpreter {
     fn visit_assignment(&mut self, node: &Node) -> Value {
         match node {
             Node::AssignStmnt { id, expression } => {
+                
                 let id = id.accept(self);
                 
                 let Value::Reference(id_val) = id else {
-                    panic!("Expected Reference");
+                    panic!("Expected Reference {:?}", id);
                 };
                 
                 let mut id_val = id_val.borrow_mut();
@@ -813,8 +817,8 @@ impl Visitor<Value> for Interpreter {
         match op {
             TokenKind::Dot => self.dot_op(lhs, rhs),
             TokenKind::Add | TokenKind::Divide | TokenKind::Multiply | TokenKind::Subtract => {
-                let e_lhs = lhs.accept(self);
-                let e_rhs = rhs.accept(self);
+                let e_lhs = self.eval_deref(lhs);
+                let e_rhs = self.eval_deref(rhs);
                 match (e_lhs, e_rhs) {
                     (Value::Int(lhs_float), Value::Int(rhs_float)) => self.bin_op_int(node, &lhs_float, &rhs_float),
                     (Value::Double(lhs_float), Value::Double(rhs_float)) => self.bin_op_float(node, &lhs_float, &rhs_float),

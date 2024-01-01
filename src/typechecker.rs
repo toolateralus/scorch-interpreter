@@ -50,7 +50,7 @@ impl Type {
                 return result.clone();
             },
             None => {
-                panic!("no operator overload found for type {} and type {}", self.name, other_tname);
+                panic!("no operator overload found operator {:?} for type {} and type {}",op, self.name, other_tname);
             }
         }
     }

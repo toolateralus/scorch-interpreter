@@ -1,12 +1,13 @@
+struct Vec2 |
+    x : int
+    y : int 
+|
+struct Xaryu |
+    pos : Vec2
+|
 
+xxx := new Xaryu()
 
-var x := []
-repeat i < 2500000 {
-    x.push('hi')
-}
-println(x.len())
-repeat i < 2500000 {
-    x.pop()
-}
+xxx.pos.x = 500
 
-println(x.len())
+println(xxx.x)
