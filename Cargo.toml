@@ -9,4 +9,4 @@ indexmap = "2.1.0"
 rand = "0.8.5"
 regex = "1.10.2"
 
-scorch-parser = { git = "https://github.com/toolateralus/scorch-parser", branch = "dot-op" }
+scorch-parser = { git = "https://github.com/toolateralus/scorch-parser", branch = "main" }

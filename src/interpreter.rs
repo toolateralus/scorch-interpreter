@@ -688,7 +688,11 @@ impl Visitor<Value> for Interpreter {
                 let result = self.eval_deref(expression);
                 
                 let mut id_val = id_val.borrow_mut();
-
+                
+                if !id_val.mutable {
+					panic!("cannot assign to const : {:?}", id_val);
+				}
+                
                 id_val.set_value(&result);
                 
                 if !TypeChecker::validate(&id_val) {

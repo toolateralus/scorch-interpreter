@@ -12,11 +12,9 @@ struct Scene |
 	objects : array = [].push(new Player())
 |
 
-scene := new Scene()
-	i := 0
+var x : int
 
 repeat {
-	i = i + i + i + 1
-	println(i)
-	wait(16.0)
+
+
 }
