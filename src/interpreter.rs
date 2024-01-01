@@ -324,7 +324,7 @@ impl Interpreter {
     }
 
     pub fn dot_op(&mut self, lhs: &Box<Node>, rhs: &Box<Node>) -> Value {
-        let lhs_value = lhs.accept(self);
+        let lhs_value = self.eval_deref(lhs);
         
         match rhs.as_ref() {
             Node::Identifier(id) => match lhs_value {
@@ -903,14 +903,14 @@ impl Visitor<Value> for Interpreter {
         }
     }
     fn visit_break_stmnt(&mut self, node: &Node) -> Value {
-        if let Node::BreakStmnt(opt_val) = node {
+        if let Node::ReturnStmnt(opt_val) = node {
             let Some(value_node) = opt_val else {
                 return Value::Return(None);
             };
             let value = value_node.accept(self);
             return Value::Return(Some(Box::new(value.clone())));
         } else {
-            panic!("Expected BreakStmnt node");
+            panic!("Expected ReturnStmnt node");
         }
     }
     fn visit_array(&mut self, node: &Node) -> Value {
