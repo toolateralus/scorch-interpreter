@@ -3,7 +3,7 @@ struct Vec2 |
     y : int 
 |
 struct Xaryu |
-    pos : Vec2
+    pos := new Vec2()
 |
 
 xxx := new Xaryu()
