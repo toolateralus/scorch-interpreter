@@ -14,7 +14,8 @@ pub enum Attr {
 pub struct OperatorOverload {
     pub rhs_t: String,
     pub op : TokenKind,
-    pub method : Box<dyn Fn(&Value, &Value) -> Value + 'static>,
+    pub rust_method : Option<Box<dyn Fn(&Value, &Value) -> Value>>,
+    pub user_fn : Option<Rc<Function>>,
 }
 
 
@@ -46,8 +47,13 @@ impl Type {
         
         match &op_ovr {
             Some(op_ovr) => {
-                let result = (op_ovr.method)(lhs_value, other);
-                return result.clone();
+                
+                if let Some(op_ovr_mthod) = op_ovr.rust_method.as_ref() {
+                    return (op_ovr_mthod)(lhs_value, other);
+                } else {
+                    
+                }
+                
             },
             None => {
                 panic!("no operator overload found operator {:?} for type {} and type {}",op, self.name, other_tname);
@@ -189,6 +195,7 @@ impl TypeChecker {
     }
 }
 
+use scorch_lang::types::{Function, Invokable};
 // import constants.
 use scorch_parser::{ast::*, lexer::TokenKind};
 

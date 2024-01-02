@@ -1160,4 +1160,25 @@ impl Visitor<Value> for Interpreter {
         
         Value::None()
     }
+
+    fn visit_op_ovr_decl(&mut self, node: &Node) -> Value {
+        let Node::OpOverrideDecl { op, func, rhs_tname, ..} = node else {
+            panic!("Expected OpOverrideDecl node");
+        };
+        
+        let func = func.accept(self);
+        
+        let Value::Function(function) = func else{
+            panic!("Expected function");
+        };    
+        
+        let op_ovr = OperatorOverload {
+            rhs_t: rhs_tname.clone(),
+            op: *op,
+            rust_method: None,
+            user_fn: Rc::clone(&function)
+        };
+        
+        Value::None()
+    }
 }
