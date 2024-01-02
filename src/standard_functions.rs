@@ -97,8 +97,8 @@ pub fn print_ln(context: &mut Context, type_checker: &TypeChecker, args: Vec<Val
                 // }
             }
             Value::StructInstance {
-                typename: name,
-                context,
+                typename: _name,
+                context: _,
             } => {
                 // println!("global::{}\n{:#?}", name, context);
                 // for (k, member) in context.variables.iter() {

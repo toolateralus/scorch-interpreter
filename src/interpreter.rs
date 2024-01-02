@@ -6,8 +6,8 @@ use scorch_parser::ast::*;
 use scorch_parser::lexer::*;
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::ops::Deref;
-use std::ops::DerefMut;
+
+
 use std::rc::Rc;
 
 pub struct Interpreter {
@@ -264,7 +264,7 @@ impl Interpreter {
             let Some(fn_ptr) = ctx.find_variable(id) else {
                 let Some(builtin) = self.builtin.get_mut(id) else {
                     dbg!(id);
-                    panic!("Function not found");
+                    panic!("Function {id}  not found");
                 };
                 return builtin.call(&mut ctx, &self.type_checker, args);
             };
@@ -277,7 +277,7 @@ impl Interpreter {
         
         let Some(function) = function else {
             dbg!(id);
-            panic!("Function not found");
+            panic!("Function {id} not found");
         };
         
         // valid parameterless
