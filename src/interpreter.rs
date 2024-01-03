@@ -404,7 +404,7 @@ impl Interpreter {
                 if elements.len() <= index {
                     panic!("Array index out of bounds :: {}[{}]", id, index);
                 }
-                elements[index].value.clone()
+                Value::Reference(Rc::clone(&elements[index]))
             }
             _ => panic!("Expected Array node"),
         }
@@ -424,9 +424,12 @@ impl Interpreter {
                 if elements.len() <= index {
                     panic!("Array index out of bounds :: {}[{}]", id, index);
                 }
-                elements[index].set_value(&value);
-
-                if !TypeChecker::validate(&elements[index]) {
+                {
+                    elements[index].borrow_mut().set_value(&value);
+                }
+                
+                let element = &elements[index].borrow();
+                if !TypeChecker::validate(element) {
                     dbg!(&elements[index]);
                     panic!("Invalid type");
                 }
@@ -1026,9 +1029,9 @@ impl Visitor<Value> for Interpreter {
                     panic!("{:?} doesn't match to a valid type", val);
                 };
                 let var = Instance::new(*elements_mutable, val, m_type);
-                values.push(var);
+                values.push(Rc::new(RefCell::new(var)));
             }
-
+            
             return Value::Array(*mutability, Rc::new(RefCell::new(values)));
         } else {
             panic!("Expected List node");

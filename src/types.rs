@@ -13,7 +13,7 @@ pub enum Value {
     Function(Rc<Function>),
     Return(Option<Box<Value>>),
     Reference(Rc<RefCell<Instance>>),
-    Array(bool, Rc<RefCell<Vec<Instance>>>),
+    Array(bool, Rc<RefCell<Vec<Rc<RefCell<Instance>>>>>),
     StructInstance { typename: String, context: Box<Context> },
 }
 

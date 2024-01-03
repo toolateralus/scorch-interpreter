@@ -1,6 +1,7 @@
 use super::context::Context;
 use super::typechecker::TypeChecker;
 use super::types::{Instance, Value};
+use std::cell::RefCell;
 use std::process::Command;
 use std::{collections::HashMap, rc::Rc};
 
@@ -171,7 +172,7 @@ pub fn push(_context: &mut Context, type_checker: &TypeChecker, mut args: Vec<Va
             if mutable {
                 for value in args {
                     if let Some(t) = type_checker.from_value(&value) {
-                        let var = Instance::new(mutable, value, Rc::clone(&t));
+                        let var = Rc::new(RefCell::new(Instance::new(mutable, value, Rc::clone(&t))));
                         elements.borrow_mut().push(var);
                     } else {
                         panic!("invalid type for array");
@@ -201,7 +202,15 @@ pub fn pop(_context: &mut Context, _type_checker: &TypeChecker, mut args: Vec<Va
                 "stack underflow: cannot pop from an empty array."
             );
             assert!(mutable, "Cannot pop from immutable array");
-            return el.pop().unwrap().value;
+            
+            let val = el.pop();
+            
+            if let Some(val) = val {
+                return Value::Reference(Rc::clone(&val))
+            } else {
+                panic!("Cannot pop from empty array");
+            }
+            
         }
         _ => {
             panic!("Cannot pop from non-array value");

@@ -1,0 +1,6 @@
+i := [0, 1, 2]
+
+repeat j < 4 {
+    i.pop()
+    i.println()
+}
