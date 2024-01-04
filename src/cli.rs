@@ -6,6 +6,7 @@ use std::rc::Rc;
 use crate::context::Context;
 use crate::*;
 use scorch_parser::*;
+use scorch_parser::parser::expression::parse_program;
 
 pub struct Flags {
     pub proj_root: String,
@@ -57,7 +58,7 @@ pub fn run_repl() {
         tokenizer.tokenize(&input.as_str());
         let tokens = &tokenizer.tokens;
         
-        let ast_root = parser::parse_program(&tokens);
+        let ast_root = parser::expression::parse_program(&tokens);
         
         let Ok(ast_root) = ast_root else {
             let Err(err) = ast_root else {
@@ -86,7 +87,7 @@ pub fn execute_from_file(filename: String) -> Rc<RefCell<Context>> {
     let tokens = tokenizer.tokens;
     let mut interpreter = Interpreter::new();
     
-    let ast_root = parser::parse_program(&tokens);
+    let ast_root = parse_program(&tokens);
         
         let Ok(ast_root) = ast_root else {
             let Err(err) = ast_root else {
@@ -110,7 +111,7 @@ pub fn execute_file_then_dump(filename: String) {
     let tokens = tokenizer.tokens;
     println!("Tokens:");
     dbg!(&tokens);
-    let ast_root = parser::parse_program(&tokens);
+    let ast_root = parse_program(&tokens);
     println!("AST Root:");
     dbg!(&ast_root);
     let mut interpreter = Interpreter::new();
