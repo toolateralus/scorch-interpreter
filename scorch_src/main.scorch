@@ -5,7 +5,7 @@ struct X |
 var x := 100
 
 fn println : none(d : dynamic) {
-    d = 1000    
+    var dd := 100
 }
 
 println(x)

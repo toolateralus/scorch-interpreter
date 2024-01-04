@@ -21,10 +21,10 @@ impl StandardFunction {
     }
 }
 
-pub fn get_builtin_functions() -> HashMap<String, StandardFunction> {
+pub fn get_builtin_functions(context : &mut Context) -> HashMap<String, StandardFunction> {
     HashMap::from([
         (
-            String::from("clearscreen"),
+            String::from("clear"),
             StandardFunction::new(Box::new(clear_screen)),
         ),
         (

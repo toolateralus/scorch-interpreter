@@ -18,7 +18,6 @@ pub struct OperatorOverload {
     pub user_fn : Option<Rc<Function>>,
 }
 
-
 pub struct Type {
     pub name: String,
     pub validator: Box<fn(&Value) -> bool>,
@@ -174,7 +173,6 @@ impl TypeChecker {
         }
     }
 }
-
 impl TypeChecker {
     pub fn validate(val: &Instance) -> bool {
         val.m_type.borrow().validate(&val.value)
@@ -247,8 +245,8 @@ impl TypeChecker {
                 let typename = self.get_tuple_typename(values);
                 typename
             }
-            Value::KeyTypeTuple(_) => panic!("this type cannot be instantiated."),
-            Value::KeyTypePair(_, _) => panic!("this type cannot be instantiated."),
+            Value::KeyTypeTuple(..) => panic!("this type cannot be instantiated."),
+            Value::KeyTypePair(..) => panic!("this type cannot be instantiated."),
         }
     }
 }

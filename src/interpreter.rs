@@ -787,18 +787,19 @@ impl Visitor<Value> for Interpreter {
                 return_type: r_type,
                 mutable: *mutable,
             };
-            // Todo: we might want to have a better way to do this than just getting it by string
+            
             let Some(m_type) = self.type_checker.get(FN_TNAME) else {
                 panic!("Fn isn't a type");
             };
+            
             let function = Instance {
                 mutable: *mutable,
                 value: Value::Function(Rc::new(func)),
                 m_type,
             };
-            self.context
-                .borrow_mut()
-                .insert_variable(&id, Rc::new(RefCell::new(function)));
+            
+            self.context.borrow_mut().insert_variable(&id, Rc::new(RefCell::new(function)));
+            
         } else {
             panic!("Expected FunctionDecl node");
         };
