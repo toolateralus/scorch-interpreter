@@ -2,10 +2,10 @@ struct X |
     x : int
 |
 
-x := 100
+var x := 100
 
-fn println : none(any : dynamic) {
-    compiler.println(any)
-} 
+fn println : none(d : dynamic) {
+    d = 1000    
+}
 
 println(x)

@@ -761,13 +761,24 @@ impl Visitor<Value> for Interpreter {
                 panic!("FnDecl: {} not a valid return type", return_type);
             };
             
-            let parameters = Vec::new();
             
             let tuple = fn_decl_params.accept(self);
-        
+            
             let Value::KeyTypeTuple(_values) = tuple else {
                 panic!("Expected KeyValueTuple node");
             }; 
+            
+            let mut parameters = Vec::new();
+            for i in _values {
+                let Value::KeyTypePair(key, value) = i else {
+                    panic!("Expected KeyValuePair node");
+                };
+                
+                parameters.push(Parameter {
+                    name: key.to_string(),
+                    m_type: Rc::clone(&value),
+                });
+            }
          
             let func = Function {
                 name: id.to_string(),
@@ -853,7 +864,6 @@ impl Visitor<Value> for Interpreter {
             panic!("Expected List node");
         }
     }
-   
    
     fn visit_struct_def(&mut self, node: &Node) -> Value {
         if let Node::StructDecl { id, block } = node {
