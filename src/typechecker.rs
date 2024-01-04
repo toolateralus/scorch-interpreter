@@ -1,4 +1,4 @@
-use crate::{types::Value, context::Context};
+use crate::{types::{Value, Function}, context::Context};
 
 use super::types::Instance;
 use std::{fmt::Debug, rc::Rc, cell::RefCell, collections::HashMap};
@@ -47,13 +47,11 @@ impl Type {
         
         match &op_ovr {
             Some(op_ovr) => {
-                
                 if let Some(op_ovr_mthod) = op_ovr.rust_method.as_ref() {
                     return (op_ovr_mthod)(lhs_value, other);
                 } else {
                     Value::None()
                 }
-                
             },
             None => {
                 panic!("no operator overload found operator {:?} for type {} and type {}",op, self.name, other_tname);
@@ -187,36 +185,73 @@ impl TypeChecker {
             None => None,
         }
     }
-    pub fn from_value(&self, val: &Value) -> Option<Rc<RefCell<Type>>> {
-        let typename = get_typename(val);
-        let result = self.get(&typename);
-        assert!(result.is_some(), "type not found, {}", typename);
+    pub fn from_value(&mut self, val: &Value) -> Option<Rc<RefCell<Type>>> {
+        let type_name = self.get_typename(val);
+        let result = self.get(&type_name);
+        assert!(result.is_some(), "typechecker::from_value() failed to get type from value {:#?}", val);
         Some(result.unwrap())
     }
-}
-
-use crate::types::{Function, Invokable};
-// import constants.
-use scorch_parser::{ast::*, lexer::TokenKind};
-
-pub fn get_typename(arg: &Value) -> &str {
-    match &arg {
-        Value::Array(..) => ARRAY_TNAME,
-        Value::None() => NONE_TNAME,
-        Value::Int(..) => INT_TNAME,
-        Value::Bool(..) => BOOL_TNAME,
-        Value::String(..) => STRING_TNAME,
-        Value::Double(..) => DOUBLE_TNAME,
-        Value::Return(..) => panic!("cannot get the typename of a return node. if you don't know what this means, something has gone seriously wrong."),
-        // todo: Fix the lack of type checking for functions,
-        // we need a more centralized way of checking types for structs & functions.
-        Value::Function(..) => FN_TNAME,
-        Value::StructInstance {
-            typename,
-            context: _,
-        } => typename,
-        _ => {
-            panic!("cannot find type from value {:?}", arg);
+    pub fn get_tuple_typename(&mut self, values: &Vec<Value>) -> String {
+        let mut typename = String::from("(");
+        for value in values {
+            if values.len() != 1 {
+                typename.push_str(",");
+            }
+            
+            let value_tname = &self.get_typename(value);
+            
+            if self.types.get(value_tname).is_none() {
+                panic!("invalid or undefined type expression in value tuple : {:?} typename {:?}", value, typename);
+            }
+            
+            typename.push_str(&value_tname);
+            
+            
+        }
+        typename.push_str(")");
+        
+        if self.get(&typename).is_none() {
+            self.types.insert(typename.to_string(), Rc::new(RefCell::new(Type {
+                name: typename.clone(),
+                validator: Box::new(|v| match v {
+                    Value::Tuple(_values) => {
+                        true // todo #25 : add better typechecking to tuples & arrays.
+                    },
+                    _ => false,
+                }),
+                attribute: Attr::Value,
+                context: Box::new(Context { parent: None, variables: HashMap::new() }),
+                operators: Vec::new(),
+            })));
+        }
+        typename
+    }
+    pub fn get_typename(&mut self, arg: &Value) -> String {
+        match arg {
+            Value::Array(..) => String::from(ARRAY_TNAME),
+            Value::None() => String::from(NONE_TNAME),
+            Value::Int(..) => String::from(INT_TNAME),
+            Value::Bool(..) => String::from(BOOL_TNAME),
+            Value::String(..) => String::from(STRING_TNAME),
+            Value::Double(..) => String::from(DOUBLE_TNAME),
+            Value::Return(..) => panic!("Cannot get the typename of a return node. If you don't know what this means, something has gone seriously wrong."),
+            Value::Function(..) => String::from(FN_TNAME),
+            Value::StructInstance { typename, context: _ } => typename.clone(),
+            Value::Reference(refcell) =>{
+                let refcell = refcell.borrow();
+                let instance = &refcell.value;
+                let typename = self.get_typename(instance);
+                typename
+            },
+            Value::Tuple(values) => {
+                let typename = self.get_tuple_typename(values);
+                typename
+            }
+            Value::KeyTypeTuple(_) => panic!("this type cannot be instantiated."),
+            Value::KeyTypePair(_, _) => panic!("this type cannot be instantiated."),
         }
     }
 }
+use scorch_parser::{ast::*, lexer::TokenKind};
+
+

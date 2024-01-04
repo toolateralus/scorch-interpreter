@@ -90,41 +90,6 @@ impl Interpreter {
             }
         }
     }
-    
-    pub fn get_params_list(&mut self, param_nodes: &Vec<Node>) -> Vec<Parameter> {
-        let mut params = Vec::new();
-        for param in param_nodes {
-            if let Node::KeyValueTuple { varname, typename } = param {
-                let param_name = match varname.as_ref() {
-                    Node::Identifier(id) => id.clone(),
-                    _ => {
-                        dbg!(varname);
-                        panic!("Expected Identifier node");
-                    }
-                };
-
-                let type_name = match typename.as_ref() {
-                    Node::Identifier(id) => id.clone(),
-                    _ => {
-                        dbg!(typename);
-                        panic!("Expected Identifier node");
-                    }
-                };
-
-                let Some(m_type) = self.type_checker.get(type_name.as_str()) else {
-                    panic!("{} isnt a type", type_name)
-                };
-
-                let parameter = Parameter {
-                    name: param_name,
-                    m_type,
-                };
-
-                params.push(parameter);
-            }
-        }
-        params
-    }
     pub fn bin_op_float(&mut self, node: &Node, lhs: &f64, rhs: &f64) -> Value {
         let result: f64;
 
@@ -180,7 +145,6 @@ impl Interpreter {
         }
         Value::String(result)
     }
-    
     pub fn new() -> Interpreter {
         let builtins = super::standard_functions::get_builtin_functions();
         let type_checker = TypeChecker::new();
@@ -200,11 +164,14 @@ impl Interpreter {
             type_checker: TypeChecker::new(),
         }
     }
-    pub fn try_find_and_execute_fn(&mut self, arguments: &Option<Vec<Node>>, id: &String) -> Value {
-        let args = Function::extract_args(self, arguments);
+    pub fn try_find_and_execute_fn(&mut self, arguments: &Value, id: &str) -> Value {
+        
+        let args = match arguments {
+            Value::Tuple(values) => values,
+            _ => panic!("Expected Tuple node"),
+        };
         
         let function: Option<Rc<Function>>;
-        
         {
             let mut ctx = self.context.borrow_mut();
             // function pointer
@@ -213,7 +180,7 @@ impl Interpreter {
                     dbg!(id);
                     panic!("Function {id}  not found");
                 };
-                return builtin.call(&mut ctx, &self.type_checker, args);
+                return builtin.call(&mut ctx, &mut self.type_checker, args.clone());
             };
             
             function = match &fn_ptr.borrow_mut().value {
@@ -271,8 +238,7 @@ impl Interpreter {
 
         Value::None()
     }
-
-    pub fn dot_op(&mut self, lhs: &Box<Node>, rhs: &Box<Node>) -> Value {
+    pub fn dot_op(&mut self, _lhs: &Box<Node>, _rhs: &Box<Node>) -> Value {
         Value::None()
     }
     pub fn push_ctx(&mut self) {
@@ -290,7 +256,6 @@ impl Interpreter {
             None => panic!("Cannot pop root context"),
         };
     }
-
     pub fn access_array(&self, id: &str, index: usize) -> Value {
         let ctx = self.context.borrow();
         let var = ctx.find_variable(id).expect("Variable not found");
@@ -307,7 +272,6 @@ impl Interpreter {
             _ => panic!("Expected Array node"),
         }
     }
-
     pub fn assign_to_array(&mut self, id: &str, index: usize, value: Value) {
         let ctx = self.context.borrow();
         let var = ctx.find_variable(id).expect("Variable not found");
@@ -332,8 +296,7 @@ impl Interpreter {
             _ => panic!("Expected Array node"),
         }
     }
-
-    fn evaluate_expression(&mut self, lhs: &Box<Node>, rhs: &Box<Node>, op: &TokenKind) -> Value {
+    pub fn evaluate_expression(&mut self, lhs: &Box<Node>, rhs: &Box<Node>, op: &TokenKind) -> Value {
         let lhs_value = self.eval_deref(lhs);
         let rhs_value = self.eval_deref(rhs);
         
@@ -349,10 +312,15 @@ impl Interpreter {
             None => panic!("invalid type in relational expression : {:?}", rhs_value),
         };
         
+        // function call
+        if *op == TokenKind::OpenParenthesis {
+            let func_id = get_identifier_str(&lhs);
+            return self.try_find_and_execute_fn(&rhs_value, func_id);
+        }
+        
         let result = l_type.borrow().perform_bin_op(op, &r_type, &lhs_value, &rhs_value);
         result
     }
-    
     pub fn eval_deref(&mut self, expression: &Node) -> Value {
         let value = expression.accept(self);
                 
@@ -364,65 +332,6 @@ impl Interpreter {
             _ => value,
         };
         result
-    }
-    
-    fn try_call_associated_fn(&mut self, arguments: Option<Vec<Node>>, id: &str, typename: String, context: Box<Context>) -> Value {
-        let func = context.find_variable(id);
-        
-        let Some(func) = func else {
-            panic!("unable to find function {id} in struct {typename}");
-        };
-        
-        let Value::Function(function) = func.borrow().value.clone() else {
-            panic!("expected function");
-        };
-        
-        let args = Function::extract_args(self, &arguments);
-        
-        // valid parameterless
-        if function.params.len() + args.len() == 0 {
-            
-            let result = function.body.accept(self);
-            
-            match result {
-                Value::Return(Some(return_value)) => return *return_value,
-                Value::Return(None) => return Value::None(),
-                _ => return result,
-            }
-            
-        }
-        
-        if args.len() != function.params.len() {
-            panic!("Number of arguments does not match the number of parameters :: expected {}, got {}", function.params.len(), args.len());
-        }
-        
-        self.push_ctx();
-        
-        for (arg, param) in args.iter().zip(function.params.iter()) {
-            if !param.m_type.borrow().validate(arg) {
-                panic!("Argument type does not match parameter type.\n provided argument: {:#?} expected parameter : {:#?}", arg, param)
-            } else {
-                self.context.borrow_mut().insert_variable(
-                    &param.name,
-                    Rc::new(RefCell::new(Instance::new(
-                        false,
-                        arg.clone(),
-                        Rc::clone(&param.m_type),
-                    ))),
-                );
-            }
-        }
-        
-        let ret = function.body.accept(self);
-
-        self.pop_ctx();
-
-        if let Value::Return(Some(return_value)) = ret {
-            return *return_value;
-        }
-
-        Value::None()
-        
     }
 }
 impl Visitor<Value> for Interpreter {
@@ -460,7 +369,6 @@ impl Visitor<Value> for Interpreter {
 
         Value::None()
     }
-
     // statements
     fn visit_if_stmnt(&mut self, node: &Node) -> Value {
         let (condition, true_block, else_block) = match node {
@@ -621,7 +529,8 @@ impl Visitor<Value> for Interpreter {
             }
         }
     }
-    
+
+    // values
     fn visit_identifier(&mut self, node: &Node) -> Value {
         let ctx = self.context.borrow_mut();
         
@@ -639,7 +548,6 @@ impl Visitor<Value> for Interpreter {
         
         Value::Reference(Rc::clone(&var))
     }
-   
     fn visit_bool(&mut self, node: &Node) -> Value {
         if let Node::Bool(value) = node {
             return Value::Bool(*value);
@@ -756,7 +664,6 @@ impl Visitor<Value> for Interpreter {
             panic!("Expected RelativeExpression node");
         }
     }
-        
     fn visit_logical_op(&mut self, node: &Node) -> Value {
         if let Node::LogicalOperation { lhs, op, rhs } = node {
             let lhs_value = self.eval_deref(lhs);
@@ -835,28 +742,36 @@ impl Visitor<Value> for Interpreter {
         }
     }
  
-
     fn visit_function_decl(&mut self, node: &Node) -> Value {
         if let Node::FuncDeclStmnt {
             id,
-            params,
+            params: fn_decl_params,
             body,
             return_t,
             mutable,
         } = node
         {
             
+            
             let return_type = get_identifier_str(return_t);
             let id = get_identifier_str(id);
-            
             
             let body_cloned = body.clone();
             let Some(r_type) = self.type_checker.get(return_type) else {
                 panic!("FnDecl: {} not a valid return type", return_type);
             };
+            
+            let parameters = Vec::new();
+            
+            let tuple = fn_decl_params.accept(self);
+        
+            let Value::KeyTypeTuple(_values) = tuple else {
+                panic!("Expected KeyValueTuple node");
+            }; 
+         
             let func = Function {
                 name: id.to_string(),
-                params: self.get_params_list(params),
+                params: parameters,
                 body: body_cloned,
                 return_type: r_type,
                 mutable: *mutable,
@@ -1022,7 +937,7 @@ impl Visitor<Value> for Interpreter {
         
         Value::None()
     }
-
+    
     fn visit_tuple(&mut self, node: &Node) -> Value {
         let Node::Tuple(values) = node else {
             panic!("Expected Tuple node");
@@ -1057,10 +972,36 @@ impl Visitor<Value> for Interpreter {
         }
     }
     
-    fn visit_kv_tuple(&mut self, node: &Node) -> Value {
-        todo!()
+    fn visit_kv_tuple(&mut self, _node: &Node) -> Value {
+        let Node::KeyValueTuple { pairs } =_node else {
+            panic!("Expected KeyValueTuple node");
+        };
+        let mut v_pairs = Vec::new();
+        for pair in pairs {
+            let kvp = pair.accept(self);
+            v_pairs.push(kvp);
+        }
+        Value::KeyTypeTuple(v_pairs)
     }
+    
+    fn visit_kv_pair(&mut self, node: &Node) -> Value {
+        let Node::KeyValuePair { varname, typename } = node else {
+            panic!("Expected KeyValuePair node");
+        };
+        let varname = get_identifier_str(varname);
+        let typename = get_identifier_str(typename);
+        
+        let t = self.type_checker.get(typename);
+        
+        if t.is_none() {
+            panic!("{} is not a valid type", typename);
+        }
+        
+        let t = t.unwrap();
+        
+        return Value::KeyTypePair(varname.to_string(), t)
     }
+}
 
 // todo : improve this, right now we don't have type paths but we will.
 // also, this never accounts for bin ops like dot op or :: 

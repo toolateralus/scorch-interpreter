@@ -8,7 +8,7 @@ pub mod types;
 use ::std::collections::HashMap;
 use indexmap::IndexMap;
 use interpreter::*;
-use scorch_parser::{lexer::{*, self}, parser::{self, expression::parse_program}};
+use scorch_parser::{lexer::{create_tokenizer, TokenProcessor}, parser::expression::parse_program};
 use types::Value;
 
 #[cfg(test)]
@@ -16,7 +16,7 @@ pub mod test;
 
 pub fn run<'a>(code : &'a String) -> Result<&'a Value, String> {
     
-    let mut lexer = lexer::create_tokenizer();
+    let mut lexer = create_tokenizer();
     
     lexer.tokenize(code);
     
@@ -45,7 +45,7 @@ pub fn run_with_modules<'a>(code_array : IndexMap<String, Vec<String>>) -> Resul
     
     for (_module_name, code_vec) in &code_array {
         for code in code_vec {
-            let mut lexer = lexer::create_tokenizer();
+            let mut lexer = create_tokenizer();
             lexer.tokenize(&code);
             let tokens = &lexer.tokens;
             

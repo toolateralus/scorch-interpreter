@@ -5,16 +5,16 @@ use std::process::Command;
 use std::{collections::HashMap, rc::Rc};
 
 pub struct StandardFunction {
-    pub func: Box<dyn FnMut(&mut Context, &TypeChecker, Vec<Value>) -> Value>,
+    pub func: Box<dyn FnMut(&mut Context, &mut TypeChecker, Vec<Value>) -> Value>,
 }
 impl StandardFunction {
-    pub fn new(func: Box<dyn FnMut(&mut Context, &TypeChecker, Vec<Value>) -> Value>) -> Self {
+    pub fn new(func: Box<dyn FnMut(&mut Context, &mut TypeChecker, Vec<Value>) -> Value>) -> Self {
         StandardFunction { func }
     }
     pub fn call(
         &mut self,
         context: &mut Context,
-        type_checker: &TypeChecker,
+        type_checker: &mut TypeChecker,
         args: Vec<Value>,
     ) -> Value {
         (self.func)(context, type_checker, args)
@@ -60,7 +60,7 @@ pub fn get_builtin_functions() -> HashMap<String, StandardFunction> {
     ])
 }
 
-pub fn clear_screen(_: &mut Context, _: &TypeChecker, _: Vec<Value>) -> Value {
+pub fn clear_screen(_: &mut Context, _: &mut TypeChecker, _: Vec<Value>) -> Value {
     if cfg!(target_os = "windows") {
         let _ = Command::new("cmd").arg("/c").arg("cls").status();
     } else {
@@ -70,7 +70,7 @@ pub fn clear_screen(_: &mut Context, _: &TypeChecker, _: Vec<Value>) -> Value {
 }
 
 // IO
-pub fn print_ln(context: &mut Context, type_checker: &TypeChecker, args: Vec<Value>) -> Value {
+pub fn print_ln(context: &mut Context, type_checker: &mut TypeChecker, args: Vec<Value>) -> Value {
     for arg in args {
         match arg {
             Value::Reference(..) => todo!(),
@@ -107,12 +107,13 @@ pub fn print_ln(context: &mut Context, type_checker: &TypeChecker, args: Vec<Val
             }
             Value::Return(_) => panic!("Cannot print return value"),
             Value::Tuple(_) => println!("{:?}", arg),
-            Value::KeyValueTuple(_) => println!("{:?}", arg),
+            Value::KeyTypeTuple(_) => println!("{:?}", arg),
+            Value::KeyTypePair(key, t) => println!("{:?}{:#?}", key, t.borrow()),
         }
     }
     Value::None()
 }
-pub fn readln(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Value>) -> Value {
+pub fn readln(_context: &mut Context, _type_checker: &mut TypeChecker, args: Vec<Value>) -> Value {
     if args.len() != 0 {
         panic!("readln expected 0 arguments");
     }
@@ -123,7 +124,7 @@ pub fn readln(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Val
     Value::String(input.replace("\n", ""))
 }
 // System
-pub fn time(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Value>) -> Value {
+pub fn time(_context: &mut Context, _type_checker: &mut TypeChecker, args: Vec<Value>) -> Value {
     if args.len() != 0 {
         panic!("time expected 0 arguments");
     }
@@ -134,7 +135,7 @@ pub fn time(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Value
 
     Value::Int(time.as_millis() as i32)
 }
-pub fn wait(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Value>) -> Value {
+pub fn wait(_context: &mut Context, _type_checker: &mut TypeChecker, args: Vec<Value>) -> Value {
     if args.len() != 1 {
         panic!("wait expected 1 argument :: ms wait duration");
     }
@@ -146,7 +147,7 @@ pub fn wait(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Value
     Value::None()
 }
 // Vectors & Arrays
-pub fn length(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Value>) -> Value {
+pub fn length(_context: &mut Context, _type_checker: &mut TypeChecker, args: Vec<Value>) -> Value {
     if args.len() != 1 {
         panic!("length takes one array argument");
     }
@@ -162,12 +163,12 @@ pub fn length(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Val
         }
     }
 }
-pub fn push(_context: &mut Context, type_checker: &TypeChecker, mut args: Vec<Value>) -> Value {
+pub fn push(_context: &mut Context, type_checker: &mut TypeChecker, mut args: Vec<Value>) -> Value {
     if args.len() < 2 {
         panic!("push expected 2 arguments");
     }
     let arg = args.remove(0);
-
+    
     match arg {
         Value::Array(mutable, elements) => {
             if mutable {
@@ -190,7 +191,7 @@ pub fn push(_context: &mut Context, type_checker: &TypeChecker, mut args: Vec<Va
         }
     }
 }
-pub fn pop(_context: &mut Context, _type_checker: &TypeChecker, mut args: Vec<Value>) -> Value {
+pub fn pop(_context: &mut Context, _type_checker: &mut TypeChecker, mut args: Vec<Value>) -> Value {
     if args.len() != 1 {
         panic!("pop expected 1 argument");
     }
@@ -211,7 +212,7 @@ pub fn pop(_context: &mut Context, _type_checker: &TypeChecker, mut args: Vec<Va
     }
 }
 // Testing
-pub fn assert_eq(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Value>) -> Value {
+pub fn assert_eq(_context: &mut Context, _type_checker: &mut TypeChecker, args: Vec<Value>) -> Value {
     if args.len() != 3 {
         panic!("assert expected 3 arguments");
     }
@@ -228,7 +229,7 @@ pub fn assert_eq(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<
     assert!(are_equal, "{}", message);
     Value::None()
 }
-pub fn assert(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Value>) -> Value {
+pub fn assert(_context: &mut Context, _type_checker: &mut TypeChecker, args: Vec<Value>) -> Value {
     if args.len() != 2 {
         panic!("assert expected 2 or 3 arguments");
     }
@@ -238,7 +239,7 @@ pub fn assert(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Val
     Value::None()
 }
 // Conversions
-pub fn tostr(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Value>) -> Value {
+pub fn tostr(_context: &mut Context, _type_checker: &mut TypeChecker, args: Vec<Value>) -> Value {
     if args.len() != 1 {
         panic!("tostr expected 1 argument");
     }
@@ -284,7 +285,7 @@ pub fn get_function_signature<'ctx>(func: &'ctx Rc<super::types::Function>) -> S
 }
 // Math
 // IO
-pub fn abs(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Value>) -> Value {
+pub fn abs(_context: &mut Context, _type_checker: &mut TypeChecker, args: Vec<Value>) -> Value {
     if args.len() != 1 {
         panic!("abs expected 1 argument");
     }
@@ -295,7 +296,7 @@ pub fn abs(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Value>
         _ => panic!("Cannot apply abs function to non-numeric value"),
     }
 }
-pub fn floor(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Value>) -> Value {
+pub fn floor(_context: &mut Context, _type_checker: &mut TypeChecker, args: Vec<Value>) -> Value {
     if args.len() != 1 {
         panic!("floor expected 1 argument");
     }

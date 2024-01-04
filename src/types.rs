@@ -1,5 +1,5 @@
 use super::{context::Context, typechecker::Type};
-use crate::interpreter::Interpreter;
+
 use scorch_parser::ast::{Node, Visitor};
 use std::{cell::RefCell, rc::Rc};
 
@@ -17,8 +17,11 @@ pub enum Value {
     StructInstance { typename: String, context: Box<Context> },
     // arguments, value tuples.
     Tuple(Vec<Value>),
-    // parameters, id : type typles.
-    KeyValueTuple(Vec<(String, Rc<Type>)>)
+    
+    // parameters, KeyValue pairs.
+    KeyTypeTuple(Vec<Value>),
+    // members of param declarations.
+    KeyTypePair(String, Rc<RefCell<Type>>),
 }
 
 impl Value {
@@ -81,19 +84,5 @@ impl Function {
     // procedure here, like injecting args, context swaps.
     pub fn call(&mut self, i: &mut dyn Visitor<Value>) -> Value {
         return self.body.accept(i);
-    }
-}
-pub trait Invokable {
-    fn extract_args(interpeter: &mut Interpreter, arguments: &Option<Vec<Node>>) -> Vec<Value>;
-}
-impl Invokable for Function {
-    fn extract_args(interpeter: &mut Interpreter, arguments: &Option<Vec<Node>>) -> Vec<Value> {
-        let mut args = Vec::new();
-        let args_col = arguments.as_ref().unwrap();
-        for arg in args_col {
-            let value = interpeter.eval_deref(arg);
-            args.push(value);
-        }
-        args
     }
 }
