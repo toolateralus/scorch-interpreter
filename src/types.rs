@@ -15,6 +15,10 @@ pub enum Value {
     Reference(Rc<RefCell<Instance>>),
     Array(bool, Rc<RefCell<Vec<Instance>>>),
     StructInstance { typename: String, context: Box<Context> },
+    // arguments, value tuples.
+    Tuple(Vec<Value>),
+    // parameters, id : type typles.
+    KeyValueTuple(Vec<(String, Rc<Type>)>)
 }
 
 impl Value {

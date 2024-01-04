@@ -552,12 +552,19 @@ impl Visitor<Value> for Interpreter {
                     } else {
                         value = Value::None();
                     }
-                    var = Instance::new(mutability, value, m_type);
                     
-                    if !TypeChecker::validate(&var) {
-                        println!("recieved value: ");
-                        dbg!(&var.value);
-                        panic!("invalid type in declaration '{:?} : {}'",target_id, var.m_type.borrow().name);
+                    var = Instance::new(mutability, value.clone(), m_type);
+                    match value {
+                        Value::None() => {
+                            // all types can currently be none or something.
+                        },
+                        _ => {
+                            if !TypeChecker::validate(&var) {
+                                println!("recieved value: ");
+                                dbg!(&var.value);
+                                panic!("invalid type in declaration '{:?} : {}'",target_id, var.m_type.borrow().name);
+                            }
+                        }    
                     }
                 }
                 _ => {
@@ -1017,7 +1024,15 @@ impl Visitor<Value> for Interpreter {
     }
 
     fn visit_tuple(&mut self, node: &Node) -> Value {
-        todo!()
+        let Node::Tuple(values) = node else {
+            panic!("Expected Tuple node");
+        };
+        let mut result = Vec::new();
+        for expr in values {
+            let val = expr.accept(self);
+            result.push(val);
+        }
+        Value::Tuple(result)
     }
     
     fn visit_unary_op(&mut self, node: &Node) -> Value {

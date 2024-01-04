@@ -1,0 +1,11 @@
+struct X |
+    x : int
+|
+
+x := 100
+
+fn println : none(any : dynamic) {
+    compiler.println(any)
+} 
+
+println(x)

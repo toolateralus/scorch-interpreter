@@ -51,7 +51,7 @@ impl Type {
                 if let Some(op_ovr_mthod) = op_ovr.rust_method.as_ref() {
                     return (op_ovr_mthod)(lhs_value, other);
                 } else {
-                    
+                    Value::None()
                 }
                 
             },
@@ -195,7 +195,7 @@ impl TypeChecker {
     }
 }
 
-use scorch_lang::types::{Function, Invokable};
+use crate::types::{Function, Invokable};
 // import constants.
 use scorch_parser::{ast::*, lexer::TokenKind};
 
