@@ -228,7 +228,7 @@ pub fn find(_context: &mut Context, type_checker: &TypeChecker, mut args: Vec<Va
         }
     }
     
-    panic!("Key not found in the search target.");
+    Value::None()
 }
 pub fn pop(_context: &mut Context, _type_checker: &TypeChecker, mut args: Vec<Value>) -> Value {
     if args.len() != 1 {
