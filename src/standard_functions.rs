@@ -50,6 +50,7 @@ pub fn get_builtin_functions() -> HashMap<String, StandardFunction> {
             String::from("assert_eq"),
             StandardFunction::new(Box::new(assert_eq)),
         ),
+        (String::from("find"), StandardFunction::new(Box::new(find))),
         (String::from("len"), StandardFunction::new(Box::new(length))),
         (String::from("push"), StandardFunction::new(Box::new(push))),
         (String::from("pop"), StandardFunction::new(Box::new(pop))),
