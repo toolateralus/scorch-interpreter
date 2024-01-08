@@ -194,8 +194,8 @@ pub fn find(_context: &mut Context, type_checker: &TypeChecker, mut args: Vec<Va
     if args.len() < 2 {
         panic!("find expects at least 2 arguments: a string key and an array or struct instance to search in. got : {:#?}", args);
     }
-    let key = args.remove(0);
-    let search_target = args.remove(0);
+    let key = args.pop().unwrap();
+    let search_target = args.pop().unwrap();
     
     match search_target {
         Value::Array(_, elements) => {
