@@ -204,7 +204,7 @@ pub fn find(_context: &mut Context, type_checker: &TypeChecker, mut args: Vec<Va
             for element in elements.borrow().iter() {
                 let element = element.borrow_mut();
                 let Value::StructInstance {typename, context } = &element.value else {
-                    panic!("find expects an array or struct instance as the search target.");
+                    panic!("find expects an array or struct instance as the search target, got : {:#?}", &element.value);
                 };
                 
                 if let Some(member) = context.variables.get("key") {
@@ -225,7 +225,7 @@ pub fn find(_context: &mut Context, type_checker: &TypeChecker, mut args: Vec<Va
             }
         }
         _ => {
-            panic!("find expects an array or struct instance as the search target.");
+            panic!("find expects an array or struct instance as the search target, got {:#?}", search_target);
         }
     }
     
