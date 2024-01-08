@@ -189,6 +189,47 @@ pub fn push(_context: &mut Context, type_checker: &TypeChecker, mut args: Vec<Va
         }
     }
 }
+pub fn find(_context: &mut Context, type_checker: &TypeChecker, mut args: Vec<Value>) -> Value {
+    if args.len() < 2 {
+        panic!("find expects at least 2 arguments: a string key and an array or struct instance to search in.");
+    }
+    let key = args.remove(0);
+    let search_target = args.remove(0);
+    
+    match search_target {
+        Value::Array(_, elements) => {
+            let key = key.as_string().unwrap();
+            
+            for element in elements.borrow().iter() {
+                let element = element.borrow_mut();
+                let Value::StructInstance {typename, context } = &element.value else {
+                    panic!("find expects an array or struct instance as the search target.");
+                };
+                
+                if let Some(member) = context.variables.get("key") {
+                    let mem = member.borrow();
+                    let string = mem.value.as_string();
+                    let mut equals = false;
+                    
+                    if let Some(string) = string {
+                        equals = *string == *key;
+                    };
+                    
+                    if !equals {
+                        continue;
+                    }
+                    
+                    return Value::Reference(Rc::clone(&member));
+                }
+            }
+        }
+        _ => {
+            panic!("find expects an array or struct instance as the search target.");
+        }
+    }
+    
+    panic!("Key not found in the search target.");
+}
 pub fn pop(_context: &mut Context, _type_checker: &TypeChecker, mut args: Vec<Value>) -> Value {
     if args.len() != 1 {
         panic!("pop expected 1 argument");
