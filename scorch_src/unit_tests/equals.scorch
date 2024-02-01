@@ -1,0 +1,57 @@
+
+struct Type | 
+	name           : string = 'dynamic'
+	attribute      : string = 'value'
+	members 	   : array  = []
+|
+
+equals : bool(this:array, other:array) {
+	l1 := this.len()
+	l2 := other.len()
+	
+	if l1 != l2 {
+		return false
+	}
+	
+	var i := 0
+	var result := false
+	return repeat {
+		a := this[i]
+		a1 := other[i]
+		
+		if a != a1 {
+			return false
+		}
+		
+		i = i + 1
+		
+		if i > l1 {
+			return false
+		}
+	}
+}
+
+within Type {
+	equals : bool(this: Type, rhs: Type) {
+		m := this.members
+		eq := m.equals(rhs.members)
+		return (this.attribute == rhs.attribute && this.name == rhs.name && eq)
+	}
+}
+
+t := new Type()
+
+t1 := new Type()
+
+f : bool() {
+	return false
+}
+
+f1 : int() {
+	return 100
+}
+
+push(t.members, f)
+push(t1.members, f1)
+
+println(t.equals(t))

@@ -6,8 +6,8 @@ use scorch_parser::ast::*;
 use scorch_parser::lexer::*;
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::ops::Deref;
-use std::ops::DerefMut;
+
+
 use std::rc::Rc;
 
 pub struct Interpreter {
