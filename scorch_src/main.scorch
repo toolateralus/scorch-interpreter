@@ -1,5 +1,5 @@
 i := [0, 1, 2]
-
+// this is an expected error.
 repeat j < 4 {
     i.pop()
     i.println()
