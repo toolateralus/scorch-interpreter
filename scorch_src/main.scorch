@@ -1,4 +1,6 @@
-struct type |
-	var x := 0
-	var y := 0
-|
+i := [0, 1, 2]
+
+repeat j < 4 {
+    i.pop()
+    i.println()
+}

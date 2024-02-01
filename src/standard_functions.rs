@@ -1,6 +1,7 @@
 use super::context::Context;
 use super::typechecker::TypeChecker;
 use super::types::{Instance, Value};
+use std::cell::RefCell;
 use std::process::Command;
 use std::{collections::HashMap, rc::Rc};
 
@@ -49,6 +50,7 @@ pub fn get_builtin_functions() -> HashMap<String, StandardFunction> {
             String::from("assert_eq"),
             StandardFunction::new(Box::new(assert_eq)),
         ),
+        (String::from("find"), StandardFunction::new(Box::new(find))),
         (String::from("len"), StandardFunction::new(Box::new(length))),
         (String::from("push"), StandardFunction::new(Box::new(push))),
         (String::from("pop"), StandardFunction::new(Box::new(pop))),
@@ -171,7 +173,7 @@ pub fn push(_context: &mut Context, type_checker: &TypeChecker, mut args: Vec<Va
             if mutable {
                 for value in args {
                     if let Some(t) = type_checker.from_value(&value) {
-                        let var = Instance::new(mutable, value, Rc::clone(&t));
+                        let var = Rc::new(RefCell::new(Instance::new(mutable, value, Rc::clone(&t))));
                         elements.borrow_mut().push(var);
                     } else {
                         panic!("invalid type for array");
@@ -188,6 +190,47 @@ pub fn push(_context: &mut Context, type_checker: &TypeChecker, mut args: Vec<Va
         }
     }
 }
+pub fn find(_context: &mut Context, type_checker: &TypeChecker, mut args: Vec<Value>) -> Value {
+    if args.len() < 2 {
+        panic!("find expects at least 2 arguments: a string key and an array or struct instance to search in. got : {:#?}", args);
+    }
+    let key = args.pop().unwrap();
+    let search_target = args.pop().unwrap();
+    
+    match search_target {
+        Value::Array(_, elements) => {
+            let key = key.as_string().unwrap();
+            
+            for element in elements.borrow().iter() {
+                let element = element.borrow_mut();
+                let Value::StructInstance {typename, context } = &element.value else {
+                    panic!("find expects an array or struct instance as the search target, got : {:#?}", &element.value);
+                };
+                
+                if let Some(member) = context.variables.get("key") {
+                    let mem = member.borrow();
+                    let string = mem.value.as_string();
+                    let mut equals = false;
+                    
+                    if let Some(string) = string {
+                        equals = *string == *key;
+                    };
+                    
+                    if !equals {
+                        continue;
+                    }
+                    
+                    return Value::Reference(Rc::clone(&member));
+                }
+            }
+        }
+        _ => {
+            panic!("find expects an array or struct instance as the search target, got {:#?}", search_target);
+        }
+    }
+    
+    Value::None()
+}
 pub fn pop(_context: &mut Context, _type_checker: &TypeChecker, mut args: Vec<Value>) -> Value {
     if args.len() != 1 {
         panic!("pop expected 1 argument");
@@ -201,7 +244,15 @@ pub fn pop(_context: &mut Context, _type_checker: &TypeChecker, mut args: Vec<Va
                 "stack underflow: cannot pop from an empty array."
             );
             assert!(mutable, "Cannot pop from immutable array");
-            return el.pop().unwrap().value;
+            
+            let val = el.pop();
+            
+            if let Some(val) = val {
+                return Value::Reference(Rc::clone(&val))
+            } else {
+                panic!("Cannot pop from empty array");
+            }
+            
         }
         _ => {
             panic!("Cannot pop from non-array value");
