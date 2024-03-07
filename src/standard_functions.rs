@@ -1,4 +1,4 @@
-use super::context::Context;
+use super::types::Context;
 use super::typechecker::TypeChecker;
 use super::types::{Instance, Value};
 use std::cell::RefCell;
@@ -24,6 +24,10 @@ impl StandardFunction {
 
 pub fn get_builtin_functions() -> HashMap<String, StandardFunction> {
     HashMap::from([
+        (
+            String::from("tochar"),
+            StandardFunction::new(Box::new(tochar)),
+        ),
         (
             String::from("clearscreen"),
             StandardFunction::new(Box::new(clear_screen)),
@@ -190,7 +194,7 @@ pub fn push(_context: &mut Context, type_checker: &TypeChecker, mut args: Vec<Va
         }
     }
 }
-pub fn find(_context: &mut Context, type_checker: &TypeChecker, mut args: Vec<Value>) -> Value {
+pub fn find(_context: &mut Context, _type_checker: &TypeChecker, mut args: Vec<Value>) -> Value {
     if args.len() < 2 {
         panic!("find expects at least 2 arguments: a string key and an array or struct instance to search in. got : {:#?}", args);
     }
@@ -203,7 +207,7 @@ pub fn find(_context: &mut Context, type_checker: &TypeChecker, mut args: Vec<Va
             
             for element in elements.borrow().iter() {
                 let element = element.borrow_mut();
-                let Value::StructInstance {typename, context } = &element.value else {
+                let Value::StructInstance {typename: _, context } = &element.value else {
                     panic!("find expects an array or struct instance as the search target, got : {:#?}", &element.value);
                 };
                 
@@ -330,6 +334,31 @@ pub fn get_function_signature<'ctx>(func: &'ctx Rc<super::types::Function>) -> S
         params.join(", "),
         func.return_type.borrow().name
     )
+}
+pub fn tochar(_context: &mut Context, _type_checker: &TypeChecker, args: Vec<Value>) -> Value {
+    if args.len() != 1 {
+        panic!("tochar requires a positive 'u32' integer argument");
+    }
+    let value = &args[0];
+    
+    match value {
+        Value::Int(v) => {
+            let char = char::from_u32(*v as u32);
+            
+            match char {
+                Some(c) => {
+                    let string = String::from(c);
+                    Value::String(string)
+                }
+                None => {
+                    panic!("failed to cast to char.");
+                }
+            }
+        }
+        _ => {
+            panic!("unsupported type passed to 'tochar'");
+        }
+    }
 }
 // Math
 // IO
